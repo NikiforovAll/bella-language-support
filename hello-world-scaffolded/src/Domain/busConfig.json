@@ -1,0 +1,5 @@
+{
+    "$schema": "./busConfig.schema.json",
+    "Components": [
+    ]
+}

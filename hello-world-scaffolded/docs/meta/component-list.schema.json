@@ -1,0 +1,79 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "components": {
+            "description": "Array of components",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Component Name",
+                        "type": "string"
+                    },
+                    "services": {
+                        "type": "array",
+                        "description": "Array of services",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "description": "Service Name"
+                                },
+                                "methods": {
+                                    "type": "array",
+                                    "description": "Array of methods",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "description": "Method Name",
+                                                "type": "string"
+                                            },
+                                            "returns": {
+                                                "description": "Return type/value",
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "description": "Short description of method",
+                                                "type": "string"
+                                            },
+                                            "description-extended": {
+                                                "description": "Description of method",
+                                                "type": "string"
+                                            },
+                                            "method-params": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "description": "Param name",
+                                                            "type": "string"
+                                                        },
+                                                        "type": {
+                                                            "description": "Param type",
+                                                            "type": "string"
+                                                        },
+                                                        "description": {
+                                                            "description": "Param desc",
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

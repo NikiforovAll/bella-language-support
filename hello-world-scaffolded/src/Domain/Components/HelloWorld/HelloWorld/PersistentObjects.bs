@@ -1,0 +1,12 @@
+persistent object ExampleCatalog:ExamplePOCO[ExampleId]
+
+
+// persistent object GlEventsByDate:GlEventsByType[DateTime]
+
+// persistent object ServiceCategoryGlPartCatalog:ServiceCategoryGlPart[ServiceCategoryId]
+
+// persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+// persistent object TypeOfServiceGlPartCatalog:TypeOfServiceGlPart[TypeOfServiceId]
+
+// persistent object BankAccountGlPartByServiceCategoryId:BankAccountGlPart[ServiceCategoryId]

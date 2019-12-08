@@ -1,0 +1,92 @@
+procedure ExampleMethod()
+    LogInfo("Echo: ExampleMethod HelloWorld")
+
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+object GlAccountNumber:String
+object GlAccountId:String
+object SubCode:String
+
+object GlAccount
+    number:GlAccountNumber
+    subCode:SubCode
+    description:String
+
+object GlAccounts:GlAccount[]
+
+procedure SaveGlAccount(GlAccount)
+    GlAccountId = GlAccount.number + GlAccount.subCode
+    GlAccountCatalog[GlAccountId] = GlAccount
+
+// Standard DEMO of lsp-sample
+TypeScript lets you write JavaScript the way you really want to.
+TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
+ANY browser. ANY host. ANY OS. Open Source.
+
+// setting PayableVat6GlAccountNumber:String = "190100"
+// setting TelevisionTypeOfServiceAccountId:String = "8120002"
+// setting DirectDebitSuspenseAccount:String = "116000"
+// setting CashbackAccountNumber:String = "882000"
+// setting TelephonieTypeOfServiceAccountId:String = "8110002"
+// setting CrossDiscountGlAccountNumber:String = "815000"
+
+// formula GetCashbackAccountNumber(ServiceCategoryId):GlAccountId =
+//     if(ServiceCategoryId == AnnaServiceCategoryId, CashbackAccountNumber + "3",
+//         if(ServiceCategoryId == TriplePlayServiceCategoryId, CashbackAccountNumber + "2",
+//             if(ServiceCategoryId == HollandWarmteServiceCategoryId || ServiceCategoryId == MaintenanceServiceCategoryId, CashbackAccountNumber + "1", "")
+//         ))
+
+// procedure CheckGlEventExisting(SourceCreationDate, GlEventType, SourceId)
+//     if not GlEventsByDate.ContainsKey(SourceCreationDate)
+//         error[GlEventNotFound] "General ledger events with for Date: "+SourceCreationDate+" were not found"
+//     if not GlEventsByDate[SourceCreationDate].ContainsKey(GlEventType)
+//         error[GlEventNotFound] "General ledger events with type: "+GlEventType+" were not found"
+//     if not GlEventsByDate[SourceCreationDate][GlEventType].ContainsKey(SourceId)
+//         error[GlEventNotFound] "General ledger event with sourceId: "+SourceId+" was not found"
+
+// procedure SaveGlEvent(GlEvent, SourceCreationDate)
+//     SourceCreationDate = SourceCreationDate.Date() as DateTime
+//     if not IsEmpty(GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent)
+//         GlEventLog = GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId]
+//         GlEventLog.historyGlEvents ++= GlEventLog.currentGlEvent
+//         GlEventLog.currentGlEvent = GlEvent
+//     else
+//         GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent = GlEvent
+
+// procedure SaveGlAccount(GlAccount)
+//     GlAccountId = GlAccount.number + GlAccount.subCode
+//     GlAccountCatalog[GlAccountId] = GlAccount
+
+// procedure GetGlEvent(SourceCreationDate, GlEventType, SourceId, out GlEvent)
+//     SourceCreationDate = SourceCreationDate.Date() as DateTime
+//     call CheckGlEventExisting(SourceCreationDate = SourceCreationDate, GlEventType = GlEventType, SourceId = SourceId)
+//     GlEvent = GlEventsByDate[SourceCreationDate][GlEventType][SourceId].currentGlEvent
+
+// object GlEventId:String
+// object SourceId:String
+
+// object GlEvent
+//     id:GlEventId
+//     eventType:GlEventType
+//     createdOn:DateTime
+//     sourceId:SourceId
+//     records:GlRecord[]
+//     serviceAccountId:String
+//     subscriptionId:String
+//     subscribedComponentId:String
+//     subscribedDiscountId:String
+//     subscribedCashbackId:String
+
+// object GlEventLog
+//     currentGlEvent:GlEvent
+//     historyGlEvents:GlEvents
+
+// object GlEventLogsBySourceId:GlEventLog[SourceId]
+
+// object GlEventsByType:GlEventLogsBySourceId[GlEventType]
+
+// object GlEvents:GlEvent[]
+
+// object TempGLEvents:GlEvent[]
+
+// object SourceCreationDate:DateTime

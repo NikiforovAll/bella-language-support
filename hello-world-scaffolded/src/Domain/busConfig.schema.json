@@ -1,0 +1,57 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "title": "The Root Schema",
+  "required": ["Components"],
+  "properties": {
+    "Components": {
+      "$id": "#/properties/Components",
+      "type": "array",
+      "title": "The Components Schema",
+      "items": {
+        "$id": "#/properties/Components/items",
+        "type": "object",
+        "title": "The Items Schema",
+        "required": ["ComponentName", "Endpoints"],
+        "properties": {
+          "ComponentName": {
+            "$id": "#/properties/Components/items/properties/ComponentName",
+            "type": "string",
+            "title": "The Componentname Schema",
+            "default": "",
+            "examples": [""],
+            "pattern": "^(.*)$"
+          },
+          "Endpoints": {
+            "$id": "#/properties/Components/items/properties/Endpoints",
+            "type": "array",
+            "title": "The Endpoints Schema",
+            "items": {
+              "$id": "#/properties/Components/items/properties/Endpoints/items",
+              "type": "object",
+              "title": "The Items Schema",
+              "required": ["Address", "ImplementedContracts"],
+              "properties": {
+                "Address": {
+                  "$id": "#/properties/Components/items/properties/Endpoints/items/properties/Address",
+                  "type": "string",
+                  "title": "The Address Schema",
+                  "default": "",
+                  "examples": [".\\private$\\"],
+                  "pattern": "^(.*)$"
+                },
+                "ImplementedContracts": {
+                  "$id": "#/properties/Components/items/properties/Endpoints/items/properties/ImplementedContracts",
+                  "type": "array",
+                  "title": "The Implementedcontracts Schema"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

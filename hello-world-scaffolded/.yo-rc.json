@@ -1,0 +1,6 @@
+{
+  "generator-bella": {
+    "compiler": ".\\bin\\Bella",
+    "projectSetup": true
+  }
+}

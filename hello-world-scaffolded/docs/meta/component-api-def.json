@@ -1,0 +1,85 @@
+{
+  "components": [
+    {
+      "name": "Component1",
+      "services": [
+        {
+          "name": "Echo1",
+          "methods": [
+            {
+              "name": "DoEcho1",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        },
+        {
+          "name": "Echo2",
+          "methods": [
+            {
+              "name": "DoEcho2",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Component2",
+      "services": [
+        {
+          "name": "Component2",
+          "methods": [
+            {
+              "name": "ExampleMethod",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        },
+        {
+          "name": "Echo1",
+          "methods": [
+            {
+              "name": "DoEcho1",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Component3",
+      "services": [
+        {
+          "name": "Component3",
+          "methods": [
+            {
+              "name": "ExampleMethod",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        },
+        {
+          "name": "Echo2",
+          "methods": [
+            {
+              "name": "DoEcho2",
+              "returns": "Void",
+              "description-extended": "auto-generated,\r\n[System.ServiceModel.OperationContractAttribute()]\r\n[System.ServiceModel.FaultContractAttribute(typeof(DomainBellaNS.API.DomainFault))]",
+              "method-params": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+setting StartupServices:String = "HelloWorld:HelloWorld"

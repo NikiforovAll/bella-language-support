@@ -1,0 +1,2 @@
+enum DomainError
+    DomainError = 1

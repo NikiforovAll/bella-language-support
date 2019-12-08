@@ -1,0 +1,12 @@
+hosted service HelloWorld on HelloWorld
+
+// external service <componentName> on <communication>
+
+// hosted service GeneralLedger on GeneralLedger
+// hosted service GeneralLedgerAsync on Kompass
+// hosted service GeneralLedgerMigrationTestApi on GeneralLedgerMigrationTestApi
+
+// hosted service GeneralLedgerAdapterTestApi on GeneralLedgerAdapterTestApi
+// external service GlAdapter on [Kompass]
+
+// external service InvoiceGenerator on [InvoiceGenerator]
