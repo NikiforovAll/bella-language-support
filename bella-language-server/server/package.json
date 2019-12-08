@@ -1,0 +1,18 @@
+{
+	"name": "bella-lsp-server",
+	"description": "Example implementation of a language server in node.",
+	"version": "0.0.1",
+	"author": "",
+	"license": "MIT",
+	"engines": {
+		"node": "*"
+	},
+	"repository": {
+		"type": "git",
+		"url": ""
+	},
+	"dependencies": {
+		"vscode-languageserver": "^5.2.1"
+	},
+	"scripts": {}
+}

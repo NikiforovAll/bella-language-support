@@ -1,0 +1,3 @@
+[submodule "bella-language-server"]
+	path = bella-language-server
+	url = ./bella-language-server/

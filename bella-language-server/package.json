@@ -1,0 +1,79 @@
+{
+  "name": "bella-language-server",
+  "displayName": "bella-language-server",
+  "description": "Provide language support for Bella Programming Language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.40.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "configuration": {
+        "type": "object",
+        "title": "Example configuration",
+        "properties": {
+            "bellaLanguageServer.maxNumberOfProblems": {
+                "scope": "resource",
+                "type": "number",
+                "default": 100,
+                "description": "Controls the maximum number of problems produced by the server."
+            },
+            "bellaLanguageServer.trace.server": {
+                "scope": "window",
+                "type": "string",
+                "enum": [
+                    "off",
+                    "messages",
+                    "verbose"
+                ],
+                "default": "off",
+                "description": "Traces the communication between VS Code and the language server."
+            }
+        }
+    },
+    "languages": [
+      {
+        "id": "bella",
+        "aliases": [
+          "Bella",
+          "bella"
+        ],
+        "extensions": [
+          ".bs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "bella",
+        "scopeName": "source.bs",
+        "path": "./syntaxes/bella.grammar.json"
+      }
+    ]
+  },
+  "main": "./client/out/src/extension",
+  "activationEvents": [
+    "onLanguage:bella"
+  ],
+  "scripts": {
+    "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+    "build-all": "tsc -p ./client && tsc -p ./server",
+    "compile": "tsc -watch -p ./client",
+    "watch": "tsc -b -w ./client",
+    "compile-server": "tsc -watch -p ./server",
+    "watch-server": "tsc -b -w ./server",
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+  },
+  "devDependencies": {
+    "@types/mocha": "^2.2.33",
+    "@types/node": "^6.0.52",
+    "typescript": "^2.1.5",
+    "vscode": "^1.1.18"
+  },
+  "dependencies": {
+    "vscode-languageclient": "~3.3.0"
+  }
+}
