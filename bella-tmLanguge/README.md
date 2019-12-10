@@ -21,6 +21,8 @@ Links:
 * https://code.visualstudio.com/api/references/contribution-points#contributes.grammars
 * https://macromates.com/manual/en/language_grammars
 * https://macromates.com/manual/en/regular_expressions
+* https://github.com/microsoft/TypeScript-TmLanguage/blob/master/TypeScript.YAML-tmLanguage
+* https://www.apeth.com/nonblog/stories/textmatebundle.html
 
 ## Bella Language Features
 

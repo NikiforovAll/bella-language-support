@@ -1,3 +1,6 @@
 [submodule "bella-language-server"]
 	path = bella-language-server
 	url = ./bella-language-server/
+[submodule "bella-cookbook"]
+	path = bella-cookbook
+	url = ./bella-cookbook/
