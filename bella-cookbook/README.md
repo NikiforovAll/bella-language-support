@@ -12,3 +12,8 @@ Run:
 cd ./src
 gitbook serve
 ```
+
+
+## TODOs
+
+Cosider to add highlighting to code snippets

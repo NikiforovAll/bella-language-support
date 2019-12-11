@@ -2,12 +2,16 @@
 
 ## ForEach
 
+Example:
+
 ```bella
  foreach <Type | Alias> in <ICollection>
         <do something about it>
 ```
 
 ## If
+
+Example:
 
 ```bella
 if <condition>

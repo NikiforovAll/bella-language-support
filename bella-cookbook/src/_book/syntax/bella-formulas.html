@@ -94,7 +94,7 @@
                 <a href="../">
             
                     
-                    Introduction
+                    ☕ Introduction
             
                 </a>
             
@@ -107,7 +107,7 @@
                 <a href="../bella-project-structure.html">
             
                     
-                    Bella Project Structure
+                    📂 Bella Project Structure
             
                 </a>
             
@@ -120,7 +120,7 @@
                 <a href="../bella-syntax.html">
             
                     
-                    Bella Syntax
+                    📝 Bella Syntax
             
                 </a>
             
@@ -225,12 +225,26 @@
             
         </li>
     
-        <li class="chapter " data-level="1.4" data-path="../kompass.html">
+        <li class="chapter " data-level="1.4" data-path="../recipes.html">
             
-                <a href="../kompass.html">
+                <a href="../recipes.html">
             
                     
-                    Kompass
+                    📃 Recipes
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="../recipes/how-to-migrate-database-schema-with-bella.html">
+            
+                <a href="../recipes/how-to-migrate-database-schema-with-bella.html">
+            
+                    
+                    How to migrate database schema with Bella
             
                 </a>
             
@@ -238,12 +252,69 @@
             
         </li>
     
-        <li class="chapter " data-level="1.5" data-path="../bella-language-support.html">
+        <li class="chapter " data-level="1.4.2" data-path="../recipes/how-to-move-from-wcf-to-kompass.html">
+            
+                <a href="../recipes/how-to-move-from-wcf-to-kompass.html">
+            
+                    
+                    How to move from WCF method to Kompass
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="../recipes/how-to-update-contracts-of-csharp-components.html">
+            
+                <a href="../recipes/how-to-update-contracts-of-csharp-components.html">
+            
+                    
+                    How to update contracts of external csharp components
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.4" data-path="../recipes/how-to-debug-bella.html">
+            
+                <a href="../recipes/how-to-debug-bella.html">
+            
+                    
+                    How to debug Bella
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="../kompass.html">
+            
+                <a href="../kompass.html">
+            
+                    
+                    🧭 Kompass
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="../bella-language-support.html">
             
                 <a href="../bella-language-support.html">
             
                     
-                    Contribute 💪
+                    🤛 Contribute
             
                 </a>
             
@@ -297,6 +368,7 @@
                                 <section class="normal markdown-section">
                                 
                                 <h1 id="formulas-bellacoreformulas">Formulas [bella.core.formulas]</h1>
+<p>Example:</p>
 <pre><code class="lang-bella">formula &lt;FormulaName&gt;(&lt;TransformedObject&gt;, ...&lt;params&gt;):&lt;ReturnType&gt; = new &lt;ReturnType&gt;(
   &lt;ReturnType&gt;.&lt;Field&gt; = &lt;expr&gt;
 )
@@ -308,6 +380,14 @@
 </code></pre>
 <h2 id="share-formulas">Share formulas</h2>
 <p>Formulas could be shared if you put them in <code>./Domain/common/*</code> folder.</p>
+<h2 id="generic--specific">Generic / Specific</h2>
+<p>Example:</p>
+<pre><code class="lang-bella">generic formula GetSquare(Shape):Integer = 0
+
+specific formula GetSquare(Circle):Integer = Circle.radius * 2 * PI
+
+specific formula GetScheduledDate(Square):Date = Square.width * Square.width
+</code></pre>
 
                                 
                                 </section>
@@ -351,7 +431,7 @@
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Formulas","level":"1.3.6","depth":2,"next":{"title":"Language built-in features","level":"1.3.7","depth":2,"path":"syntax/bella-support.md","ref":"syntax/bella-support.md","articles":[]},"previous":{"title":"Control Flow","level":"1.3.5","depth":2,"path":"syntax/bella-control-flow.md","ref":"syntax/bella-control-flow.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"syntax/bella-formulas.md","mtime":"2019-12-10T16:57:32.027Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-12-10T17:02:48.779Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Formulas","level":"1.3.6","depth":2,"next":{"title":"Language built-in features","level":"1.3.7","depth":2,"path":"syntax/bella-support.md","ref":"syntax/bella-support.md","articles":[]},"previous":{"title":"Control Flow","level":"1.3.5","depth":2,"path":"syntax/bella-control-flow.md","ref":"syntax/bella-control-flow.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["livereload"],"pluginsConfig":{"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"syntax/bella-formulas.md","mtime":"2019-12-11T08:43:37.034Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-12-11T09:26:44.668Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
@@ -359,6 +439,10 @@
         
     <script src="../gitbook/gitbook.js"></script>
     <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
     
         
         <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>

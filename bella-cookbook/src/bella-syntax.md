@@ -1,4 +1,4 @@
-# TOC
+# Syntax. TOC 📝
 
 ## [Services](syntax/bella-services.md)
 

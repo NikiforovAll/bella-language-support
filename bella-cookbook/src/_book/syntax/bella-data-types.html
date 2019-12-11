@@ -94,7 +94,7 @@
                 <a href="../">
             
                     
-                    Introduction
+                    ☕ Introduction
             
                 </a>
             
@@ -107,7 +107,7 @@
                 <a href="../bella-project-structure.html">
             
                     
-                    Bella Project Structure
+                    📂 Bella Project Structure
             
                 </a>
             
@@ -120,7 +120,7 @@
                 <a href="../bella-syntax.html">
             
                     
-                    Bella Syntax
+                    📝 Bella Syntax
             
                 </a>
             
@@ -225,12 +225,26 @@
             
         </li>
     
-        <li class="chapter " data-level="1.4" data-path="../kompass.html">
+        <li class="chapter " data-level="1.4" data-path="../recipes.html">
             
-                <a href="../kompass.html">
+                <a href="../recipes.html">
             
                     
-                    Kompass
+                    📃 Recipes
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="1.4.1" data-path="../recipes/how-to-migrate-database-schema-with-bella.html">
+            
+                <a href="../recipes/how-to-migrate-database-schema-with-bella.html">
+            
+                    
+                    How to migrate database schema with Bella
             
                 </a>
             
@@ -238,12 +252,69 @@
             
         </li>
     
-        <li class="chapter " data-level="1.5" data-path="../bella-language-support.html">
+        <li class="chapter " data-level="1.4.2" data-path="../recipes/how-to-move-from-wcf-to-kompass.html">
+            
+                <a href="../recipes/how-to-move-from-wcf-to-kompass.html">
+            
+                    
+                    How to move from WCF method to Kompass
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.3" data-path="../recipes/how-to-update-contracts-of-csharp-components.html">
+            
+                <a href="../recipes/how-to-update-contracts-of-csharp-components.html">
+            
+                    
+                    How to update contracts of external csharp components
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4.4" data-path="../recipes/how-to-debug-bella.html">
+            
+                <a href="../recipes/how-to-debug-bella.html">
+            
+                    
+                    How to debug Bella
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="../kompass.html">
+            
+                <a href="../kompass.html">
+            
+                    
+                    🧭 Kompass
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="../bella-language-support.html">
             
                 <a href="../bella-language-support.html">
             
                     
-                    Contribute 💪
+                    🤛 Contribute
             
                 </a>
             
@@ -296,19 +367,25 @@
     
                                 <section class="normal markdown-section">
                                 
-                                <h1 id="data-types-bellacoredatatypes">Data Types [bella.core.datatypes]</h1>
+                                <h1 id="data-types-bellacoremodels">Data Types [bella.core.models]</h1>
 <ul>
-<li><a href="#data-types-bellacoredatatypes">Data Types [bella.core.datatypes]</a><ul>
+<li><a href="#data-types-bellacoremodels">Data Types [bella.core.models]</a><ul>
 <li><a href="#primitives">Primitives</a><ul>
 <li><a href="#string-bellacoremodelsstring">String [bella.core.models.string]</a></li>
+<li><a href="#boolean-bellacoremodelsbool">Boolean [bella.core.models.bool]</a></li>
+<li><a href="#integer-bellacoremodelsint">Integer [bella.core.models.int]</a></li>
+<li><a href="#number-bellacoremodelsnumber">Number [bella.core.models.number]</a></li>
+<li><a href="#decimal-bellacoremodelsdecimal">Decimal [bella.core.models.decimal]</a></li>
 <li><a href="#date-amp-date-time-bellacoremodelsdates">Date &amp; Date Time [bella.core.models.dates]</a></li>
-<li><a href="#enums-amp-errors">Enums &amp; Errors</a></li>
+<li><a href="#enums-bellacoremodelsenum">Enums [bella.core.models.enum]</a></li>
+<li><a href="#errors-bellacoremodelserror">Errors [bella.core.models.error]</a></li>
 </ul>
 </li>
 <li><a href="#aliases-bellacoremodelsalias">Aliases [bella.core.models.alias]</a></li>
 <li><a href="#objects-bellacoremodelsobject">Objects [bella.core.models.object]</a><ul>
 <li><a href="#casting">Casting</a></li>
 <li><a href="#object-initializers">Object initializers</a></li>
+<li><a href="#empty--nulls-default-values">Empty / Nulls /Default values</a></li>
 <li><a href="#auto-calculated-fields">Auto-calculated fields</a></li>
 </ul>
 </li>
@@ -319,6 +396,7 @@
 </ul>
 </li>
 <li><a href="#dictionaries--maps-bellacorecollectionsdictionary">Dictionaries / Maps [bella.core.collections.dictionary]</a><ul>
+<li><a href="#access-element-by-key">Access element by key</a></li>
 <li><a href="#mutate-dictionary">Mutate dictionary</a></li>
 </ul>
 </li>
@@ -332,23 +410,24 @@
 <li>String</li>
 <li>Boolean</li>
 <li>Integer</li>
-<li>Number</li>
+<li>Decimal</li>
 <li>Date</li>
 <li>DateTime</li>
 <li>Enum/Errors</li>
 </ul>
 <h3 id="string-bellacoremodelsstring">String [bella.core.models.string]</h3>
 <p>Strings are enclosed in double quotes. <code>&quot;Bella is awesome&quot;</code></p>
-<p>You could concatenate string with &quot;+&quot; operator: <code>LogInfo(&quot;Hello&quot; + Name)</code></p>
-<h3 id="date--date-time-bellacoremodelsdates">Date &amp; Date Time [bella.core.models.dates]</h3>
-<p>Date is initialized like this: <code>Date(&lt;yyyy&gt;, &lt;dd&gt;, &lt;mm&gt;)</code>.You could cast <code>Date</code> to <code>DateTime</code>: <code>Date(&lt;yyyy&gt;, &lt;dd&gt;, &lt;mm&gt;) as DateTime</code></p>
-<h3 id="enums--errors">Enums &amp; Errors</h3>
-<p>Errors are define in <code>./Domain/common/DomainError.bs</code></p>
-<pre><code class="lang-bella">enum DomainError
-    DomainError = 1
-    CustomError = 2
+<p>&#x1F4A1; You could concatenate string with &quot;+&quot; operator: <code>LogInfo(&quot;Hello&quot; + Name)</code></p>
+<h3 id="boolean-bellacoremodelsbool">Boolean [bella.core.models.bool]</h3>
+<pre><code class="lang-bella">True | False
 </code></pre>
-<p>Throw errors: <code>error[CustomError] &quot;&lt;errorMessage&gt;&quot;</code></p>
+<h3 id="integer-bellacoremodelsint">Integer [bella.core.models.int]</h3>
+<h3 id="number-bellacoremodelsnumber">Number [bella.core.models.number]</h3>
+<h3 id="decimal-bellacoremodelsdecimal">Decimal [bella.core.models.decimal]</h3>
+<h3 id="date--date-time-bellacoremodelsdates">Date &amp; Date Time [bella.core.models.dates]</h3>
+<p>Date is initialized like this: <code>Date(&lt;yyyy&gt;, &lt;dd&gt;, &lt;mm&gt;)</code>.</p>
+<p>&#x1F4A1; You could cast <code>Date</code> to <code>DateTime</code>: <code>Date(&lt;yyyy&gt;, &lt;dd&gt;, &lt;mm&gt;) as DateTime</code></p>
+<h3 id="enums-bellacoremodelsenum">Enums [bella.core.models.enum]</h3>
 <p>You could define your own enum:</p>
 <pre><code class="lang-bella">enum WeekDay
     Monday
@@ -360,18 +439,25 @@
     Sunday
 </code></pre>
 <p>Use it like this: <code>WeekDay.&lt;EnumItem&gt;</code>.</p>
+<h3 id="errors-bellacoremodelserror">Errors [bella.core.models.error]</h3>
+<p>Errors are define in <code>./Domain/common/DomainError.bs</code></p>
+<pre><code class="lang-bella">enum DomainError
+    DomainError = 1
+    CustomError = 2
+</code></pre>
+<p>Throw errors: <code>error[CustomError] &quot;&lt;errorMessage&gt;&quot;</code></p>
 <h2 id="aliases-bellacoremodelsalias">Aliases [bella.core.models.alias]</h2>
 <p>It is not common to define variable of type in Bella. Instead, we use <em>aliases</em>.</p>
 <p>Bella alias is a type and variable at the same type.</p>
 <pre><code class="lang-bella">object HelloWorldMessageId:String
 object CreatedOn:DateTime
 </code></pre>
-<p>Now you can use it to define other objects.</p>
-<p>But, if you want to define scoped varialbe inside some procedure you could use <code>let</code> keyword: <code>let MyHelloWorldMessage = &lt;objectInitializer&gt;</code></p>
+<p>&#x1F4A1; But, if you want to define scoped varialbe inside some procedure you could use <code>let</code> keyword: <code>let MyHelloWorldMessage = &lt;objectInitializer&gt;</code></p>
 <h2 id="objects-bellacoremodelsobject">Objects [bella.core.models.object]</h2>
 <p>You could define your own Objects. Fields are indented and look like this: <code>&lt;key&gt;: &lt;Type | Alias&gt;</code>.</p>
 <pre><code class="lang-bella">object HelloWorldMessage
     messageId: HelloWorldMessageId //object fields
+    content: String
     createdOn: CreatedOn
 </code></pre>
 <h3 id="casting">Casting</h3>
@@ -385,8 +471,19 @@ Also, you could check object type via <code>is</code> operator.</p>
 // initialize arrays
 List(&lt;items...&gt;)
 </code></pre>
-<p>You could initialize default objects and collections via <code>new</code> keyword. Also, Bella has <code>empty</code> keyword (kind like <code>null</code>).</p>
+<h3 id="empty--nulls-default-values">Empty / Nulls /Default values</h3>
+<p>You could initialize default objects and collections via <code>new</code> keyword. Also, Bella has <code>empty</code> keyword (kinda like <code>null</code>). For dates you could use <code>emptyDate</code> keyword.</p>
 <h3 id="auto-calculated-fields">Auto-calculated fields</h3>
+<p>It&apos;s like properties in C#.</p>
+<p>Example:</p>
+<pre><code class="lang-bella">setting EMPHASIS_TOKEN:String = &quot;!&quot;
+object HelloWorldMessage
+    messageId: HelloWorldMessageId
+    content: String
+    createdOn: CreatedOn
+    contentWithEmphasize: String = content + EMPHASIS_TOKEN
+</code></pre>
+<p>Currency</p>
 <h2 id="arrays-bellacorecollectionsarray">Arrays [bella.core.collections.array]</h2>
 <pre><code class="lang-bella">object HelloWorldMessagesList:HelloWorldMessage[*]
 &lt;keyword&gt; &lt;name&gt;               &lt;returnType&gt;
@@ -398,6 +495,7 @@ List(&lt;items...&gt;)
   &lt;ICollection&gt; --= &lt;Object&gt; // removes item by reference*
 </code></pre>
 <h3 id="traverse">Traverse</h3>
+<p>Example:</p>
 <pre><code class="lang-bella">foreach HelloWorldMessage in HelloWorldMessagesList
   LogInfo(&quot;)
 </code></pre>
@@ -405,12 +503,16 @@ List(&lt;items...&gt;)
 <pre><code class="lang-bella">object HelloWorldMessageDictionary:HelloWorldMessage[HelloWorldMessageId]
 &lt;keyword&gt;  &lt;name&gt;                     &lt;returnType&gt;           &lt;key&gt;
 </code></pre>
+<h3 id="access-element-by-key">Access element by key</h3>
+<p>Example:</p>
+<pre><code class="lang-bello">Phrase = GreetingPhrases[Languages.Italian]
+</code></pre>
 <h3 id="mutate-dictionary">Mutate dictionary</h3>
 <pre><code class="lang-bella">  &lt;ICollection&gt;[&lt;Key&gt;] = &lt;Object&gt; //adds item
   &lt;ICollection&gt; --= &lt;Key&gt; //removes item
 </code></pre>
 <h2 id="models--contracts">Models / Contracts</h2>
-<p>It is good practice to separate domain models from contract/transport models.</p>
+<p>&#x1F4A1; It is good practice to separate domain models from contract/transport models.</p>
 <p>Domain models are stored in <code>./Domain/Components/&lt;ComponentName&gt;/model</code></p>
 <p>Shared models are used between components and stored in <code>./Domain/common/models/*</code>.</p>
 
@@ -456,7 +558,7 @@ List(&lt;items...&gt;)
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Data Types","level":"1.3.2","depth":2,"next":{"title":"Persist Data","level":"1.3.3","depth":2,"path":"syntax/bella-persistance.md","ref":"syntax/bella-persistance.md","articles":[]},"previous":{"title":"Services","level":"1.3.1","depth":2,"path":"syntax/bella-services.md","ref":"syntax/bella-services.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"syntax/bella-data-types.md","mtime":"2019-12-10T16:51:56.917Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-12-10T17:02:48.779Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Data Types","level":"1.3.2","depth":2,"next":{"title":"Persist Data","level":"1.3.3","depth":2,"path":"syntax/bella-persistance.md","ref":"syntax/bella-persistance.md","articles":[]},"previous":{"title":"Services","level":"1.3.1","depth":2,"path":"syntax/bella-services.md","ref":"syntax/bella-services.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["livereload"],"pluginsConfig":{"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"syntax/bella-data-types.md","mtime":"2019-12-11T10:38:07.078Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2019-12-11T09:26:44.668Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
@@ -464,6 +566,10 @@ List(&lt;items...&gt;)
         
     <script src="../gitbook/gitbook.js"></script>
     <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
     
         
         <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>

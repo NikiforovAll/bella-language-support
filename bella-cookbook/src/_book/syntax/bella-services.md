@@ -35,6 +35,8 @@ setting StartupServices:String = "HelloWorld:HelloWorld;Greeter:[Kompass]"
 In order to share a service with other components you should register it in `./Domain/common/services`
 Create file with the name of component of defined service and add public contract to be consumed by other components:
 
+Example:
+
 ```bella
 service HelloWorld
     SayHello() oneway

@@ -59,6 +59,7 @@ LogError(<string>)
 
 ```bella
 IsEmpty(<ICollection>)
+<Decimal>.Round1()
 DeepCopy(<Object>)
 "<RegExp>".IsMatch(<stringToMatch>)
 <DateTime>.Date()
