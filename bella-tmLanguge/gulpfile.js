@@ -7,7 +7,8 @@ const js_yaml = require('js-yaml');
 const plist = require('plist');
 const fs = require('fs');
 const path = require('path');
-
+const watch = require('gulp-watch');
+const run = require('gulp-run');
 const inputGrammar = 'src/bella.tmLanguage.yml';
 const grammarsDirectory = 'grammars/';
 const jsOut = 'out/';
@@ -16,6 +17,12 @@ function handleError(err) {
   console.log(err.toString());
   process.exit(-1);
 }
+
+gulp.task('stream', function () {
+    // Endless stream mode
+    return watch('src/bella.tmLanguage.yml', { ignoreInitial: false })
+        .pipe(run('npm run-script convert-to-json'));
+});
 
 gulp.task('buildTmLanguage', function(done) {
   const text = fs.readFileSync(inputGrammar);
@@ -56,7 +63,6 @@ gulp.task(
       .on('error', handleError);
   })
 );
-
 gulp.task(
   'default',
   gulp.series(['buildAtom', 'buildTmLanguage'], function(done) {

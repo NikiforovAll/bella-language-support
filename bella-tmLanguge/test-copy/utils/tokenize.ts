@@ -185,30 +185,34 @@ function createToken(text: string, type: string) {
 export namespace Token {
   export namespace Comment {
     export const LeadingWhitespace = (text: string) =>
-      createToken(text, 'punctuation.whitespace.comment.leading.bella');
+      createToken(text, 'punctuation.whitespace.comment.leading.apex');
 
     export namespace MultiLine {
       export const End = createToken(
         '*/',
-        'punctuation.definition.comment.bella'
+        'punctuation.definition.comment.apex'
       );
       export const Start = createToken(
         '/*',
-        'punctuation.definition.comment.bella'
+        'punctuation.definition.comment.apex'
+      );
+      export const JavaDocStart = createToken(
+        '/**',
+        'punctuation.definition.comment.apex'
       );
 
       export const Text = (text: string) =>
-        createToken(text, 'comment.block.bella');
+        createToken(text, 'comment.block.apex');
     }
 
     export namespace SingleLine {
       export const Start = createToken(
         '//',
-        'punctuation.definition.comment.bella'
+        'punctuation.definition.comment.apex'
       );
 
       export const Text = (text: string) =>
-        createToken(text, 'comment.line.double-slash.bella');
+        createToken(text, 'comment.line.double-slash.apex');
     }
   }
 

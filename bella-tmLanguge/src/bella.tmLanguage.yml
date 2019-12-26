@@ -1,6 +1,233 @@
 # [PackageDev] target_format: plist, ext: tmLanguage
 ---
 name: Bella
-scopeName: source.Bella
+scopeName: source.bs
 fileTypes: [bs]
 
+patterns:
+- include: '#comment'
+- include: '#declarations'
+
+repository:
+
+  declarations:
+    patterns:
+    - include: '#type-declarations'
+
+  type-declarations:
+    patterns:
+    - include: '#comment'
+    # - include: '#class-declaration'
+    # - include: '#enum-declaration'
+    - include: '#service-host-declaration'
+    - include: '#service-declaration'
+    - include: "#procedure-declaration"
+    # - include: '#procedure-name-part-declaration' # TODO: uncomment
+    - include: '#statement'
+    - include: '#expression'
+
+
+  service-host-declaration:
+    begin: (?=\b(hosted|external)\b)
+    end: (?=$)
+    patterns:
+    - begin: |-
+        (?x)
+        \b(hosted|external)\b\s+
+        \b(service)\b\s+
+        (@?[_[:alpha:]][_[:alnum:]]+)\s+
+        \b(on)\b\s+
+        (@?\[*[_[:alpha:]][_[:alnum:]]+\]*)\s*
+      beginCaptures:
+        '1': { name: storage.modifier.declaration.service.bella }
+        '2': { name: keyword.other.class.service.bella }
+        '3': { name: entity.name.type.service.bella }
+        '4': { name: keyword.other.class.service.bella }
+        '5': { name: variable.parameter.type.transport.service.bella }
+      patterns:
+      - include: '#procedure-name-part-declaration'
+      end: (?=$)
+
+  service-declaration:
+    name: "meta.function.service.bella"
+    begin: \b(service)\b\s+([_[:alpha:]][_[:alnum:]]+)
+    beginCaptures:
+        '1': { name: keyword.other.class.service.bella }
+        '2': { name: entity.name.type.service.bella }
+    end: (?=$)
+    # patterns:
+    # - include: '#procedure-name-part-declaration'
+    # - begin:
+
+  procedure-name-part-declaration:
+    name: "meta.function.procedure.signature.declaration.bella"
+    begin: ([_[:alpha:]][_[:alnum:]]+)
+    beginCaptures:
+        '1': {name: entity.name.function.bella}
+    end: (?=$)
+    patterns:
+    - begin: \(
+      beginCaptures:
+        '0': { name: punctuation.parenthesis.open.bella }
+      end: \)
+      endCaptures:
+        '0': { name: punctuation.parenthesis.close.bella }
+      patterns:
+        - include: '#procedure-params-declaration'
+    - match: '(\:)\b([_[:alpha:]][_[:alnum:]]+)\b'
+      captures:
+        '1': { name: punctuation.separator.colon.return-type.bella }
+        '2': { name: variable.function.return-type.bella }
+    - match: '\b(oneway)\b'
+      captures:
+        '1': { name: keyword.declaration.return-type.bella }
+
+
+  procedure-declaration:
+    name: "meta.function.procedure.declaration.bella"
+    begin: \s*\b(procedure)\b\s+(.*)
+    beginCaptures:
+        '1': { name: keyword.declaration.procedure.bella }
+        '2':
+          patterns:
+            - include: '#procedure-name-part-declaration'
+    end: (?=$)
+
+  procedure-params-declaration:
+    name: "meta.function.parameter.declaration.bella"
+    patterns:
+    - match: '\s+\b(out)\b\s+'
+      captures:
+          '1': { name: keyword.declaration.function.procedure.out.bella }
+    - match: \s*\b([_[:alpha:]][_[:alnum:]]+)\b
+      captures:
+        '1': { name: variable.parameter.function.procedure.bella }
+    - include: '#punctuation-comma'
+
+
+  # annotation-declaration:
+  #   begin: ([@][_[:alpha:]]+)\b
+  #   beginCaptures:
+  #     '1': { name: storage.type.annotation.apex }
+  #   end: (?<=\)|$)
+  #   patterns:
+  #   - begin: \(
+  #     beginCaptures:
+  #       '0': { name: punctuation.parenthesis.open.apex }
+  #     end: \)
+  #     endCaptures:
+  #       '0': { name: punctuation.parenthesis.close.apex }
+  #     patterns:
+  #     - include: '#expression'
+  #   - include: '#statement'
+
+  comment:
+    patterns:
+    - name: comment.block.bella
+      begin: /\*(\*)?
+      beginCaptures:
+        '0': { name: punctuation.definition.comment.bella }
+      end: \*/
+      endCaptures:
+        '0': { name: punctuation.definition.comment.bella }
+    - begin: (^\s+)?(?=//)
+      beginCaptures:
+        '1': { name: punctuation.whitespace.comment.leading.bella }
+      end: (?=$)
+      patterns:
+      - name: comment.line.double-slash.bella
+        begin: (?<!/)//(?:(?!/)|(?=//))
+        beginCaptures:
+          '0': { name: punctuation.definition.comment.bella }
+        end: (?=$)
+
+  expression:
+    patterns:
+    - include: '#comment'
+    # - include: '#merge-expression'
+    # - include: '#support-expression'
+    # - include: '#throw-expression'
+    # - include: '#this-expression'
+    # - include: '#conditional-operator'
+    # - include: '#expression-operators'
+    # - include: '#object-creation-expression'
+    # - include: '#member-access-expression'
+    # - include: '#element-access-expression'
+    # - include: '#literal'
+    # - include: '#parenthesized-expression'
+    # - include: '#initializer-expression'
+    # - include: '#identifier'
+
+  statement:
+    patterns:
+    - include: '#comment'
+    # - include: '#while-statement'
+    # - include: '#do-statement'
+    # - include: '#for-statement'
+    # - include: '#switch-statement'
+    # - include: '#when-else-statement'
+    # - include: '#when-sobject-statement'
+    # - include: '#when-statement'
+    # - include: '#when-multiple-statement'
+    - include: '#if-statement-ternary'
+    # - include: '#if-statement'
+    - include: '#else-part'
+    # - include: '#goto-statement'
+    # - include: '#return-statement'
+    # - include: '#break-or-continue-statement'
+    # - include: '#throw-statement'
+    # - include: '#try-statement'
+    # - include: '#soql-query-expression'
+    # - include: '#local-declaration'
+    # - include: '#block'
+    # - include: '#expression'
+    # - include: '#punctuation-semicolon'
+
+  if-statement-ternary:
+    begin: (?<!\.)\b(if)\b\s*(?=\()
+    beginCaptures:
+      '1': { name: keyword.control.conditional.if.bella }
+    end: (?<=\})|(?=;)
+    patterns:
+    - begin: \(
+      beginCaptures:
+        '0': { name: punctuation.parenthesis.open.bella }
+      end: \)
+      endCaptures:
+        '0': { name: punctuation.parenthesis.close.bella }
+      patterns:
+      - include: '#expression'
+    - include: '#statement'
+
+  if-statement:
+    begin: (?<!\.)\b(if)\b\s*(?=\()
+    beginCaptures:
+      '1': { name: keyword.control.conditional.if.bella }
+    end: (?=$)
+
+  else-part:
+    begin: (?<!\.)\b(else)\b
+    beginCaptures:
+      '1': { name: keyword.control.conditional.else.bella }
+    end: (?=$)
+    patterns:
+    - include: '#statement'
+
+  punctuation-comma:
+    name: punctuation.separator.comma.bella
+    match: ','
+  # service-transport-component:
+  #   name: entity.name.type.service.bella
+  #   patterns:
+  #   - name: entity.name.transport.service.bella
+  #     match: '@?[_[:alpha:]][_[:alnum:]]*'
+  #   - name: entity.name.transport.external.service.bella
+  #     match: '@?\[[_[:alpha:]][_[:alnum:]]\]*'
+
+  # identifier:
+  #   name: variable.other.readwrite.apex
+  #   match: '@?[_[:alpha:]][_[:alnum:]]*'
+
+  # method-name-custom:
+  #   name: entity.name.function.bella
+  #   match: '@?[_[:alpha:]][_[:alnum:]]*'
