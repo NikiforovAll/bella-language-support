@@ -36,6 +36,9 @@
         },
         {
           "include": "#object-declaration"
+        },
+        {
+          "include": "#setting-declaration"
         }
       ]
     },
@@ -121,6 +124,29 @@
           "include": "#object-field-declaration"
         }
       ]
+    },
+    "setting-declaration": {
+      "name": "meta.settings.declaration.bella",
+      "begin": "\\b(setting)\\b\\s+([_[:alpha:]][_[:alnum:]]+)\\b\\s*(.+)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.settings.declaration.bella"
+        },
+        "2": {
+          "name": "entity.name.class.object.bella"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#return-type-declaration"
+            },
+            {
+              "include": "#expression"
+            }
+          ]
+        }
+      },
+      "end": "(?=$)"
     },
     "object-field-declaration": {
       "name": "meta.object.field.declaration",
@@ -308,6 +334,9 @@
         },
         {
           "include": "#if-statement-ternary"
+        },
+        {
+          "include": "#literal"
         }
       ]
     },
@@ -383,6 +412,105 @@
     "punctuation-comma": {
       "name": "punctuation.separator.comma.bella",
       "match": ","
+    },
+    "literal": {
+      "patterns": [
+        {
+          "include": "#boolean-literal"
+        },
+        {
+          "include": "#null-literal"
+        },
+        {
+          "include": "#numeric-literal"
+        },
+        {
+          "include": "#string-literal"
+        }
+      ]
+    },
+    "boolean-literal": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.true.bella",
+          "match": "(?<!\\.)\\btrue\\b"
+        },
+        {
+          "name": "constant.language.boolean.false.bella",
+          "match": "(?<!\\.)\\bfalse\\b"
+        }
+      ]
+    },
+    "null-literal": {
+      "name": "constant.language.null.bella",
+      "match": "(?<!\\.)\\bnull\\b"
+    },
+    "numeric-literal": {
+      "patterns": [
+        {
+          "name": "constant.numeric.datetime.bella",
+          "match": "\\b(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}(\\-|\\+)\\d{2}\\:\\d{2})\\b"
+        },
+        {
+          "name": "constant.numeric.datetime.bella",
+          "match": "\\b(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}(Z)?)\\b"
+        },
+        {
+          "name": "constant.numeric.date.bella",
+          "match": "\\b(\\d{4}\\-\\d{2}\\-\\d{2})\\b"
+        },
+        {
+          "name": "constant.numeric.hex.bella",
+          "match": "\\b0(x|X)[0-9a-fA-F_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+        },
+        {
+          "name": "constant.numeric.binary.bella",
+          "match": "\\b0(b|B)[01_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.bella",
+          "match": "\\b([0-9_]+)?\\.[0-9_]+((e|E)[0-9]+)?(F|f|D|d|M|m)?\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.bella",
+          "match": "\\b[0-9_]+(e|E)[0-9_]+(F|f|D|d|M|m)?\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.bella",
+          "match": "\\b[0-9_]+(F|f|D|d|M|m)\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.bella",
+          "match": "\\b[0-9_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+        }
+      ]
+    },
+    "string-literal": {
+      "name": "string.quoted.double.bella",
+      "begin": "\"",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.bella"
+        }
+      },
+      "end": "(\\\")|((?:[^\\\\\\n])$)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.bella"
+        },
+        "2": {
+          "name": "invalid.illegal.newline.bella"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.apex",
+      "match": "\\\\."
     }
   }
 }

@@ -23,6 +23,7 @@ repository:
     - include: '#service-declaration'
     - include: '#procedure-declaration'
     - include: '#object-declaration'
+    - include: '#setting-declaration'
     # - include: '#persistent-object-declaration'
     # - include: '#procedure-signature-declaration' # TODO: uncomment
     # - include: '#statement'
@@ -78,6 +79,18 @@ repository:
       # - include: '#return-type-declaration'
       end: (?=$)
     - include: '#object-field-declaration'
+
+  setting-declaration:
+    name: meta.settings.declaration.bella
+    begin: \b(setting)\b\s+([_[:alpha:]][_[:alnum:]]+)\b\s*(.+)
+    beginCaptures:
+        '1': { name: keyword.other.settings.declaration.bella }
+        '2': { name: entity.name.class.object.bella }
+        '3':
+          patterns:
+            - include: '#return-type-declaration'
+            - include: '#expression'
+    end: (?=$)
 
   object-field-declaration:
     name: meta.object.field.declaration
@@ -138,10 +151,6 @@ repository:
       patterns:
         - include: '#procedure-params-declaration'
     - include: '#return-type-declaration'
-    # - match: '(\:)\s*\b([_[:alpha:]][_[:alnum:]]+)\b'
-    #   captures:
-    #     '1': { name: punctuation.separator.colon.return-type.bella }
-    #     '2': { name: support.function.return-type.bella }
     - match: '\b(oneway)\b'
       captures:
         '1': { name: keyword.declaration.return-type.bella }
@@ -157,21 +166,17 @@ repository:
         '1': { name: variable.parameter.function.procedure.bella }
     - include: '#punctuation-comma'
 
-  # annotation-declaration:
-  #   begin: ([@][_[:alpha:]]+)\b
+  # operator-assignment:
+  #   name: keyword.operator.assignment.bellla
+  #   match: (?<!=|!)(=)(?!=)
+
+  # variable-initializer:
+  #   begin: (?<!=|!)(=)(?!=|>)
   #   beginCaptures:
-  #     '1': { name: storage.type.annotation.apex }
-  #   end: (?<=\)|$)
+  #     '1': { name: keyword.operator.assignment.bella }
+  #   end: (?=[,\)\];}])
   #   patterns:
-  #   - begin: \(
-  #     beginCaptures:
-  #       '0': { name: punctuation.parenthesis.open.apex }
-  #     end: \)
-  #     endCaptures:
-  #       '0': { name: punctuation.parenthesis.close.apex }
-  #     patterns:
-  #     - include: '#expression'
-  #   - include: '#statement'
+  #   - include: '#expression'
 
   comment:
     patterns:
@@ -206,7 +211,7 @@ repository:
     # - include: '#object-creation-expression'
     # - include: '#member-access-expression'
     # - include: '#element-access-expression'
-    # - include: '#literal'
+    - include: '#literal'
     # - include: '#parenthesized-expression'
     # - include: '#initializer-expression'
     # - include: '#identifier'
@@ -269,18 +274,69 @@ repository:
   punctuation-comma:
     name: punctuation.separator.comma.bella
     match: ','
-  # service-transport-component:
-  #   name: entity.name.type.service.bella
-  #   patterns:
-  #   - name: entity.name.transport.service.bella
-  #     match: '@?[_[:alpha:]][_[:alnum:]]*'
-  #   - name: entity.name.transport.external.service.bella
-  #     match: '@?\[[_[:alpha:]][_[:alnum:]]\]*'
 
-  # identifier:
-  #   name: variable.other.readwrite.apex
-  #   match: '@?[_[:alpha:]][_[:alnum:]]*'
+  literal:
+    patterns:
+    - include: '#boolean-literal'
+    - include: '#null-literal'
+    - include: '#numeric-literal'
+    - include: '#string-literal'
 
-  # method-name-custom:
-  #   name: entity.name.function.bella
-  #   match: '@?[_[:alpha:]][_[:alnum:]]*'
+
+  boolean-literal:
+    patterns:
+    - name: constant.language.boolean.true.bella
+      match: (?<!\.)\btrue\b
+    - name: constant.language.boolean.false.bella
+      match: (?<!\.)\bfalse\b
+
+  null-literal:
+    name: constant.language.null.bella
+    match: (?<!\.)\bnull\b
+
+  numeric-literal:
+    patterns:
+    # match datetime utc constants: 2011-04-26T10:00:00-08:00
+    - name: constant.numeric.datetime.bella
+      match: \b(\d{4}\-\d{2}\-\d{2}T\d{2}\:\d{2}\:\d{2}(\-|\+)\d{2}\:\d{2})\b
+    # match datetime with offset: 1999-01-01T23:01:01Z
+    - name: constant.numeric.datetime.bella
+      match: \b(\d{4}\-\d{2}\-\d{2}T\d{2}\:\d{2}\:\d{2}(Z)?)\b
+    # match date: 1999-01-02
+    - name: constant.numeric.date.bella
+      match: \b(\d{4}\-\d{2}\-\d{2})\b
+    # C# grammar: 0x hex-digits integer-type-suffix[opt] OR 0X hex-digits integer-type-suffix[opt]
+    - name: constant.numeric.hex.bella
+      match: \b0(x|X)[0-9a-fA-F_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\b
+    # C# grammar: 0b binary-digits integer-type-suffix[opt] OR 0B binary-digits integer-type-suffix[opt]
+    - name: constant.numeric.binary.bella
+      match: \b0(b|B)[01_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\b
+    # C# grammar: decimal-digits . decimal-digits exponent-part[opt] real-type-suffix[opt] OR . decimal-digits exponent-part[opt] real-type-suffix[opt]
+    - name: constant.numeric.decimal.bella
+      match: \b([0-9_]+)?\.[0-9_]+((e|E)[0-9]+)?(F|f|D|d|M|m)?\b
+    #  C# grammar: decimal-digits exponent-part real-type-suffix[opt]
+    - name: constant.numeric.decimal.bella
+      match: \b[0-9_]+(e|E)[0-9_]+(F|f|D|d|M|m)?\b
+    # C# grammar: decimal-digits real-type-suffix
+    - name: constant.numeric.decimal.bella
+      match: \b[0-9_]+(F|f|D|d|M|m)\b
+    # C# grammar: decimal-digits integer-type-suffix[opt]
+    - name: constant.numeric.decimal.bella
+      match: \b[0-9_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\b
+
+
+  string-literal:
+    name: string.quoted.double.bella
+    begin: "\""
+    beginCaptures:
+      '0': { name: punctuation.definition.string.begin.bella }
+    end: (\")|((?:[^\\\n])$)
+    endCaptures:
+      '1': { name: punctuation.definition.string.end.bella }
+      '2': { name: invalid.illegal.newline.bella }
+    patterns:
+    - include: '#string-character-escape'
+
+  string-character-escape:
+    name: constant.character.escape.apex
+    match: \\.

@@ -54,3 +54,25 @@ formula ToCreateServiceAccountRequest(Order, Proposition):CreateServiceAccountRe
     initialInvoicePaymentMethod = Order.initialInvoicePaymentMethod,
     email = Order.customer.contactInfo.email,
     subscribedCashback = if (Order.isEnergieCustomer, Proposition.cashback, empty))
+
+
+procedure CreateMyNleAccount(CreateCustomerAccountRequest, out AccountId)
+    AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+    call CreateCustomerAccountInternal(AccountId, CreateCustomerAccountRequest)
+
+procedure CreateCustomerAccountInternal(AccountId, CreateCustomerAccountRequest)
+    Email = CreateCustomerAccountRequest.contactInfo.email
+    Name = CreateCustomerAccountRequest.firstName + " " + CreateCustomerAccountRequest.lastName
+
+    CustomerAccount = CreateCustomerAccountRequest.FromDto(AccountId)
+    CustomerAccounts[AccountId] = CustomerAccount
+    Accounts[AccountId] = CustomerAccount
+    AccountIdsByEmail[Email] ++= AccountId
+
+
+procedure UpdateCustomerAccount(UpdateCustomerAccountRequest)
+    if IsEmpty(UpdateCustomerAccountRequest.accountId)
+        error[InvalidAccountId] "Customer account id cannot be empty"
+    call GetCustomerAccountById(AccountId = UpdateCustomerAccountRequest.accountId, out CustomerAccount)
+    if UpdateCustomerAccountRequest.createdBy is empty
+        error[InvalidCreatedBy] "Created by cannot be empty"
