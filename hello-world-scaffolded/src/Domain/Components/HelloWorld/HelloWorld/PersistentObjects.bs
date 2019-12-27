@@ -1,12 +1,70 @@
 persistent object ExampleCatalog:ExamplePOCO[ExampleId]
 
 
-// persistent object GlEventsByDate:GlEventsByType[DateTime]
+persistent object GlEventsByDate:GlEventsByType[DateTime]
 
-// persistent object ServiceCategoryGlPartCatalog:ServiceCategoryGlPart[ServiceCategoryId]
+persistent object ServiceCategoryGlPartCatalog:ServiceCategoryGlPart[ServiceCategoryId]
 
-// persistent object GlAccountCatalog:GlAccount[GlAccountId]
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
 
-// persistent object TypeOfServiceGlPartCatalog:TypeOfServiceGlPart[TypeOfServiceId]
+persistent object TypeOfServiceGlPartCatalog:TypeOfServiceGlPart[TypeOfServiceId]
 
-// persistent object BankAccountGlPartByServiceCategoryId:BankAccountGlPart[ServiceCategoryId]
+persistent object BankAccountGlPartByServiceCategoryId:BankAccountGlPart[ServiceCategoryId]
+
+
+persistent object AccountLoginBlockInfos:AccountLoginBlockInfo[AccountId]
+persistent object AccountClaims:Claims[AccountId]
+
+persistent object UniqueKeys:UniqueKeyInfo[*]
+persistent object ResetUniqueKeys:ResetUniqueKeyInfo[*]
+persistent object RestoreUniqueKeys:RestoreUniqueKeyInfo[*]
+
+persistent object AuthorizationCredentials:LoginInfo[Login]
+persistent object UserRolesCollection:UserRole[*]
+
+persistent object UserRolesToUsersMap: LoginInfos[RoleName]
+persistent object UserSessionsCollection: UserSession[AccountId]
+persistent object AccountIdAccessTokenTuplesByAccessTokenHash:AccountIdAccessTokenTuples[String]
+
+
+persistent object ApiUsersMap:ApiUser[Login]
+
+persistent object RunMigrationProceduresCatalog:ProcedureRunHistoryItem[ProcedureName]
+
+
+object AccountId:String
+object NutsCustomerAccountNumber:String
+object SelligentAccountId:String
+object MaxAccountId:Integer
+object FirstName:String
+object LastName:String
+object DateOfBirth:Date
+object Iban:String
+object SmileId:String
+object BusinessPartnerId:String
+object CustomerIdList:String[*]
+object Input:String
+object Inputs:Input[*]
+object ZipInput:Input
+object ZipInputs:ZipInput[*]
+object PageNumber:Integer
+object PerPage:Integer
+object FullName:String
+object StartOn:DateTime
+object EndOn:DateTime
+object SuspendOn:DateTime
+object ResumeOn:DateTime
+
+// General person information
+object Account
+    id:AccountId
+    firstName:FirstName[*]
+    initials:Initials
+    prefix:Prefix
+    lastName:LastName
+    fullName:FullName = firstName + (if (IsEmpty(prefix), " ", (" " + prefix + " "))) + lastName
+    gender:Gender
+    dateOfBirth:DateOfBirth
+    contactInfo:ContactInfo
+
+object AccountIds:AccountId[*]

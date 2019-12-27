@@ -5,7 +5,7 @@ service GeneralLedger
     SaveGlEvent(GlEvent, SourceCreationDate) oneway
     SaveGlAccount(GlAccount) oneway
     RevertGlEvent(Date, GlEventType, SourceId) oneway
-    GetGlEvent(Date, GlEventType, SourceId):GlEvent
+    GetGlEvent(Date, GlEventType, SourceId): GlEvent[*]
     GetRevertedGlEvents(Date, GlEventType, SourceId):GlEvents
     GelAllAccounts():GlAccounts
 
@@ -19,7 +19,7 @@ procedure GetCustomerAccountListByIdList(AccountIds, out AccountList)
         call GetUserAccountById(AccountId, out Account)
         AccountList ++= Account
 
-procedure ProccessMailAssignmentRequest(MailAssignmentRequest)
+procedure ProccessMailAssignmentRequest(GlAccount, MailAssignmentRequest)
     MailAssignmentResultDetailsCollection = MailAssignmentRequest.mailAssignmentRequestDetailsCollection
         .Where(x => AccountIdsByEmail.ContainsKey(x.senderEmail) && !(AccountIdsByEmail[x.senderEmail].Count > 1))
         .Select

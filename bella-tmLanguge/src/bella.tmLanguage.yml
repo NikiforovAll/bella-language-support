@@ -21,10 +21,12 @@ repository:
     # - include: '#enum-declaration'
     - include: '#service-host-declaration'
     - include: '#service-declaration'
-    - include: "#procedure-declaration"
-    # - include: '#procedure-name-part-declaration' # TODO: uncomment
-    - include: '#statement'
-    - include: '#expression'
+    - include: '#procedure-declaration'
+    - include: '#object-declaration'
+    # - include: '#persistent-object-declaration'
+    # - include: '#procedure-signature-declaration' # TODO: uncomment
+    # - include: '#statement'
+    # - include: '#expression'
 
 
   service-host-declaration:
@@ -45,7 +47,7 @@ repository:
         '4': { name: keyword.other.class.service.bella }
         '5': { name: variable.parameter.type.transport.service.bella }
       patterns:
-      - include: '#procedure-name-part-declaration'
+      - include: '#procedure-signature-declaration'
       end: (?=$)
 
   service-declaration:
@@ -55,10 +57,72 @@ repository:
         '1': { name: keyword.other.class.service.bella }
         '2': { name: entity.name.type.service.bella }
     patterns:
-    - include: '#procedure-name-part-declaration'
+    - include: '#procedure-signature-declaration'
     end: (^\s*$)
 
-  procedure-name-part-declaration:
+  object-declaration:
+    name: meta.object.declaration.bella
+    begin: (?=\b(object|persistent)\b)
+    end: (^\s*$)
+    patterns:
+    - match: (persistent)\b\s+
+      name: storage.modifier.declaration.service.bella
+    - begin: \b(object)\b\s+([_[:alpha:]][_[:alnum:]]+)\s*(.*)
+      beginCaptures:
+        '1': { name: keyword.other.object.declaration.bella }
+        '2': { name: entity.name.class.object.bella }
+        '3':
+          patterns:
+            - include: '#return-type-declaration'
+      # patterns:
+      # - include: '#return-type-declaration'
+      end: (?=$)
+    - include: '#object-field-declaration'
+
+  object-field-declaration:
+    name: meta.object.field.declaration
+    match: ([_[:alpha:]][_[:alnum:]]+)\b\s*(.+)\s*
+    captures:
+      '1': { name: variable.parameter.object.bella }
+      '2':
+        patterns:
+          - include: '#return-type-declaration'
+          - include: '#expression'
+
+  return-type-declaration:
+      name: 'meta.common.declaration.return-type.bella'
+      match: '(\:)\s*\b([_[:alpha:]][_[:alnum:]]+)\b(\S+)*\s*'
+      captures:
+        '1': { name: punctuation.separator.colon.return-type.bella }
+        '2': { name: support.function.return-type.bella }
+        '3':
+          patterns:
+            - include: '#collection-modifier'
+
+  collection-modifier:
+    name: meta.common.declaration.collection-modifier
+    begin: (\[)([_[:alpha:]][_[:alnum:]]+|\*)
+    beginCaptures:
+      '1': { name: punctuation.parenthesis.close.bella }
+      '2': { name: keyword.control.other.placeholder }
+    end: (\])
+    endCaptures:
+      '1': { name: punctuation.parenthesis.close.bella }
+    # match: \[(\*|[_[:alpha:]][_[:alnum:]]+)\]
+    # captures:
+    #   '1': { name: punctuation.separator.colon.return-type.bella }
+
+  procedure-declaration:
+    name: "meta.function.procedure.declaration.bella"
+    begin: ^\s*\b(procedure)\b\s+(.*)
+    beginCaptures:
+        '1': { name: keyword.declaration.procedure.bella }
+        '2':
+          patterns:
+            - include: '#procedure-signature-declaration'
+    end: (?=$)
+
+  procedure-signature-declaration:
     name: "meta.function.procedure.signature.declaration.bella"
     begin: \s*([_[:alpha:]][_[:alnum:]]+)
     beginCaptures:
@@ -73,24 +137,14 @@ repository:
         '0': { name: punctuation.parenthesis.close.bella }
       patterns:
         - include: '#procedure-params-declaration'
-    - match: '(\:)\b([_[:alpha:]][_[:alnum:]]+)\b'
-      captures:
-        '1': { name: punctuation.separator.colon.return-type.bella }
-        '2': { name: support.function.return-type.bella }
+    - include: '#return-type-declaration'
+    # - match: '(\:)\s*\b([_[:alpha:]][_[:alnum:]]+)\b'
+    #   captures:
+    #     '1': { name: punctuation.separator.colon.return-type.bella }
+    #     '2': { name: support.function.return-type.bella }
     - match: '\b(oneway)\b'
       captures:
         '1': { name: keyword.declaration.return-type.bella }
-
-
-  procedure-declaration:
-    name: "meta.function.procedure.declaration.bella"
-    begin: \s*\b(procedure)\b\s+(.*)
-    beginCaptures:
-        '1': { name: keyword.declaration.procedure.bella }
-        '2':
-          patterns:
-            - include: '#procedure-name-part-declaration'
-    end: (?=$)
 
   procedure-params-declaration:
     name: "meta.function.parameter.declaration.bella"
@@ -102,7 +156,6 @@ repository:
       captures:
         '1': { name: variable.parameter.function.procedure.bella }
     - include: '#punctuation-comma'
-
 
   # annotation-declaration:
   #   begin: ([@][_[:alpha:]]+)\b
@@ -143,6 +196,7 @@ repository:
   expression:
     patterns:
     - include: '#comment'
+    - include: '#if-statement-ternary'
     # - include: '#merge-expression'
     # - include: '#support-expression'
     # - include: '#throw-expression'
@@ -185,7 +239,7 @@ repository:
   if-statement-ternary:
     begin: (?<!\.)\b(if)\b\s*(?=\()
     beginCaptures:
-      '1': { name: keyword.control.conditional.if.bella }
+      '1': { name: keyword.control.conditional-ternary.if.bella }
     end: (?<=\})|(?=;)
     patterns:
     - begin: \(
