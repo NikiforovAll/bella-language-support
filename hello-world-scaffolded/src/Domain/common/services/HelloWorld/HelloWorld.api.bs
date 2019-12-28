@@ -103,6 +103,8 @@ procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionReq
                 SubscribedBundlesPerProduct.tvBundles = Bundles
             else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
                 SubscribedBundlesPerProduct.voipBundles = Bundles
+            else
+                MethodInfo("Test")
 
 procedure UpdateCustomerAccount(UpdateCustomerAccountRequest)
     if IsEmpty(UpdateCustomerAccountRequest.accountId)

@@ -41,6 +41,9 @@
           "include": "#setting-declaration"
         },
         {
+          "include": "#enum-declaration"
+        },
+        {
           "include": "#comment"
         }
       ]
@@ -125,6 +128,28 @@
         },
         {
           "include": "#object-field-declaration"
+        }
+      ]
+    },
+    "enum-declaration": {
+      "name": "meta.enum.declaration.bella",
+      "begin": "\\b(enum)\\b\\s+",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.enum.declaration.bella"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#identifier"
+            }
+          ]
+        }
+      },
+      "end": "(^\\s*$)",
+      "patterns": [
+        {
+          "include": "#identifier"
         }
       ]
     },
@@ -400,6 +425,15 @@
           "include": "#comment"
         },
         {
+          "include": "#foreach-statement"
+        },
+        {
+          "include": "#if-statement"
+        },
+        {
+          "include": "#throw-statement"
+        },
+        {
           "include": "#local-declaration"
         },
         {
@@ -460,8 +494,8 @@
       "end": "(?=\\B)"
     },
     "if-statement-ternary3": {
-      "name": "meta.common.expression.ternary.multi-line",
-      "begin": "(?x)\n(@?if)\\s*                 # method name\n(?=\\(|\\s*$)",
+      "name": "meta.common.expression.ternary.multi-line.bella",
+      "begin": "(?x)\n(@?if)\\s*\n(?=\\(|\\s*$)",
       "beginCaptures": {
         "1": {
           "name": "keyword.control.conditional-ternary.if.bella"
@@ -476,6 +510,72 @@
           "include": "#punctuation-comma"
         }
       ]
+    },
+    "if-statement": {
+      "name": "meta.common.statement.if.bella",
+      "begin": "\\s(if|else if|else)\\s+(.*)(?=\\s*$)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.conditional.if.bella"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        }
+      },
+      "end": "(?=$)"
+    },
+    "foreach-statement": {
+      "name": "meta.common.statement.foreach.bella",
+      "begin": "\\s*(foreach)(.+)(in)(.+)\\s*(?=\\s*$)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.foreach.bella"
+        },
+        "2": {
+          "name": "variable.parameter.variable.declaration.bella"
+        },
+        "3": {
+          "name": "keyword.declaration.foreach.in.bella"
+        },
+        "4": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        }
+      },
+      "end": "(?=$)"
+    },
+    "throw-statement": {
+      "name": "meta.common.statement.throw.bella",
+      "begin": "\\s*(error)(\\[)(.+)(\\])\\s+(.+)\\s*(?=\\s*$)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.error.bella"
+        },
+        "2": {
+          "name": "punctuation.parenthesis.open.bella"
+        },
+        "3": {
+          "name": "invalid.illegal.error-enum.bella"
+        },
+        "4": {
+          "name": "punctuation.parenthesis.close.bella"
+        },
+        "5": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        }
+      },
+      "end": "(?=$)"
     },
     "support-expression": {
       "patterns": [
@@ -601,29 +701,6 @@
       "patterns": [
         {
           "include": "#expression"
-        }
-      ]
-    },
-    "if-statement": {
-      "begin": "(?<!\\.)\\b(if)\\b\\s*(?=\\()",
-      "beginCaptures": {
-        "1": {
-          "name": "keyword.control.conditional.if.bella"
-        }
-      },
-      "end": "(?=$)"
-    },
-    "else-part": {
-      "begin": "(?<!\\.)\\b(else)\\b",
-      "beginCaptures": {
-        "1": {
-          "name": "keyword.control.conditional.else.bella"
-        }
-      },
-      "end": "(?=$)",
-      "patterns": [
-        {
-          "include": "#statement"
         }
       ]
     },
