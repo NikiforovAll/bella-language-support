@@ -1,5 +1,6 @@
 procedure ExampleMethod()
     LogInfo("Echo: ExampleMethod HelloWorld")
+    LogError("TEST")
 
 persistent object GlAccountCatalog:GlAccount[GlAccountId]
 
@@ -36,7 +37,7 @@ formula GetCashbackAccountNumber(ServiceCategoryId):GlAccountId =
             if(ServiceCategoryId == HollandWarmteServiceCategoryId || ServiceCategoryId == MaintenanceServiceCategoryId, CashbackAccountNumber + "1", "")
         ))
 
-formula ToServiceAccountDetailsDto(ServiceAccount):ServiceAccountDetailsDto = new ServiceAccountDetailsDto(
+formula ToServiceAccountDetailsDto(ServiceAccount):ServiceAccountDetailsDto[*] = new ServiceAccountDetailsDto(
     id = ServiceAccount.id,
     startOnDate = ServiceAccount.startOn,
     endOnDate = ServiceAccount.endOn,
@@ -93,6 +94,12 @@ procedure GetGlEvent(SourceCreationDate, GlEventType, SourceId, out GlEvent)
     call CheckGlEventExisting(SourceCreationDate = SourceCreationDate, GlEventType = GlEventType, SourceId = SourceId)
     GlEvent = GlEventsByDate[SourceCreationDate][GlEventType][SourceId].currentGlEvent
 
+procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
+    call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
+    GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
+    call ReplaceProcessesCreatedBy(Processes = GetPagedAndFilteredAdjustingProcessesResponse.processes, AccountId = empty)
+    CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = GetPagedAndFilteredAdjustingProcessesResponse.ToCrmPortalDto()
+
 object GlEventId:String
 object SourceId:String
 
@@ -121,3 +128,52 @@ object GlEvents:GlEvent[]
 object TempGLEvents:GlEvent[]
 
 object SourceCreationDate:DateTime
+
+
+generic formula ToProcessName(Flow):ProcessName = empty
+
+specific formula ToProcessName(Order):ProcessName = if
+    (
+    Order.type == OrderType.New,
+    "New contract",
+    "Order prolongation"
+    )
+
+specific formula ToProcessName(AdjustingOrder):ProcessName = "Adjusting order"
+
+specific formula ToProcessName(AutoProlongationOrder):ProcessName = "Order auto prolongation"
+
+specific formula ToProcessName(CeaseDslOrder):ProcessName = "Cease dsl"
+
+specific formula ToProcessName(PackageAddOrder):ProcessName = "Package add"
+
+specific formula ToProcessName(PackageDropOrder):ProcessName = "Package drop"
+
+specific formula ToProcessName(ExtraHardwareOrder):ProcessName = "Extra hardware"
+
+specific formula ToProcessName(StartTvOrder):ProcessName = "Start tv"
+
+specific formula ToProcessName(StartVoipOrder):ProcessName = "Start voip"
+
+specific formula ToProcessName(StopTvOrder):ProcessName = "Stop tv"
+
+specific formula ToProcessName(StopVoipOrder):ProcessName = "Stop voip"
+
+specific formula ToProcessName(UpgradeDslOrder):ProcessName = "Upgrade dsl"
+
+specific formula ToProcessName(MoveDslOrder):ProcessName = "Move Dsl"
+
+specific formula ToProcessName(ChangePriceForAutoProlongationOrder):ProcessName = "Change Price"
+
+generic formula ToProcessType(Flow):ProcessType = ProcessType.Flow
+
+specific formula ToProcessType(Order):ProcessType = if
+    (
+    Order.type == OrderType.New,
+    ProcessType.NewContract,
+    ProcessType.OrderProlongation
+    )
+
+specific formula ToProcessType(CeaseDslOrder):ProcessType = ProcessType.CeaseDslOrder
+
+specific formula ToProcessType(PackageAddOrder):ProcessType = ProcessType.PackageAddOrder

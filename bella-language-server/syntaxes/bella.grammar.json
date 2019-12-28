@@ -363,13 +363,19 @@
     "expression": {
       "patterns": [
         {
-          "include": "#if-statement-ternary2"
+          "include": "#if-statement-ternary3"
         },
         {
           "include": "#comment"
         },
         {
+          "include": "#support-expression"
+        },
+        {
           "include": "#invocation-expression"
+        },
+        {
+          "include": "#arrow-function-expression-body"
         },
         {
           "include": "#expression-operators"
@@ -392,74 +398,46 @@
         }
       ]
     },
-    "if-statement-ternary": {
-      "name": "meta.common.expression.ternary",
-      "begin": "\\b(if)\\b\\s*",
+    "if-statement-ternary3": {
+      "name": "meta.common.expression.ternary.multi-line",
+      "begin": "(?x)\n(@?if)\\s*                 # method name\n(?=\\(|\\s*$)",
       "beginCaptures": {
         "1": {
           "name": "keyword.control.conditional-ternary.if.bella"
         }
       },
-      "end": "\\)",
+      "end": "(?<=\\))",
       "patterns": [
         {
-          "begin": "\\(",
-          "beginCaptures": {
-            "0": {
-              "name": "punctuation.parenthesis.open.bella"
-            }
-          },
-          "end": "\\)",
-          "endCaptures": {
-            "0": {
-              "name": "punctuation.parenthesis.close.bella"
-            }
-          },
-          "patterns": [
-            {
-              "include": "#expression"
-            }
-          ]
+          "include": "#expression"
         },
         {
-          "include": "#statement"
+          "include": "#punctuation-comma"
         }
       ]
     },
-    "if-statement-ternary2": {
-      "name": "meta.common.expression.ternary",
-      "match": "\\b(if)\\b\\s*\\((.*)\\,(.*)\\,(.*)\\)",
-      "captures": {
-        "1": {
-          "name": "keyword.control.conditional-ternary.if.bella"
-        },
-        "2": {
-          "patterns": [
-            {
-              "include": "#expression"
-            }
-          ]
-        },
-        "3": {
-          "patterns": [
-            {
-              "include": "#expression"
-            }
-          ]
-        },
-        "4": {
-          "patterns": [
-            {
-              "include": "#expression"
-            }
-          ]
-        }
-      },
+    "support-expression": {
       "patterns": [
         {
-          "include": "#statement"
+          "include": "#support-type"
         }
       ]
+    },
+    "support-type": {
+      "name": "meta.support.bella",
+      "patterns": [
+        {
+          "include": "#support-functions"
+        }
+      ]
+    },
+    "support-functions": {
+      "match": "\\b(LogInfo|LogError|IsEmpty|With)\\b",
+      "captures": {
+        "1": {
+          "name": "support.function.bella"
+        }
+      }
     },
     "invocation-expression": {
       "name": "meta.common.expression.invocation",
@@ -512,6 +490,21 @@
           "name": "punctuation.parenthesis.close.bella"
         }
       },
+      "patterns": [
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "arrow-function-expression-body": {
+      "name": "meta.common.expression.arrow-func",
+      "begin": "=>",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.declaration.function.arrow.bella"
+        }
+      },
+      "end": "(?=\\))",
       "patterns": [
         {
           "include": "#expression"

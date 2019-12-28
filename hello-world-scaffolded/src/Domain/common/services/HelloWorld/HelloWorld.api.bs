@@ -21,6 +21,7 @@ procedure GetCustomerAccountListByIdList(AccountIds, out AccountList)
 
 procedure ProccessMailAssignmentRequest(GlAccount, MailAssignmentRequest)
     firstName + 3 +  (if (IsEmpty(prefix, test), " ", (" " + prefix + " "))) + lastName
+
     MailAssignmentResultDetailsCollection = MailAssignmentRequest.mailAssignmentRequestDetailsCollection
         .Where(x => AccountIdsByEmail.ContainsKey(x.senderEmail) && !(AccountIdsByEmail[x.senderEmail].Count > 1))
         .Select
