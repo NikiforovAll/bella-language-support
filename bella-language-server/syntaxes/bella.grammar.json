@@ -32,6 +32,9 @@
           "include": "#procedure-declaration"
         },
         {
+          "include": "#formula-declaration"
+        },
+        {
           "include": "#object-declaration"
         },
         {
@@ -226,6 +229,28 @@
         }
       ]
     },
+    "formula-declaration": {
+      "name": "meta.function.formula.declaration.bella",
+      "begin": "^\\s*\\b(formula)\\b\\s+(.*)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.declaration.procedure.bella"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#procedure-signature-declaration"
+            }
+          ]
+        }
+      },
+      "end": "(^\\s*$)",
+      "patterns": [
+        {
+          "include": "#statement"
+        }
+      ]
+    },
     "procedure-signature-declaration": {
       "name": "meta.function.procedure.signature.declaration.bella",
       "begin": "\\s*([_[:alpha:]][_[:alnum:]]+)",
@@ -265,6 +290,9 @@
               "name": "keyword.declaration.return-type.bella"
             }
           }
+        },
+        {
+          "include": "#expression"
         }
       ]
     },

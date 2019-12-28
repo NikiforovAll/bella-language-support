@@ -19,6 +19,7 @@ repository:
     - include: '#service-host-declaration'
     - include: '#service-declaration'
     - include: '#procedure-declaration'
+    - include: '#formula-declaration'
     - include: '#object-declaration'
     - include: '#setting-declaration'
     - include: '#comment'
@@ -135,6 +136,18 @@ repository:
     patterns:
       - include: '#statement'
 
+  formula-declaration:
+    name: "meta.function.formula.declaration.bella"
+    begin: ^\s*\b(formula)\b\s+(.*)
+    beginCaptures:
+        '1': { name: keyword.declaration.procedure.bella }
+        '2':
+          patterns:
+            - include: '#procedure-signature-declaration'
+    end: (^\s*$)
+    patterns:
+      - include: '#statement'
+
   procedure-signature-declaration:
     name: "meta.function.procedure.signature.declaration.bella"
     begin: \s*([_[:alpha:]][_[:alnum:]]+)
@@ -154,6 +167,7 @@ repository:
     - match: '\b(oneway)\b'
       captures:
         '1': { name: keyword.declaration.return-type.bella }
+    - include: '#expression'
 
   procedure-params-declaration:
     name: "meta.function.parameter.declaration.bella"
@@ -257,6 +271,7 @@ repository:
       - include: '#expression'
     - include: '#statement'
 
+  # TODO: add multi-line ternary support
   if-statement-ternary2:
     name: meta.common.expression.ternary
     match: \b(if)\b\s*\((.*)\,(.*)\,(.*)\)
@@ -432,3 +447,10 @@ repository:
   identifier:
     name: variable.other.readwrite.bella
     match: '@?[_[:alpha:]][_[:alnum:]]*'
+
+# TODO:
+
+# * as
+# * empty
+# * not
+# * new

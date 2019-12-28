@@ -36,6 +36,24 @@ formula GetCashbackAccountNumber(ServiceCategoryId):GlAccountId =
             if(ServiceCategoryId == HollandWarmteServiceCategoryId || ServiceCategoryId == MaintenanceServiceCategoryId, CashbackAccountNumber + "1", "")
         ))
 
+formula ToServiceAccountDetailsDto(ServiceAccount):ServiceAccountDetailsDto = new ServiceAccountDetailsDto(
+    id = ServiceAccount.id,
+    startOnDate = ServiceAccount.startOn,
+    endOnDate = ServiceAccount.endOn,
+    pendingBillingStatus = With(
+        ServiceAccount.serviceAccountStateHistory.Last(),
+        lastState => if(
+            lastState.endOn > now,
+            lastState.status,
+            ServiceAccount.getStatus(now)
+            )
+        ),
+    currentBillingStatus = ServiceAccount.getStatus(now),
+    paymentMethod = ServiceAccount.paymentMethod,
+    deliveryAddress = ServiceAccount.shippingAddress.ToDto(),
+    serviceCategoryId = ServiceAccount.serviceCategoryId
+    )
+
 procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
     AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
     Email = CreatePartnerAccountRequest.contactInfo.email
