@@ -16,14 +16,12 @@ repository:
 
   type-declarations:
     patterns:
-    - include: '#comment'
-    # - include: '#class-declaration'
-    # - include: '#enum-declaration'
     - include: '#service-host-declaration'
     - include: '#service-declaration'
     - include: '#procedure-declaration'
     - include: '#object-declaration'
     - include: '#setting-declaration'
+    - include: '#comment'
     # - include: '#persistent-object-declaration'
     # - include: '#procedure-signature-declaration' # TODO: uncomment
     # - include: '#statement'
@@ -71,7 +69,7 @@ repository:
     - begin: \b(object)\b\s+([_[:alpha:]][_[:alnum:]]+)\s*(.*)
       beginCaptures:
         '1': { name: keyword.other.object.declaration.bella }
-        '2': { name: entity.name.class.object.bella }
+        '2': { name: entity.name.type.object.bella }
         '3':
           patterns:
             - include: '#return-type-declaration'
@@ -133,7 +131,9 @@ repository:
         '2':
           patterns:
             - include: '#procedure-signature-declaration'
-    end: (?=$)
+    end: (^\s*$)
+    patterns:
+      - include: '#statement'
 
   procedure-signature-declaration:
     name: "meta.function.procedure.signature.declaration.bella"
@@ -199,22 +199,26 @@ repository:
         end: (?=$)
 
   expression:
+    # name: meta.common.expression
     patterns:
+    - include: '#if-statement-ternary2'
     - include: '#comment'
-    - include: '#if-statement-ternary'
     # - include: '#merge-expression'
     # - include: '#support-expression'
     # - include: '#throw-expression'
     # - include: '#this-expression'
     # - include: '#conditional-operator'
-    # - include: '#expression-operators'
+    - include: '#invocation-expression'
+    - include: '#expression-operators'
     # - include: '#object-creation-expression'
     # - include: '#member-access-expression'
     # - include: '#element-access-expression'
     - include: '#literal'
-    # - include: '#parenthesized-expression'
+    - include: '#parenthesized-expression'
     # - include: '#initializer-expression'
     # - include: '#identifier'
+    # - include: '#identifier'
+
 
   statement:
     patterns:
@@ -227,25 +231,21 @@ repository:
     # - include: '#when-sobject-statement'
     # - include: '#when-statement'
     # - include: '#when-multiple-statement'
-    - include: '#if-statement-ternary'
     # - include: '#if-statement'
-    - include: '#else-part'
-    # - include: '#goto-statement'
+    # - include: '#else-part'
     # - include: '#return-statement'
-    # - include: '#break-or-continue-statement'
     # - include: '#throw-statement'
-    # - include: '#try-statement'
-    # - include: '#soql-query-expression'
     # - include: '#local-declaration'
     # - include: '#block'
-    # - include: '#expression'
+    - include: '#expression'
     # - include: '#punctuation-semicolon'
 
   if-statement-ternary:
-    begin: (?<!\.)\b(if)\b\s*(?=\()
+    name: meta.common.expression.ternary
+    begin: \b(if)\b\s*
     beginCaptures:
       '1': { name: keyword.control.conditional-ternary.if.bella }
-    end: (?<=\})|(?=;)
+    end: \)
     patterns:
     - begin: \(
       beginCaptures:
@@ -256,6 +256,67 @@ repository:
       patterns:
       - include: '#expression'
     - include: '#statement'
+
+  if-statement-ternary2:
+    name: meta.common.expression.ternary
+    match: \b(if)\b\s*\((.*)\,(.*)\,(.*)\)
+    captures:
+      '1': {name: keyword.control.conditional-ternary.if.bella }
+      '2':
+        patterns:
+          - include: '#expression'
+      '3':
+        patterns:
+          - include: '#expression'
+      '4':
+        patterns:
+          - include: '#expression'
+
+    patterns:
+    - include: '#statement'
+
+  # support-type:
+  #   name: support.bella
+  #   patterns:
+  #   - include: '#comment'
+  #   - include: '#support-class'
+  #   - include: '#support-functions'
+  #   - include: '#support-name'
+
+  invocation-expression:
+    name: meta.common.expression.invocation
+    begin: |-
+      (?x)
+      (@?[_[:alpha:]][_[:alnum:]]*)\s*                 # method name
+      (?=\()                                           # open paren of argument list
+    beginCaptures:
+      '1': { name: entity.name.function.bella }
+    end: (?<=\))
+    patterns:
+    - include: '#argument-list'
+
+  argument-list:
+    begin: \(
+    beginCaptures:
+      '0': { name: punctuation.parenthesis.open.bella }
+    end: \)
+    endCaptures:
+      '0': { name: punctuation.parenthesis.close.bella }
+    patterns:
+    # - include: '#named-argument'
+    - include: '#expression'
+    - include: '#punctuation-comma'
+
+  parenthesized-expression:
+    name: meta.common.expression.parenthesized-expression
+    begin: \(
+    beginCaptures:
+      '0': { name: punctuation.parenthesis.open.bella }
+    end: \)
+    endCaptures:
+      '0': { name: punctuation.parenthesis.close.bella }
+    patterns:
+    - include: '#expression'
 
   if-statement:
     begin: (?<!\.)\b(if)\b\s*(?=\()
@@ -270,6 +331,33 @@ repository:
     end: (?=$)
     patterns:
     - include: '#statement'
+  expression-operators:
+
+    patterns:
+    - name: keyword.operator.collection.compound.bella
+      match: --=|\+\+=
+    - name: keyword.operator.assignment.compound.bella
+      match: \*=|/=|%=|\+=|-=
+    - name: keyword.operator.assignment.compound.bitwise.bella
+      match: \&=|\^=|<<=|>>=|\|=
+    - name: keyword.operator.bitwise.shift.bella
+      match: <<|>>
+    - name: keyword.operator.comparison.bella
+      match: ==|!=
+    - name: keyword.operator.relational.bella
+      match: <=|>=|<|>
+    - name: keyword.operator.logical.bella
+      match: \!|&&|\|\|
+    - name: keyword.operator.bitwise.bella
+      match: \&|~|\^|\|
+    - name: keyword.operator.assignment.bella
+      match: \=
+    - name: keyword.operator.decrement.bella
+      match: --
+    - name: keyword.operator.increment.bella
+      match: \+\+
+    - name: keyword.operator.arithmetic.bella
+      match: '%|\*|/|-|\+'
 
   punctuation-comma:
     name: punctuation.separator.comma.bella
@@ -338,5 +426,9 @@ repository:
     - include: '#string-character-escape'
 
   string-character-escape:
-    name: constant.character.escape.apex
+    name: constant.character.escape.bella
     match: \\.
+
+  identifier:
+    name: variable.other.readwrite.bella
+    match: '@?[_[:alpha:]][_[:alnum:]]*'

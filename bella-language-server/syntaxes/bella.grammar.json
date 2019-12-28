@@ -23,9 +23,6 @@
     "type-declarations": {
       "patterns": [
         {
-          "include": "#comment"
-        },
-        {
           "include": "#service-host-declaration"
         },
         {
@@ -39,6 +36,9 @@
         },
         {
           "include": "#setting-declaration"
+        },
+        {
+          "include": "#comment"
         }
       ]
     },
@@ -108,7 +108,7 @@
               "name": "keyword.other.object.declaration.bella"
             },
             "2": {
-              "name": "entity.name.class.object.bella"
+              "name": "entity.name.type.object.bella"
             },
             "3": {
               "patterns": [
@@ -219,7 +219,12 @@
           ]
         }
       },
-      "end": "(?=$)"
+      "end": "(^\\s*$)",
+      "patterns": [
+        {
+          "include": "#statement"
+        }
+      ]
     },
     "procedure-signature-declaration": {
       "name": "meta.function.procedure.signature.declaration.bella",
@@ -330,13 +335,22 @@
     "expression": {
       "patterns": [
         {
+          "include": "#if-statement-ternary2"
+        },
+        {
           "include": "#comment"
         },
         {
-          "include": "#if-statement-ternary"
+          "include": "#invocation-expression"
+        },
+        {
+          "include": "#expression-operators"
         },
         {
           "include": "#literal"
+        },
+        {
+          "include": "#parenthesized-expression"
         }
       ]
     },
@@ -346,21 +360,19 @@
           "include": "#comment"
         },
         {
-          "include": "#if-statement-ternary"
-        },
-        {
-          "include": "#else-part"
+          "include": "#expression"
         }
       ]
     },
     "if-statement-ternary": {
-      "begin": "(?<!\\.)\\b(if)\\b\\s*(?=\\()",
+      "name": "meta.common.expression.ternary",
+      "begin": "\\b(if)\\b\\s*",
       "beginCaptures": {
         "1": {
           "name": "keyword.control.conditional-ternary.if.bella"
         }
       },
-      "end": "(?<=\\})|(?=;)",
+      "end": "\\)",
       "patterns": [
         {
           "begin": "\\(",
@@ -386,6 +398,98 @@
         }
       ]
     },
+    "if-statement-ternary2": {
+      "name": "meta.common.expression.ternary",
+      "match": "\\b(if)\\b\\s*\\((.*)\\,(.*)\\,(.*)\\)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.conditional-ternary.if.bella"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        "4": {
+          "patterns": [
+            {
+              "include": "#expression"
+            }
+          ]
+        }
+      },
+      "patterns": [
+        {
+          "include": "#statement"
+        }
+      ]
+    },
+    "invocation-expression": {
+      "name": "meta.common.expression.invocation",
+      "begin": "(?x)\n(@?[_[:alpha:]][_[:alnum:]]*)\\s*                 # method name\n(?=\\()                                           # open paren of argument list",
+      "beginCaptures": {
+        "1": {
+          "name": "entity.name.function.bella"
+        }
+      },
+      "end": "(?<=\\))",
+      "patterns": [
+        {
+          "include": "#argument-list"
+        }
+      ]
+    },
+    "argument-list": {
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.parenthesis.open.bella"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.parenthesis.close.bella"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        },
+        {
+          "include": "#punctuation-comma"
+        }
+      ]
+    },
+    "parenthesized-expression": {
+      "name": "meta.common.expression.parenthesized-expression",
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.parenthesis.open.bella"
+        }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.parenthesis.close.bella"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        }
+      ]
+    },
     "if-statement": {
       "begin": "(?<!\\.)\\b(if)\\b\\s*(?=\\()",
       "beginCaptures": {
@@ -406,6 +510,58 @@
       "patterns": [
         {
           "include": "#statement"
+        }
+      ]
+    },
+    "expression-operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.collection.compound.bella",
+          "match": "--=|\\+\\+="
+        },
+        {
+          "name": "keyword.operator.assignment.compound.bella",
+          "match": "\\*=|/=|%=|\\+=|-="
+        },
+        {
+          "name": "keyword.operator.assignment.compound.bitwise.bella",
+          "match": "\\&=|\\^=|<<=|>>=|\\|="
+        },
+        {
+          "name": "keyword.operator.bitwise.shift.bella",
+          "match": "<<|>>"
+        },
+        {
+          "name": "keyword.operator.comparison.bella",
+          "match": "==|!="
+        },
+        {
+          "name": "keyword.operator.relational.bella",
+          "match": "<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.logical.bella",
+          "match": "\\!|&&|\\|\\|"
+        },
+        {
+          "name": "keyword.operator.bitwise.bella",
+          "match": "\\&|~|\\^|\\|"
+        },
+        {
+          "name": "keyword.operator.assignment.bella",
+          "match": "\\="
+        },
+        {
+          "name": "keyword.operator.decrement.bella",
+          "match": "--"
+        },
+        {
+          "name": "keyword.operator.increment.bella",
+          "match": "\\+\\+"
+        },
+        {
+          "name": "keyword.operator.arithmetic.bella",
+          "match": "%|\\*|/|-|\\+"
         }
       ]
     },
@@ -509,8 +665,12 @@
       ]
     },
     "string-character-escape": {
-      "name": "constant.character.escape.apex",
+      "name": "constant.character.escape.bella",
       "match": "\\\\."
+    },
+    "identifier": {
+      "name": "variable.other.readwrite.bella",
+      "match": "@?[_[:alpha:]][_[:alnum:]]*"
     }
   }
 }

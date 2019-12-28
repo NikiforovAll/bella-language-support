@@ -36,6 +36,19 @@ formula GetCashbackAccountNumber(ServiceCategoryId):GlAccountId =
             if(ServiceCategoryId == HollandWarmteServiceCategoryId || ServiceCategoryId == MaintenanceServiceCategoryId, CashbackAccountNumber + "1", "")
         ))
 
+procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
+    AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+    Email = CreatePartnerAccountRequest.contactInfo.email
+    Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
+
+    PartnerAccount = CreatePartnerAccountRequest.FromDto(AccountId)
+    Accounts[AccountId] = PartnerAccount
+    PartnerAccounts[AccountId] = PartnerAccount
+    PartnerAccountsBySalesOfficeId[CreatePartnerAccountRequest.salesOfficeId] = PartnerAccount
+
+    AccountIdsByEmail[Email] ++= AccountId
+    Login = Email
+
 procedure CheckGlEventExisting(SourceCreationDate, GlEventType, SourceId)
     if not GlEventsByDate.ContainsKey(SourceCreationDate)
         error[GlEventNotFound] "General ledger events with for Date: "+SourceCreationDate+" were not found"

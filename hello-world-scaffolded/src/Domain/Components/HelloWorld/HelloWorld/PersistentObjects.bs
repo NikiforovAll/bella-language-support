@@ -62,7 +62,7 @@ object Account
     initials:Initials
     prefix:Prefix
     lastName:LastName
-    fullName:FullName = firstName + (if (IsEmpty(prefix), " ", (" " + prefix + " "))) + lastName
+    fullName:FullName = firstName ++= 3   (if (IsEmpty(prefix, test), " ", (" " + prefix + " "))) + lastName
     gender:Gender
     dateOfBirth:DateOfBirth
     contactInfo:ContactInfo
