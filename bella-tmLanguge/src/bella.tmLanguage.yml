@@ -23,7 +23,6 @@ repository:
     - include: '#object-declaration'
     - include: '#setting-declaration'
     - include: '#comment'
-    # - include: '#statement'
     # - include: '#expression'
 
 
@@ -124,28 +123,32 @@ repository:
 
   procedure-declaration:
     name: "meta.function.procedure.declaration.bella"
-    begin: ^\s*\b(procedure)\b\s+(.*)
+    # begin: ^\s*\b(procedure)\b\s+(.*)
+    begin: ^\s*\b(specific|generic|.*)\b(procedure)\b\s+(.+)
     beginCaptures:
-        '1': { name: keyword.declaration.procedure.bella }
-        '2':
+        '1': { name: storage.modifier.declaration.generic-specific.bella }
+        '2': { name: keyword.declaration.procedure.bella }
+        '3':
           patterns:
             - include: '#procedure-signature-declaration'
-    end: (^\s*$)
+    end: (?=^\S)
     patterns:
       - include: '#statement'
 
   formula-declaration:
     name: "meta.function.formula.declaration.bella"
-    begin: ^\s*\b(formula)\b\s+(.*)
+    begin: ^\s*\b(specific|generic|.*)\b(formula)\b\s+(.+)
     beginCaptures:
-        '1': { name: keyword.declaration.procedure.bella }
-        '2':
+        '1': { name: storage.modifier.declaration.generic-specific.bella }
+        '2': { name: keyword.declaration.formula.bella }
+        '3':
           patterns:
             - include: '#procedure-signature-declaration'
-    end: (^\s*$)
+    end: (?=^\S)
     patterns:
       - include: '#statement'
 
+  # TODO: ad separate declaration for invocation to support multi line
   procedure-signature-declaration:
     name: "meta.function.procedure.signature.declaration.bella"
     begin: \s*([_[:alpha:]][_[:alnum:]]+)
@@ -254,6 +257,75 @@ repository:
     - include: '#expression'
     # - include: '#punctuation-semicolon'
 
+  local-declaration:
+    patterns:
+    # - include: '#local-constant-declaration'
+    - include: '#local-variable-declaration'
+
+  local-variable-declaration:
+    begin: |-
+      (?x)
+      (?:
+        (?:(\blet)\s+)?| # ref local
+        (?<type-name>
+          (?:
+            (?:blet\s+)?   # ref local
+            (?:
+              (?:(?<identifier>@?[_[:alpha:]][_[:alnum:]]*)\s*\:\:\s*)? # alias-qualification
+              (?<name-and-type-args> # identifier + type arguments (if any)
+                \g<identifier>\s*
+                (?<type-args>\s*<(?:[^<>]|\g<type-args>)+>\s*)?
+              )
+              (?:\s*\.\s*\g<name-and-type-args>)*
+            )
+            (?:\s*\?\s*)? # nullable suffix?
+            (?:\s*\[(?:\s*,\s*)*\]\s*)* # array suffix?
+          )
+        )
+      )\s+
+      (\g<identifier>)\s*
+      (?=,|;|=|\))
+    beginCaptures:
+      '1': { name: storage.modifier.apex }
+      '2': { name: keyword.other.var.apex }
+      '3':
+        patterns:
+        - include: '#support-type'
+        - include: '#type'
+      # '4': ?<identifier> is a sub-expression. It's final value is not considered.
+      # '5': ?<name-and-type-args> is a sub-expression. It's final value is not considered.
+      # '6': ?<type-args> is a sub-expression. It's final value is not considered.
+      '7': { name: entity.name.variable.local.apex }
+    end: (?=;|\))
+    patterns:
+    - name: entity.name.variable.local.apex
+      match: '@?[_[:alpha:]][_[:alnum:]]*'
+    - include: '#punctuation-comma'
+    - include: '#comment'
+    - include: '#variable-initializer'
+
+  variable-initializer:
+    begin: (?<!=|!)(=)(?!=|>)
+    beginCaptures:
+      '1': { name: keyword.operator.assignment.apex }
+    end: (?=[,\)\];}])
+    patterns:
+    - include: '#expression'
+
+
+  type-name:
+    patterns:
+    - match: (@?[_[:alpha:]][_[:alnum:]]*)\s*(\.)
+      captures:
+        '1': { name: storage.type.apex }
+        '2': { name: punctuation.accessor.apex }
+    - match: (\.)\s*(@?[_[:alpha:]][_[:alnum:]]*)
+      captures:
+        '1': { name: punctuation.accessor.apex }
+        '2': { name: storage.type.apex }
+    - name: storage.type.apex
+      match: '@?[_[:alpha:]][_[:alnum:]]*'
+
   # if-statement-ternary:
   #   name: meta.common.expression.ternary
   #   begin: \b(if)\b\s*
@@ -317,6 +389,7 @@ repository:
   support-expression:
     patterns:
     - include: '#support-type'
+    - include: '#support-keywords'
 
   support-type:
     name: meta.support.bella
@@ -331,6 +404,14 @@ repository:
     captures:
       '1': { name: support.function.bella }
 
+  support-keywords:
+    match: \b(new|empty|return|as|not|is|in|let)\b
+    captures:
+      # '1': { name: keyword.declaration.support.bella }
+      '1': { name: keyword.control.support.bella }
+
+
+  # TODO: add support for multi-line
   invocation-expression:
     name: meta.common.expression.invocation
     begin: |-
@@ -493,9 +574,8 @@ repository:
 
 # TODO:
 
-# * as
-# * empty
-# * not
-# * new
-# add support functions that are colored differently
+# variable declaration
 # * throw expression
+# consider: build-in features (functions) colored differently
+
+# Info: https://github.com/stedolan/jq/wiki/Docs-for-Oniguruma-Regular-Expressions-(RE.txt)

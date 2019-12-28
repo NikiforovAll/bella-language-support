@@ -27,11 +27,10 @@ procedure ProccessMailAssignmentRequest(GlAccount, MailAssignmentRequest)
         .Select
             (
                 x =>
-                    new MailAssignmentResultDetails
-                        (
+                    new MailAssignmentResultDetails (
                             accountId = AccountIdsByEmail[x.senderEmail].First(),
                             mailId = x.mailId
-                        )
+                    )
             )
 
     MailIds = MailAssignmentRequest.mailAssignmentRequestDetailsCollection
@@ -72,9 +71,63 @@ procedure CreateCustomerAccountInternal(AccountId, CreateCustomerAccountRequest)
     AccountIdsByEmail[Email] ++= AccountId
 
 
+procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
+    SubscribedBundlesPerProduct = new
+    AvailableProposition = Fulfillment.GetAvailablePropositonByOrderId(OrderId)
+
+    if AvailableProposition is not empty
+        AvailableProducts = AvailableProposition.products
+
+        foreach CreateSubscriptionRequest in CreateSubscriptionRequestCollection
+            SubscribeBundleWithDiscountRequests = CreateSubscriptionRequest.subscribeBundleWithDiscountRequests
+            if AvailableProducts is empty
+                error[EmptyArgument] "No available products connected with available proposition"
+            AvailableProduct = AvailableProducts.First(x => x.id == CreateSubscriptionRequest.productId)
+            BundleIds = SubscribeBundleWithDiscountRequests.Select(x => x.bundleId)
+            let Bundles = AvailableProduct.bundles.Where(x => BundleIds.Contains(x.id))
+            ProductId = CreateSubscriptionRequest.productId
+            Product = ProductCatalog.GetProductById(ProductId)
+            PricePlanId = Product.pricePlan.id
+
+            foreach AvailableBundle in Bundles
+                DiscountId = SubscribeBundleWithDiscountRequests.First(x => x.bundleId == AvailableBundle.id).discountId // unneeded ?
+                BundleId = AvailableBundle.id
+                if !IsEmpty(DiscountId)
+                    Discount = ProductCatalog.GetDiscountById(PricePlanId, BundleId)
+
+                    Amount = Discount.GetDiscountedAmount(AvailableBundle.price)
+
+                    AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
+                    AvailableBundle.discountId = Discount.id
+
+            if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
+                SubscribedBundlesPerProduct.internetBundles = Bundles
+            else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
+                SubscribedBundlesPerProduct.tvBundles = Bundles
+            else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
+                SubscribedBundlesPerProduct.voipBundles = Bundles
+
 procedure UpdateCustomerAccount(UpdateCustomerAccountRequest)
     if IsEmpty(UpdateCustomerAccountRequest.accountId)
         error[InvalidAccountId] "Customer account id cannot be empty"
     call GetCustomerAccountById(AccountId = UpdateCustomerAccountRequest.accountId, out CustomerAccount)
     if UpdateCustomerAccountRequest.createdBy is empty
         error[InvalidCreatedBy] "Created by cannot be empty"
+
+
+procedure CrmPortalGetFilteredAndPagedServiceInformation(Input, FullyMatchedPaginationInfo, PartiallyMatchedPaginationInfo, out CrmPortalGetFilteredAndPagedServiceDeliveryInformationResponse)
+    if IsEmpty(Input) || Input.Length < MinSearchQueryLength
+        CrmPortalGetFilteredAndPagedServiceDeliveryInformationResponse = new
+        return
+    CrmPortalGetFilteredAndPagedServiceDeliveryInformationResponse = CrmBackend.GetFilteredAndPagedServiceInformation(Input, FullyMatchedPaginationInfo, PartiallyMatchedPaginationInfo).ToDto()
+
+generic procedure GetPropositionsFilteredBy(FilterQuery, PropositionCollection, out PropositionFilteredCollection)
+    error [GenericObjectPassed] "You've passed generic FilterQuery object. Try specific one (ProductCatalogNameFilter, ProductCatalogServiceFilter, etc.")
+
+specific procedure GetPropositionsFilteredBy(ProductCatalogIdFilter, PropositionCollection, out PropositionFilteredCollection)
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.id.ToLower() == ProductCatalogIdFilter.id.Trim().ToLower())
+
+specific procedure GetPropositionsFilteredBy(ProductCatalogNameFilter, PropositionCollection, out PropositionFilteredCollection)
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.name.ToLower().Contains(ProductCatalogNameFilter.name.Trim().ToLower()))
+
+

@@ -68,3 +68,9 @@ object Account
     contactInfo:ContactInfo
 
 object AccountIds:AccountId[*]
+
+
+enum BalanceRecordRevert
+    NotSpecified
+    Reverted
+    NotReverted
