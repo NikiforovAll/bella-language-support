@@ -20,8 +20,6 @@ procedure GetCustomerAccountListByIdList(AccountIds, out AccountList)
         AccountList ++= Account
 
 procedure ProccessMailAssignmentRequest(GlAccount, MailAssignmentRequest)
-    firstName + 3 +  (if (IsEmpty(prefix, test), " ", (" " + prefix + " "))) + lastName
-
     MailAssignmentResultDetailsCollection = MailAssignmentRequest.mailAssignmentRequestDetailsCollection
         .Where(x => AccountIdsByEmail.ContainsKey(x.senderEmail) && !(AccountIdsByEmail[x.senderEmail].Count > 1))
         .Select
@@ -99,7 +97,6 @@ procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionReq
 
                     AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
                     AvailableBundle.discountId = Discount.id
-
             if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
                 SubscribedBundlesPerProduct.internetBundles = Bundles
             else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
