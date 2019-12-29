@@ -17,6 +17,9 @@
       "patterns": [
         {
           "include": "#type-declarations"
+        },
+        {
+          "include": "#support-top-level-declaration-keywords"
         }
       ]
     },
@@ -128,6 +131,9 @@
         },
         {
           "include": "#object-field-declaration"
+        },
+        {
+          "include": "#comment"
         }
       ]
     },
@@ -331,7 +337,7 @@
       "name": "meta.function.parameter.declaration.bella",
       "patterns": [
         {
-          "match": "\\s+\\b(out)\\b\\s+",
+          "match": "\\s*\\b(out)\\b\\s+",
           "captures": {
             "1": {
               "name": "keyword.declaration.function.procedure.out.bella"
@@ -610,6 +616,9 @@
         },
         {
           "include": "#support-declaration-keywords"
+        },
+        {
+          "include": "#support-top-level-declaration-keywords"
         }
       ]
     },
@@ -623,6 +632,14 @@
     },
     "support-declaration-keywords": {
       "match": "\\b(out|is|as)\\b",
+      "captures": {
+        "1": {
+          "name": "keyword.declaration.support.bella"
+        }
+      }
+    },
+    "support-top-level-declaration-keywords": {
+      "match": "\\b(service|procedure|object|formula|persistent|generic|specific)\\b",
       "captures": {
         "1": {
           "name": "keyword.declaration.support.bella"

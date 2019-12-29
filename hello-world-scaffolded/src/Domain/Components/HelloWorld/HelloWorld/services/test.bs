@@ -1,0 +1,27 @@
+procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
+    Email = CreatePartnerAccountRequest.contactInfo.email
+    Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
+    // AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+
+    PartnerAccount = CreatePartnerAccountRequest.FromDto(AccountId)
+    Accounts[AccountId] = PartnerAccount
+    PartnerAccounts[AccountId] = PartnerAccount
+    PartnerAccountsBySalesOfficeId[CreatePartnerAccountRequest.salesOfficeId] = PartnerAccount
+    AccountIdsByEmail[Email] ++= AccountId
+    Login = Email
+
+// procedure Test(Test, out Test)
+// Test = "1"
+//     AccountId = 'Test'
+
+
+
+
+procedure CreatePartnerAccount(out AccountId)
+    Email = CreatePartnerAccountRequest.contactInfo.email
+    Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
+    PartnerAccount = CreatePartnerAccountRequest.FromDto(AccountId)
+    Accounts[AccountId] = PartnerAccount
+    PartnerAccounts[AccountId] = PartnerAccount
+    PartnerAccountsBySalesOfficeId[CreatePartnerAccountRequest.salesOfficeId] = PartnerAccount
+    Login = Email

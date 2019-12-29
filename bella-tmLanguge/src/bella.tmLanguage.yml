@@ -13,6 +13,7 @@ repository:
   declarations:
     patterns:
     - include: '#type-declarations'
+    - include: '#support-top-level-declaration-keywords'
 
   type-declarations:
     patterns:
@@ -76,6 +77,7 @@ repository:
       # - include: '#return-type-declaration'
       end: (?=$)
     - include: '#object-field-declaration'
+    - include: '#comment'
 
   enum-declaration:
     name: meta.enum.declaration.bella
@@ -188,7 +190,7 @@ repository:
   procedure-params-declaration:
     name: "meta.function.parameter.declaration.bella"
     patterns:
-    - match: '\s+\b(out)\b\s+'
+    - match: '\s*\b(out)\b\s+'
       captures:
           '1': { name: keyword.declaration.function.procedure.out.bella }
     - match: \s*\b([_[:alpha:]][_[:alnum:]]+)\b
@@ -487,6 +489,7 @@ repository:
     patterns:
     - include: '#support-control-keywords'
     - include: '#support-declaration-keywords'
+    - include: '#support-top-level-declaration-keywords'
 
   support-control-keywords:
     match: \b(new|empty|return|not|in|let|call)\b
@@ -499,6 +502,11 @@ repository:
     captures:
       '1': { name: keyword.declaration.support.bella }
 
+  # allows to highlight top-level expression right from keyword
+  support-top-level-declaration-keywords:
+    match: \b(service|procedure|object|formula|persistent|generic|specific)\b
+    captures:
+      '1': { name: keyword.declaration.support.bella }
 
   # TODO: add support for newline bracket
   # TODO: currently, formulas, built-in functions and calling components semantically the same

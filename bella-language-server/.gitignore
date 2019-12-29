@@ -2,3 +2,4 @@ node_modules
 client/out
 server/out
 server/node_modules
+release

@@ -75,17 +75,17 @@
 					"<node_internals>/**"
 				]
 			},
-			{
-				"name": "Bella Language Server: .NET Core  (console)",
-				"type": "coreclr",
-				"request": "launch",
-				"preLaunchTask": "build",
-				"program": "${workspaceFolder:bella-language-server}/server/bin/Debug/netcoreapp3.1/server.dll",
-				"args": [],
-				"cwd": "${workspaceFolder:bella-language-server}/server",
-				"stopAtEntry": false,
-				"console": "externalTerminal"
-			}
+			// {
+			// 	"name": "Bella Language Server: .NET Core  (console)",
+			// 	"type": "coreclr",
+			// 	"request": "launch",
+			// 	"preLaunchTask": "build",
+			// 	"program": "${workspaceFolder:bella-language-server}/server/bin/Debug/netcoreapp3.1/server.dll",
+			// 	"args": [],
+			// 	"cwd": "${workspaceFolder:bella-language-server}/server",
+			// 	"stopAtEntry": false,
+			// 	"console": "externalTerminal"
+			// }
 		],
 		"compounds": [
 			{

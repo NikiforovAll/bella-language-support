@@ -77,10 +77,10 @@ procedure GetGlEvent(SourceCreationDate, GlEventType, SourceId, out GlEvent)
     GlEvent = GlEventsByDate[SourceCreationDate][GlEventType][SourceId].currentGlEvent
 
 procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
-    call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
+    // call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
     GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
     call ReplaceProcessesCreatedBy(Processes = GetPagedAndFilteredAdjustingProcessesResponse.processes, AccountId = empty)
-    CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = GetPagedAndFilteredAdjustingProcessesResponse.ToCrmPortalDto()
+    CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = asd
 
 object GlEventId:String
 object SourceId:String

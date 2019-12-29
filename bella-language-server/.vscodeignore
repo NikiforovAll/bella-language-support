@@ -1,0 +1,5 @@
+**/*.ts
+**/tsconfig.json
+server-csharp/
+.vscode
+release

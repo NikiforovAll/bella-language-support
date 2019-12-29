@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode_languageserver_1 = require("vscode-languageserver");
+const diagnostics_factory_1 = require("./diagnostics-factory");
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = vscode_languageserver_1.createConnection(vscode_languageserver_1.ProposedFeatures.all);
@@ -17,7 +18,7 @@ let connection = vscode_languageserver_1.createConnection(vscode_languageserver_
 let documents = new vscode_languageserver_1.TextDocuments();
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
+let hasDiagnosticRelatedInformationCapability = true;
 connection.onInitialize((params) => {
     let capabilities = params.capabilities;
     // Does the client support the `workspace/configuration` request?
@@ -30,10 +31,6 @@ connection.onInitialize((params) => {
     return {
         capabilities: {
             textDocumentSync: documents.syncKind,
-            // Tell the client that the server supports code completion
-            completionProvider: {
-                resolveProvider: true
-            }
         }
     };
 });
@@ -51,7 +48,7 @@ connection.onInitialized(() => {
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings = { maxNumberOfProblems: 1000 };
+const defaultSettings = { maxNumberOfProblems: 10 };
 let globalSettings = defaultSettings;
 // Cache the settings of all open documents
 let documentSettings = new Map();
@@ -93,42 +90,36 @@ function validateTextDocument(textDocument) {
     return __awaiter(this, void 0, void 0, function* () {
         // In this simple example we get the settings for every validate run.
         let settings = yield getDocumentSettings(textDocument.uri);
-        // The validator creates diagnostics for all uppercase words length 2 and more
         let text = textDocument.getText();
-        let pattern = /\b[A-Z]{2,}\b/g;
+        // let pattern = /out\s+(\w+)/g;
+        // TODO: know issue, it doesn't work if procedure is defined as last in this file and there is no capturing end tokens for this case and $ symbol as end of line doesn't work
+        let pattern = /(?=out\s+(\w+\b))(?:[\s\S]*?)(?<matched>[^/]\s\1\b\s*\=|(?<stop>procedure|formula|generic|specific|object|setting|service|hosted|persistent|external))/g;
         let m;
+        // var result = text.match(new RegExp(number + '\\s(\\w+)'))[1];
+        // pattern2 = /(?<=out\s+(\w+\b))(?:[\s\S]*)(?:procedure|object|formula|generic|specific)
         let problems = 0;
         let diagnostics = [];
         while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-            problems++;
-            let diagnostic = {
-                severity: vscode_languageserver_1.DiagnosticSeverity.Warning,
-                range: {
-                    start: textDocument.positionAt(m.index),
-                    end: textDocument.positionAt(m.index + m[0].length)
-                },
-                message: `${m[0]} is all uppercase!`,
-                source: 'ex'
+            let localParamIndexOf = m[0].indexOf(m[1]);
+            let capturedOutParam = {
+                name: m[1],
+                start: m.index + localParamIndexOf,
+                end: m.index + localParamIndexOf + (m[1] || '').length
             };
-            if (hasDiagnosticRelatedInformationCapability) {
-                diagnostic.relatedInformation = [
-                    {
-                        location: {
-                            uri: textDocument.uri,
-                            range: Object.assign({}, diagnostic.range)
-                        },
-                        message: 'Spelling matters'
-                    },
-                    {
-                        location: {
-                            uri: textDocument.uri,
-                            range: Object.assign({}, diagnostic.range)
-                        },
-                        message: 'Particularly for names'
-                    }
-                ];
+            // TODO: this should be possible via regex
+            let declarationPerformed = !m[3]; // do something with $m
+            // 	localDeclaration2.match(new RegExp(matchedContent + '\\\s+=', ''));
+            if (!declarationPerformed) {
+                let pattern = /out\s+(\w+)/g;
+                let factory = new diagnostics_factory_1.DiagnosticsFactory(hasDiagnosticRelatedInformationCapability);
+                let range = {
+                    start: textDocument.positionAt(capturedOutParam.start),
+                    end: textDocument.positionAt(capturedOutParam.end)
+                };
+                let diagnostic = factory.createDiagnostics(range, `Output parameter "${capturedOutParam.name}" is declared but never assigned.`, textDocument.uri);
+                diagnostics.push(diagnostic);
+                problems++;
             }
-            diagnostics.push(diagnostic);
         }
         // Send the computed diagnostics to VSCode.
         connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
@@ -138,58 +129,6 @@ connection.onDidChangeWatchedFiles(_change => {
     // Monitored files have change in VSCode
     connection.console.log('We received an file change event');
 });
-// This handler provides the initial list of the completion items.
-connection.onCompletion((_textDocumentPosition) => {
-    // The pass parameter contains the position of the text document in
-    // which code complete got requested. For the example we ignore this
-    // info and always provide the same completion items.
-    return [
-        {
-            label: 'TypeScript',
-            kind: vscode_languageserver_1.CompletionItemKind.Text,
-            data: 1
-        },
-        {
-            label: 'JavaScript',
-            kind: vscode_languageserver_1.CompletionItemKind.Text,
-            data: 2
-        }
-    ];
-});
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item) => {
-    if (item.data === 1) {
-        item.detail = 'TypeScript details';
-        item.documentation = 'TypeScript documentation';
-    }
-    else if (item.data === 2) {
-        item.detail = 'JavaScript details';
-        item.documentation = 'JavaScript documentation';
-    }
-    return item;
-});
-/*
-connection.onDidOpenTextDocument((params) => {
-    // A text document got opened in VSCode.
-    // params.textDocument.uri uniquely identifies the document. For documents store on disk this is a file URI.
-    // params.textDocument.text the initial full content of the document.
-    connection.console.log(`${params.textDocument.uri} opened.`);
-});
-connection.onDidChangeTextDocument((params) => {
-    // The content of a text document did change in VSCode.
-    // params.textDocument.uri uniquely identifies the document.
-    // params.contentChanges describe the content changes to the document.
-    connection.console.log(`${params.textDocument.uri} changed: ${JSON.stringify(params.contentChanges)}`);
-});
-connection.onDidCloseTextDocument((params) => {
-    // A text document got closed in VSCode.
-    // params.textDocument.uri uniquely identifies the document.
-    connection.console.log(`${params.textDocument.uri} closed.`);
-});
-*/
-// Make the text document manager listen on the connection
-// for open, change and close text document events
 documents.listen(connection);
 // Listen on the connection
 connection.listen();
