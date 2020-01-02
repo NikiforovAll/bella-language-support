@@ -536,7 +536,7 @@
     },
     "foreach-statement": {
       "name": "meta.common.statement.foreach.bella",
-      "begin": "\\s*(foreach)(.+)(in)(.+)\\s*(?=\\s*$)",
+      "begin": "\\s*(foreach)(.+)\\b(in)\\b(.+)\\s*(?=\\s*$)",
       "beginCaptures": {
         "1": {
           "name": "keyword.control.foreach.bella"
@@ -623,7 +623,7 @@
       ]
     },
     "support-control-keywords": {
-      "match": "\\b(new|empty|return|not|in|let|call)\\b",
+      "match": "\\b(new|empty|return|not|in|let|call|foreach)\\b",
       "captures": {
         "1": {
           "name": "keyword.control.support.bella"

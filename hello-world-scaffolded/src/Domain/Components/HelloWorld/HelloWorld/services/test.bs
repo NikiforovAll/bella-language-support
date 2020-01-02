@@ -1,8 +1,9 @@
 procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
     Email = CreatePartnerAccountRequest.contactInfo.email
     Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
-    // AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
-
+    AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+    CallDataRecord = SentToServiceCallsStorageCallDataRecordsMap[ServiceCallIdentificationResponse.callDataRecordId]
+    call CreateServiceCallData(ServiceCallIdentificationResponse,CallDuration = CallDataRecord.callDuration, out ServiceCallData)
     PartnerAccount = CreatePartnerAccountRequest.FromDto(AccountId)
     Accounts[AccountId] = PartnerAccount
     PartnerAccounts[AccountId] = PartnerAccount
@@ -10,11 +11,11 @@ procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
     AccountIdsByEmail[Email] ++= AccountId
     Login = Email
 
-// procedure Test(Test, out Test)
-// Test = "1"
-//     AccountId = 'Test'
 
-
+procedure CreateServiceCallData(Test, out Test)
+    // Test = "1"
+    call Test(out Test)
+    AccountId = 'Test'
 
 
 procedure CreatePartnerAccount(out AccountId)
@@ -24,4 +25,35 @@ procedure CreatePartnerAccount(out AccountId)
     Accounts[AccountId] = PartnerAccount
     PartnerAccounts[AccountId] = PartnerAccount
     PartnerAccountsBySalesOfficeId[CreatePartnerAccountRequest.salesOfficeId] = PartnerAccount
+    foreach ServiceCallIdentificationResponses
+    foreach DestinationNumber in DestinationNumbers
     Login = Email
+
+
+procedure SendServiceCallIdentificationResponse(ServiceCallIdentificationResponses)
+
+    CallDataRecordCollection = new
+
+    foreach SentToServiceCallsStorageCallDataRecordsMap.Where(cdr => cdr.regionCode is not empty)
+
+        CallDataRecordCollection ++= CallDataRecord
+
+    foreach ServiceCallIdentificationResponses
+
+        CallDataRecord = SentToServiceCallsStorageCallDataRecordsMap[ServiceCallIdentificationResponse.callDataRecordId]
+        call CreateServiceCallData(ServiceCallIdentificationResponse,CallDuration = CallDataRecord.callDuration,out ServiceCallData)
+        call CreateServiceCallData(
+            ServiceCallIdentificationResponse,
+            CallDuration = CallDataRecord.callDuration,
+            out ServiceCallData
+        )
+        CallDataRecord.serviceCallData = ServiceCallData
+
+    foreach CallDataRecordCollection
+        SentToServiceCallsStorageCallDataRecordsMap --= CallDataRecord.id
+
+    CallDataRecordBillingRequests = CallDataRecordCollection.Select(x => x.ToBillingRequest(x.serviceAccountId))
+
+   BillingEngineAsync.BillCallDataRecords(CallDataRecordBillingRequests)
+
+object

@@ -6,7 +6,7 @@ service GeneralLedger
     SaveGlAccount(GlAccount) oneway
     RevertGlEvent(Date, GlEventType, SourceId) oneway
     GetGlEvent(Date, GlEventType, SourceId): GlEvent[*]
-    GetRevertedGlEvents(Date, GlEventType, SourceId):GlEvents
+    GetRevertedGlEvents(Date, GlEventType, SourceId):GlEvents[Test]
     GelAllAccounts():GlAccounts
 
 
@@ -128,5 +128,332 @@ specific procedure GetPropositionsFilteredBy(ProductCatalogIdFilter, Proposition
 
 specific procedure GetPropositionsFilteredBy(ProductCatalogNameFilter, PropositionCollection, out PropositionFilteredCollection)
     PropositionFilteredCollection = PropositionCollection.Where(p => p.name.ToLower().Contains(ProductCatalogNameFilter.name.Trim().ToLower()))
+
+
+
+procedure InitiateRetrieveOfCallDataRecords(CurrentDateTime) every 10 Minutes
+
+    CdrConnector.RetrieveAllCallDataRecordFileNames()
+
+procedure SendAllCallDataRecordFileNames(CallDataRecordFileNameCollection)
+
+    CallDataRecordFileNameCollection = CallDataRecordFileNameCollection.Where(x => !CallDataRecordFilesMap.ContainsKey(x))
+
+    if CallDataRecordFileNameCollection.Count > 0
+
+        CdrConnector.RetrieveCallDataRecords(CallDataRecordFileNameCollection)
+
+procedure SendRetrievedCallDataRecords(CallDataRecordsRetrieveResult)
+
+    if CallDataRecordsRetrieveResult.isSuccessful
+
+        foreach CallDataRecordsRetrieveResult.callDataRecordFileCallDataRecordDtosPairs.Where(!CallDataRecordFilesMap.ContainsKey(callDataRecordFileName))
+
+            CallDataRecordCollection = CallDataRecordFileNameCallDataRecordDtosPair.callDataRecordDtos.Select(x => x.ToCallDataRecord(CallDataRecordFileNameCallDataRecordDtosPair.callDataRecordFileName))
+
+            CallDataRecordFile =  new CallDataRecordFile
+                (
+                    id = CallDataRecordFileNameCallDataRecordDtosPair.callDataRecordFileName
+                )
+
+            foreach CallDataRecordCollection
+
+                UnmatchedCallDataRecordsMap[CallDataRecord.id] = CallDataRecord
+
+                SentToServiceCallsStorageCallDataRecordsMap[CallDataRecord.id] = CallDataRecord
+
+                CallDataRecordFile.callDataRecordIdCollection ++=  CallDataRecord.id
+
+            CallDataRecordFilesMap[CallDataRecordFile.id] = CallDataRecordFile
+
+    if SentToServiceCallsStorageCallDataRecordsMap.Any()
+
+        ServiceCallIdentificationRequests = SentToServiceCallsStorageCallDataRecordsMap
+            .GetCallDataRecordsForServiceCallsIdentification()
+
+        ServiceCallsStorage.IdentifyServiceCalls(ServiceCallIdentificationRequests)
+
+
+formula ToCallDataRecord(CallDataRecordDto, CallDataRecordFileId):CallDataRecord = With
+    (
+    CallDataRecordDto.destinationNumber.GetRegionCode(),
+    regionCode => new CallDataRecord
+        (
+        id = CreateGuid(),
+        serviceAccountId = CallDataRecordDto.eventSource,
+        startOn = CallDataRecordDto.startDateTime,
+        originatingNumber = CallDataRecordDto.originatingNumber,
+        destinationNumber = CallDataRecordDto.destinationNumber,
+        callDuration = CallDataRecordDto.callDuration,
+        externalCallDataRecordId = CallDataRecordDto.callDataRecordId,
+        callDataRecordFileId = CallDataRecordFileId,
+        tariffCodePrefix = CallDataRecordDto.tariffCodePrefix,
+        tariffCode = CallDataRecordDto.tariffCode,
+        status = CallDataRecordStatus.SentToBilligEngine,
+        rateClassId = regionCode.GetRateClassId(CallDataRecordDto.startDateTime),
+        regionCode = regionCode
+        )
+    )
+
+
+formula GetCallDataRecordsForServiceCallsIdentification(CallDataRecordMap):ServiceCallIdentificationRequests =
+    CallDataRecordMap
+        .Where(cdr => cdr.regionCode is not empty)
+        .Select(x => x.ToServiceCallIdentificationRequest())
+
+
+procedure RetryCallDataRecordsServiceCallsIdentification()
+
+    foreach SentToServiceCallsStorageCallDataRecordsMap
+        CallDataRecord.regionCode = CallDataRecord.destinationNumber.GetRegionCode()
+
+    ServiceCallIdentificationRequests = SentToServiceCallsStorageCallDataRecordsMap
+        .GetCallDataRecordsForServiceCallsIdentification()
+
+    ServiceCallsStorage.IdentifyServiceCalls(ServiceCallIdentificationRequests)
+
+
+
+procedure GetAllParsedCallDataRecordsFiles(out CallDataRecordFileCollection)
+
+    CallDataRecordFileCollection = CallDataRecordFilesMap.Select(x => x)
+
+procedure GetAllUnmatchedCallDataRecords(out CallDataRecordCollection)
+
+    CallDataRecordCollection = UnmatchedCallDataRecordsMap.Select(x => x)
+
+
+procedure SendServiceCallIdentificationResponse(ServiceCallIdentificationResponses)
+
+    CallDataRecordCollection = new
+
+    foreach SentToServiceCallsStorageCallDataRecordsMap.Where(cdr => cdr.regionCode is not empty)
+
+        CallDataRecordCollection ++= CallDataRecord
+
+    foreach ServiceCallIdentificationResponses
+
+        CallDataRecord = SentToServiceCallsStorageCallDataRecordsMap[ServiceCallIdentificationResponse.callDataRecordId]
+        call CreateServiceCallData(ServiceCallIdentificationResponse, CallDuration = CallDataRecord.callDuration,out ServiceCallData)
+        CallDataRecord.serviceCallData = ServiceCallData
+
+    foreach CallDataRecordCollection
+        SentToServiceCallsStorageCallDataRecordsMap --= CallDataRecord.id
+
+    CallDataRecordBillingRequests = CallDataRecordCollection.Select(x => x.ToBillingRequest(x.serviceAccountId))
+
+   BillingEngineAsync.BillCallDataRecords(CallDataRecordBillingRequests)
+
+
+procedure CreateServiceCallData(ServiceCallIdentificationResponse, CallDuration,  out ServiceCallData)
+
+    ServiceCallData = new ServiceCallData(vatType = ServiceCallIdentificationResponse.vatType)
+
+    let TotalSum = 0.0
+
+    let IsTariffLessThanTen = ServiceCallIdentificationResponse.tariff < 10
+
+    if IsTariffLessThanTen
+        TotalSum = Ceiling(ServiceCallIdentificationResponse.tariff / 60 * CallDuration * 100) / 100.0
+
+    if  ServiceCallIdentificationResponse.tariffType == TariffType.PerMinute
+        ServiceCallData.setupCost = if(IsTariffLessThanTen, ServiceCallIdentificationResponse.tariff, 0)
+        ServiceCallData.variableCost = ServiceCallIdentificationResponse.GetServiceCallVariableCost(TotalSum)
+        return
+
+    if ServiceCallIdentificationResponse.tariffType == TariffType.PerCall
+        ServiceCallData.setupCost = ServiceCallIdentificationResponse.tariff
+        ServiceCallData.variableCost = 0
+        return
+
+    if ServiceCallIdentificationResponse.tariffType == TariffType.PerMinuteWithoutSetupCharge
+        ServiceCallData.setupCost = 0
+        ServiceCallData.variableCost = ServiceCallIdentificationResponse.GetServiceCallVariableCost(TotalSum)
+        return
+
+    if ServiceCallIdentificationResponse.tariffType == TariffType.PerMinuteWithSetupCharge
+        ServiceCallData.setupCost = ServiceCallIdentificationResponse.GetSetupCharge()
+        ServiceCallData.variableCost = ServiceCallIdentificationResponse.GetServiceCallVariableCost(TotalSum)
+        return
+
+
+formula GetServiceCallVariableCost(ServiceCallIdentificationResponse, Currency):Currency =
+    if
+    (
+        ServiceCallIdentificationResponse.tariff == ServiceCallIdentificationResponse.offpeakTariff,
+        Currency,
+        if
+        (
+            Currency > ServiceCallIdentificationResponse.offpeakTariff,
+            ServiceCallIdentificationResponse.offpeakTariff,
+            Currency
+        )
+    )
+
+formula GetSetupCharge(ServiceCallIdentificationResponse):Currency =
+    if
+    (
+        ServiceCallIdentificationResponse.tariff == 0.028
+        ||
+        ServiceCallIdentificationResponse.tariff == 91,
+        0.0951,
+        0.0454
+    )
+
+formula ToServiceCallIdentificationRequest(CallDataRecord):ServiceCallIdentificationRequest = new ServiceCallIdentificationRequest
+    (
+        callDataRecordId = CallDataRecord.id,
+        destinationNumber = CallDataRecord.destinationNumber,
+        startOn = CallDataRecord.startOn,
+        regionCode = CallDataRecord.regionCode
+    )
+
+formula ToBillingRequest(CallDataRecord, ServiceAccountId):CallDataRecordBillingRequest = new CallDataRecordBillingRequest
+    (
+    callDataRecordId = CallDataRecord.id,
+    callDataRecordStartOn = CallDataRecord.startOn,
+    serviceAccountId = ServiceAccountId.TryGetServiceAccountIdByServiceAccountIdAlias(),
+    rateClassId = CallDataRecord.rateClassId,
+    startOn = CallDataRecord.startOn,
+    callDuration = CallDataRecord.callDuration,
+    serviceCallTotalCost = if
+        (
+        CallDataRecord.serviceCallData is not empty,
+        CallDataRecord.serviceCallData.totalCost,
+        0
+        ),
+    serviceCallVatType = if
+        (
+        CallDataRecord.serviceCallData is not empty,
+        CallDataRecord.serviceCallData.vatType,
+        VatType.HighTariff
+        ),
+    isWithdrawalPossible = CallDataRecord.serviceCallData is empty
+        ||
+        ExceptionalDestinationNumbers.Any
+            (
+            number => CallDataRecord.destinationNumber.StartsWith(number)
+            )
+    )
+
+
+
+setting MaxPhoneCodeLength:Integer = 14
+
+setting MinPhoneCodeLength:Integer = 3
+
+
+
+formula GetRateClassId(RegionCode, StartOn):RateClassId = if
+    (
+    RegionCode is not empty,
+    PhoneCodes[RegionCode].phoneCodeHistory.First
+        (
+        StartOn >= startOn && StartOn < endOn
+        )
+        .rateClassId,
+    empty
+    )
+
+
+
+formula GetRegionCode(DestinationNumber):RegionCode = (Min(DestinationNumber.Length(), MaxPhoneCodeLength)..MinPhoneCodeLength)
+    .Select(length => DestinationNumber.Substring(0, length))
+    .FirstOrDefault(regionCode => PhoneCodes.ContainsKey(regionCode), empty)
+
+
+
+procedure ProcessBillingResults(CallDataRecordBillingResults)
+
+    foreach CallDataRecordBillingResults
+
+        call ProcessBillingResult(CallDataRecordBillingResult)
+
+
+
+procedure ProcessBillingResult(CallDataRecordBillingResult)
+
+    if UnmatchedCallDataRecordsMap.ContainsKey(CallDataRecordBillingResult.callDataRecordId)
+
+        CallDataRecord = UnmatchedCallDataRecordsMap[CallDataRecordBillingResult.callDataRecordId]
+
+        UnmatchedCallDataRecordsMap --= CallDataRecord.id
+
+    else
+
+        CallDataRecord = MatchedCallDataRecordMapByStartOn[CallDataRecordBillingResult.callDataRecordStartOn.DropTimePart()][CallDataRecordBillingResult.callDataRecordId]
+
+        MatchedCallDataRecordMapByStartOn[CallDataRecordBillingResult.callDataRecordStartOn.DropTimePart()] --= CallDataRecord.id
+
+
+    CallDataRecord.status = CallDataRecordBillingResult.status
+
+    if CallDataRecord.status != CallDataRecordStatus.Billed
+
+        UnmatchedCallDataRecordsMap[CallDataRecord.id] = CallDataRecord
+
+        return
+
+    MatchedCallDataRecordMapByStartOn[CallDataRecord.startOn.DropTimePart()][CallDataRecord.id] = CallDataRecord
+
+
+
+procedure GetAllMatchedCallDataRecordsByStartOn(StartOn, out CallDataRecordCollection)
+
+    CallDataRecordCollection = MatchedCallDataRecordMapByStartOn[StartOn.DropTimePart()].Select(x => x)
+
+
+
+procedure GetAllMatchedCallDataRecords(out CallDataRecordCollection)
+
+    CallDataRecordCollection = MatchedCallDataRecordMapByStartOn.SelectMany(x => x.Select(y => y))
+
+
+
+procedure RematchCallDataRecords(CallDataRecordRematchingRequests)
+
+    CallDataRecordBillingRematchingRequests = new
+
+    foreach CallDataRecordRematchingRequests
+
+        if MatchedCallDataRecordMapByStartOn[CallDataRecordRematchingRequest.callDataRecordStartOn.DropTimePart()].ContainsKey(CallDataRecordRematchingRequest.callDataRecordId)
+
+            CallDataRecord = MatchedCallDataRecordMapByStartOn[CallDataRecordRematchingRequest.callDataRecordStartOn.DropTimePart()][CallDataRecordRematchingRequest.callDataRecordId]
+
+            CallDataRecordBillingRematchingRequests ++= new CallDataRecordBillingRematchingRequest(
+                virtualBalanceRecordId = CallDataRecordRematchingRequest.virtualBalanceRecordId,
+                virtualBalanceRecordCreatedOn = CallDataRecordRematchingRequest.virtualBalanceRecordCreatedOn,
+                callDataRecordBillingRequest = CallDataRecord.ToBillingRequest(CallDataRecordRematchingRequest.serviceAccountId)
+                )
+
+    if CallDataRecordBillingRematchingRequests.Any()
+
+        BillingEngineAsync.RematchCallDataRecords(CallDataRecordBillingRematchingRequests)
+
+
+
+onfirstrun procedure SeedExceptionalDestinationNumbers()
+
+    ExceptionalDestinationNumbers = List("0031084", "003184", "0031085", "003185", "0031087", "003187", "0031088", "003188", "0031116", "003114")
+
+
+procedure AddExceptionalDestinationNumbers(DestinationNumbers)
+    foreach DestinationNumber in DestinationNumbers
+        ExceptionalDestinationNumbers ++= DestinationNumber
+
+procedure FillCdrPartForInvoicePdf(InvoiceId, InvoicePdfAccumulatedCallDataRecordDtoCollection)
+    foreach InvoicePdfAccumulatedCallDataRecordDtoCollection.SelectMany(x => x.callDataRecords)
+        call TryGetCallDataRecord(StartOn = InvoicePdfCallDataRecordDto.startOn.DropTimePart(), CallDataRecordId = InvoicePdfCallDataRecordDto.recordId, out CallDataRecord)
+        if CallDataRecord is not empty
+            InvoicePdfCallDataRecordDto.callDuration = CallDataRecord.callDuration
+            InvoicePdfCallDataRecordDto.destinationNumber = CallDataRecord.destinationNumber
+
+    DocumentPrinterComponentAsync.FillCdrPartForInvoicePdf(InvoiceId, InvoicePdfAccumulatedCallDataRecordDtoCollection)
+
+formula TryGetServiceAccountIdByServiceAccountIdAlias(ServiceAccountIdAlias):ServiceAccountId =
+    if(ServiceAccountIdAliasCatalog.ContainsKey(ServiceAccountIdAlias),
+        ServiceAccountIdAliasCatalog[ServiceAccountIdAlias].serviceAccountId,
+        ServiceAccountIdAlias)
+
 
 

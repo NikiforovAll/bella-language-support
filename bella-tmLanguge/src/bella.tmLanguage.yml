@@ -442,7 +442,7 @@ repository:
 
   foreach-statement:
     name: meta.common.statement.foreach.bella
-    begin: \s*(foreach)(.+)(in)(.+)\s*(?=\s*$)
+    begin: \s*(foreach)(.+)\b(in)\b(.+)\s*(?=\s*$)
     beginCaptures:
       '1': {name: keyword.control.foreach.bella }
       '2': {name: variable.parameter.variable.declaration.bella }
@@ -492,7 +492,7 @@ repository:
     - include: '#support-top-level-declaration-keywords'
 
   support-control-keywords:
-    match: \b(new|empty|return|not|in|let|call)\b
+    match: \b(new|empty|return|not|in|let|call|foreach)\b
     captures:
       # '1': { name: keyword.declaration.support.bella }
       '1': { name: keyword.control.support.bella }

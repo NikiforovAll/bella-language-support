@@ -4,3 +4,6 @@
 [submodule "bella-cookbook"]
 	path = bella-cookbook
 	url = ./bella-cookbook/
+[submodule "bella-generator"]
+	path = bella-generator
+	url = ./bella-generator/
