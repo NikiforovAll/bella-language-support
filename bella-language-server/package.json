@@ -58,10 +58,20 @@
         "path": "./syntaxes/bella.grammar.json"
       }
     ],
+    "snippets": [
+      {
+        "language": "bella",
+        "path": "./snippets/bella.json"
+      }
+    ],
     "commands": [
       {
         "command": "bellaLanguageSupport.openCookBook",
         "title": "Bella: Open Docs"
+      },
+      {
+        "command": "bellaLanguageSupport.startStreaming",
+        "title": "Bella: Start Streaming to LSP"
       }
     ]
   },
@@ -77,17 +87,19 @@
     "compile-client": "tsc -watch -p ./client",
     "compile-server": "tsc -watch -p ./server",
     "watch-server": "tsc -b -w ./server",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "package": "vsce package -o release/"
   },
   "devDependencies": {
+    "@types/glob": "^7.1.1",
     "@types/mocha": "^2.2.33",
     "@types/node": "^6.0.52",
-    "typescript": "^3.7.4",
-    "vscode": "^1.1.18"
+    "typescript": "^3.7.4"
   },
   "dependencies": {
     "bella-grammar": "file:../bella-grammar",
-    "vscode-languageclient": "~3.3.0"
+    "glob": "^7.1.6",
+    "vscode": "^1.1.36",
+    "vscode-languageclient": "^5.2.1",
+    "ws": "^7.2.1"
   }
 }

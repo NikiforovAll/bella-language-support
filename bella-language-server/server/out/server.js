@@ -44,13 +44,14 @@ class BellaServer {
      * care about.
      */
     register(connection) {
+        //TODO: add state machine for status of server: started, indexing, working, error. As it described in apex LSP impl
         // The content of a text document has changed. This event is emitted
         // when the text document first opened or when its content has changed.
         this.documents.listen(this.connection);
         this.documents.onDidChangeContent((change) => {
             const { uri } = change.document;
             this.diagnosticsHandler.validateTextDocument(change.document);
-            // const diagnostics = this.analyzer.analyze(uri, change.document)
+            this.analyzer.analyze(uri, change.document);
         });
         // Register all the handlers for the LSP events.
         // connection.onHover(this.onHover.bind(this))
@@ -76,7 +77,7 @@ class BellaServer {
         return handler.findSymbols(params);
     }
     static initializeParser() {
-        return new ParserProxy_1.BellaLanguageParser();
+        return new ParserProxy_1.BellaDocumentParser();
     }
 }
 exports.default = BellaServer;

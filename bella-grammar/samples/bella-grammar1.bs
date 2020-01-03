@@ -1,6 +1,6 @@
 hosted service GeneralLedgerMigrationTestApi on GeneralLedgerMigrationTestApi
 
-hosted service GeneralLedgerAdapterTestApi on GeneralLedgerAdapterTestApi
+// hosted service GeneralLedgerAdapterTestApi on GeneralLedgerAdapterTestApi
 
-external service InvoiceGenerator on [InvoiceGenerator]
-external service InvoiceGenerator on [InvoiceGenerator]
+// external service InvoiceGenerator on [InvoiceGenerator]
+// external service InvoiceGenerator on [InvoiceGenerator]

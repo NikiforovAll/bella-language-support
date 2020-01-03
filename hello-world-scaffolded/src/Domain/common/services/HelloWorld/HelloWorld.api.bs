@@ -336,13 +336,9 @@ formula ToBillingRequest(CallDataRecord, ServiceAccountId):CallDataRecordBilling
             )
     )
 
-
-
 setting MaxPhoneCodeLength:Integer = 14
 
 setting MinPhoneCodeLength:Integer = 3
-
-
 
 formula GetRateClassId(RegionCode, StartOn):RateClassId = if
     (
@@ -354,8 +350,6 @@ formula GetRateClassId(RegionCode, StartOn):RateClassId = if
         .rateClassId,
     empty
     )
-
-
 
 formula GetRegionCode(DestinationNumber):RegionCode = (Min(DestinationNumber.Length(), MaxPhoneCodeLength)..MinPhoneCodeLength)
     .Select(length => DestinationNumber.Substring(0, length))

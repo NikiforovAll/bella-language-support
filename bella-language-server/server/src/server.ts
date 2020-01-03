@@ -2,7 +2,7 @@ import * as LSP from 'vscode-languageserver';
 
 import { DocumentSymbolHandler } from './handlers/DocumentSymbolHandler';
 import BellaAnalyzer from './analyzer';
-import { BellaLanguageParser } from './ParserProxy';
+import { BellaDocumentParser } from './ParserProxy';
 import { DiagnosticsHandler } from './handlers/DiagnosticsHandler';
 
 
@@ -48,13 +48,14 @@ export default class BellaServer {
 	 * care about.
 	 */
 	public register(connection: LSP.Connection): void {
+		//TODO: add state machine for status of server: started, indexing, working, error. As it described in apex LSP impl
 		// The content of a text document has changed. This event is emitted
 		// when the text document first opened or when its content has changed.
 		this.documents.listen(this.connection)
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			const { uri } = change.document
 			this.diagnosticsHandler.validateTextDocument(change.document);
-			// const diagnostics = this.analyzer.analyze(uri, change.document)
+			this.analyzer.analyze(uri, change.document);
 		})
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))
@@ -91,7 +92,7 @@ export default class BellaServer {
 	}
 
 	private static initializeParser() {
-		return new BellaLanguageParser();
+		return new BellaDocumentParser();
 	}
 }
 

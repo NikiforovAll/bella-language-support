@@ -1,5 +1,12 @@
 # Bella Language Server Changelog
 
+## draft-version - v0.2.0
+
+### Addded
+
+* snippets
+  * `logi, loge, procedure, hosted-service, etc...`, for more details see: `snippets\bella.json`
+
 ## draft-version - v0.1.0
 
 ### Added

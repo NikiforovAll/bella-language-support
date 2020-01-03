@@ -325,3 +325,4 @@ src/Domain/ZebraBellaComponentsUtility/profiles.json
 **/NleDomain.dll
 **/package-lock.json
 **/.vscode/settings.json
+extension-dir

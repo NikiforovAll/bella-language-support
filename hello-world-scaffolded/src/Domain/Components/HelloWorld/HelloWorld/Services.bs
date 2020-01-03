@@ -14,4 +14,4 @@ external service InvoiceGenerator on [InvoiceGenerator]
 
 // external service GlAdapter on [Kompass]
 // external service GlAdapter on [Kompass]
-// external service GlAdapter on [Kompass]
+

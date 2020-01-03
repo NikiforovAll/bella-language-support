@@ -13,6 +13,8 @@
 	},
 	"dependencies": {
 		"bella-grammar": "file:../../bella-grammar",
+		"glob": "^7.1.6",
+		"node-cache": "^5.1.0",
 		"vscode-languageserver": "^5.2.1"
 	},
 	"scripts": {},

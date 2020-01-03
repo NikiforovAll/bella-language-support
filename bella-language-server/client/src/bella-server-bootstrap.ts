@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { workspace } from 'vscode';
 import * as path from 'path';
+import * as WebSocket from 'ws';
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -11,7 +12,6 @@ import {
 } from 'vscode-languageclient';
 
 export function registerLanguageFeatures(context: vscode.ExtensionContext): LanguageClient {
-
     // The server is implemented in node
     let serverModule = context.asAbsolutePath(
         path.join('server', 'out', 'index.js')
@@ -34,24 +34,29 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
     let clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'bella' }],
         synchronize: {
-            // Notify the server about file changes to '.clientrc files contained in the workspace
-            fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+            // Notify the server about file changes
+            fileEvents: workspace.createFileSystemWatcher('**/.bs')
         }
     };
+    // TODO: move this to configuration
+    let isLSPStreamingMode = false;
+    if (isLSPStreamingMode) {
+        // Hijacks all LSP logs and redirect them to a specific port through WebSocket connection
+        clientOptions.outputChannel = createWebSocketListener()
+    }
 
     // Create the language client and start the client.
-    //TODO: this is dirty fix, need to determine why it is not possible to attach debugger without this flag equals true
-    let forceDebug = true
-    const client: LanguageClient | any = new LanguageClient('bellaLanguageServer', 'Bella Language Server',
+    const client: LanguageClient | any = new LanguageClient(
+        'bellaLanguageServer',
+        'Bella Language Server',
         serverOptions,
-        clientOptions,
-        forceDebug
+        clientOptions
     );
     // Start the client. This will also launch the server
     let languageServerDisposable = client.start();
     context.subscriptions.push(languageServerDisposable);
     client.onReady().then(() => {
-        const capabilities = client._capabilites;
+        const capabilities = client._capabilities;
         if (!capabilities) {
             return vscode.window.showErrorMessage('The language server is not able to serve any features at the moment.');
         }
@@ -70,6 +75,39 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
         }
     });
     return client;
+}
+
+function createWebSocketListener(): vscode.OutputChannel {
+    const socketPort = workspace.getConfiguration('bellaLanguageSupport').get('port', 7000);
+    let socket: WebSocket | null = null;
+    vscode.commands.registerCommand('bellaLanguageSupport.startStreaming', () => {
+        // Establish websocket connection
+        socket = new WebSocket(`ws://localhost:${socketPort}`);
+        console.info("Trying to start streaming to LSP");
+    });
+
+    let log = '';
+    const websocketOutputChannel: vscode.OutputChannel = {
+        name: 'websocket',
+        // Only append the logs but send them later
+        append(value: string) {
+            log += value;
+            console.log(value);
+        },
+        appendLine(value: string) {
+            log += value;
+            // Don't send logs until WebSocket initialization
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(log);
+            }
+            log = '';
+        },
+        clear() { },
+        show() { },
+        hide() { },
+        dispose() { }
+    };
+    return websocketOutputChannel;
 }
 
 

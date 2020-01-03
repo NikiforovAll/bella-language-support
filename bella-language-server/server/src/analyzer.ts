@@ -1,7 +1,9 @@
 import * as LSP from "vscode-languageserver";
-import { BellaLanguageSupport } from "bella-grammar";
-import { BellaParser } from "bella-grammar/dist/grammars/.antlr4/BellaParser";
-import { BellaLanguageParser } from "./ParserProxy";
+
+import { BellaDocumentParser } from "./ParserProxy";
+import * as glob from 'glob';
+import * as path from 'path'
+import * as fs from 'fs'
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };
@@ -11,6 +13,7 @@ export default class BellaAnalyzer {
     private uriToDeclarations: FileDeclarations = {}
     private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
     private uriToFileContent: Texts = {}
+    private connection: LSP.Connection;
 
 
     /**
@@ -27,22 +30,45 @@ export default class BellaAnalyzer {
     }: {
         connection: LSP.Connection
         rootPath: string | null | undefined
-        parser: BellaLanguageParser
+        parser: BellaDocumentParser
     }): Promise<BellaAnalyzer> {
         if (!rootPath) {
-            return Promise.resolve(new BellaAnalyzer(parser))
+            return Promise.resolve(new BellaAnalyzer(parser, connection))
         }
         return new Promise((resolve, reject) => {
-            const analyzer = new BellaAnalyzer(parser);
-            connection.console.log(`Analyzer initialized from ${rootPath}`);
-            resolve(analyzer);
+            glob('**/*.bs', { cwd: rootPath }, (err: any, paths: string[]) => {
+                if (err != null) {
+                    reject(err)
+                } else {
+                    const analyzer = new BellaAnalyzer(parser, connection)
+                    paths.forEach(p => {
+                    const absolute = path.join(rootPath, p)
+                    // only analyze files, glob pattern may match directories
+                    if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
+                        const uri = `file://${absolute}`
+                        connection.console.log(`Analyzing ${uri}`)
+                        analyzer.analyze(
+                        uri,
+                        LSP.TextDocument.create(
+                            uri,
+                            'bella',
+                            1,
+                            fs.readFileSync(absolute, 'utf8'),
+                        ),
+                        )
+                    }
+                    })
+                    resolve(analyzer)
+                }
+                })
         })
     }
 
-    private parser: BellaLanguageParser
+    private parser: BellaDocumentParser
 
-    public constructor(parser: BellaLanguageParser) {
+    public constructor(parser: BellaDocumentParser, connection: LSP.Connection) {
         this.parser = parser
+        this.connection = connection;
     }
 
     /**
@@ -64,17 +90,22 @@ export default class BellaAnalyzer {
      * Returns all, if any, syntax errors that occurred while parsing the file.
      *
      */
-    public analyze(uri: string, document: LSP.TextDocument): LSP.Diagnostic[] {
-        const contents = document.getText()
+    public analyze(uri: string, document: LSP.TextDocument){
+        const contents = document.getText();
 
         // const tree = this.parser.parse(contents)
+        // TODO: add working with cache
+        try {
+            let res = this.parser.parse(contents);
+        } catch (error) {
+            this.connection.console.warn(error);
+        }
 
-        this.uriToTextDocument[uri] = document
+        // this.uriToTextDocument[uri] = document
         // this.uriToTreeSitterTrees[uri] = tree
-        this.uriToDeclarations[uri] = {}
-        this.uriToFileContent[uri] = contents
-
-        const problems: LSP.Diagnostic[] = []
+        // this.uriToDeclarations[uri] = {}
+        // this.uriToFileContent[uri] = contents
+        // const problems: LSP.Diagnostic[] = []
 
         // TreeSitterUtil.forEach(tree.rootNode, (n: Parser.SyntaxNode) => {
         // if (n.type === 'ERROR') {
@@ -128,6 +159,6 @@ export default class BellaAnalyzer {
 
         // findMissingNodes(tree.rootNode)
 
-        return problems
+        // return problems;
     }
 }

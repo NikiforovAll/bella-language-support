@@ -60,7 +60,8 @@
 				"runtimeExecutable": "${workspaceFolder:bella-language-server}/${execPath}",
 				"args": [
 					"--extensionDevelopmentPath=${workspaceFolder:bella-language-server}/",
-					"--extensions-dir=${workspaceFolder:bella-language-server}",
+					"--extensions-dir=${workspaceFolder:hello-world-scaffolded}/extension-dir",
+					// "--user-data-dir=${workspaceFolder:hello-world-scaffolded}/extension-dir",
 					"--folder-uri=${workspaceFolder:hello-world-scaffolded}",
 					"--enable-logging"
 				],

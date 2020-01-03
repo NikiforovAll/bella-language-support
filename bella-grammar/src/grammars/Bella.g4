@@ -47,6 +47,26 @@ enclosedServiceIdentifier
     ;
 
 
+//
+// Whitespace and comments
+//
+WS  :  [ \t\r\n\u000C]+ -> skip
+    ;
+COMMENT
+    :   '/*' .*? '*/' -> skip
+    ;
+COMMENT_START
+    :   '/*' -> skip
+    ;
+LINE_COMMENT
+    :   '//' ~[\r\n]* -> skip
+    ;
+//
+// Unexpected token for non recognized elements
+//
+QUOTE	:	'\'' -> skip;
+
+
 /// Identifier Names and Identifiers
 
 Identifier: IdentifierStart IdentifierPart*;

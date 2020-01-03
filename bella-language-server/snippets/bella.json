@@ -1,0 +1,68 @@
+{
+    "Class": {
+        "prefix": "hosted-service",
+        "body": [
+            "${1|hosted,external|} service ${2:MyClass} on ${2:MyClass}"
+        ],
+        "description": "Service declaration"
+    },
+    "System LogInfo": {
+        "prefix": "logi",
+        "body": [
+            "LogInfo($0)"
+        ],
+        "description": "System.LogInfo"
+    },
+    "System LogError": {
+        "prefix": "loge",
+        "body": [
+            "LogError($0)"
+        ],
+        "description": "System.LogError"
+    },
+    "Procedure": {
+        "prefix": "procedure",
+        "body": [
+            "procedure ${1:MyProcedure}(${2:MyParams})",
+            "\t$0"
+        ],
+        "description": "Procedure definition"
+    },
+    "ForEach": {
+        "prefix": "foreach",
+        "body": [
+            "foreach ${1:Iteratee} in ${2:Iterator}",
+            "\t$0"
+        ],
+        "description": "ForEach definition"
+    },
+    "Formula": {
+        "prefix": "formula",
+        "body": [
+            "formula To${1:MyValue}(${2:MyParams}):${1:MyValue} = $0"
+        ],
+        "description": "Formula definition"
+    },
+    "If": {
+        "prefix": "if",
+        "body": [
+            "if ${1:MyExpression}",
+            "\t$0"
+        ],
+        "description": "If definition"
+    },
+    "IfTernary": {
+        "prefix": "ift",
+        "body": [
+            "if (${1:IfExpression}, ${2:Yes}, ${3:No})"
+        ],
+        "description": "If ternary definition"
+    },
+    "Error": {
+        "prefix": "error",
+        "body": [
+            "error[${1:Error}] \"${2:ErrorMessage}\""
+        ],
+        "description": "Error definition"
+    }
+}

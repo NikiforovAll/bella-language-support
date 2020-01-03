@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsc",
     "prepublish": "npm run build",
+    "watch": "tsc -w -p ./",
     "antlr4ts": "antlr4ts -visitor src/grammars/Bella.g4 -o src/grammars/.antlr4",
     "test": "mocha -r ts-node/register tests/**/*.ts"
   },

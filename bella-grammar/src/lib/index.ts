@@ -2,19 +2,19 @@ import { ANTLRInputStream, CommonTokenStream, Token, Lexer, Parser } from 'antlr
 import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer'
 import { CompilationUnitContext, BellaParser} from '../grammars/.antlr4/BellaParser';
 import { BellaDeclarationVisitor } from "./BellaVisitor";
-export class CalculationResult {
-    isValid: boolean;
-    errorPosition: null;
-    errorMessage: null;
-    result: number;
+// export class CalculationResult {
+//     isValid: boolean;
+//     errorPosition: null;
+//     errorMessage: null;
+//     result: number;
 
-    constructor() {
-        this.isValid = false;
-        this.errorPosition = null;
-        this.errorMessage = null;
-        this.result = NaN;
-    }
-}
+//     constructor() {
+//         this.isValid = false;
+//         this.errorPosition = null;
+//         this.errorMessage = null;
+//         this.result = NaN;
+//     }
+// }
 
 export class BellaLanguageSupport {
     public static process(expr: string): Token[]{
@@ -35,7 +35,7 @@ export class BellaLanguageSupport {
         return parser.compilationUnit();
     }
 
-    public static generateComponentServiceVisitor(): BellaDeclarationVisitor {
+    public static generateVisitor(): BellaDeclarationVisitor {
         return new BellaDeclarationVisitor();
     }
 }
