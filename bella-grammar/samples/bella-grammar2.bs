@@ -1,0 +1,205 @@
+procedure ExampleMethod()
+    LogInfo("Echo: ExampleMethod HelloWorld")
+    LogError("TEST")
+
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+object GlAccountNumber:String
+object GlAccountId:String
+object SubCode:String
+
+object GlAccount
+    number:GlAccountNumber
+    subCode:SubCode
+    description:String
+
+object GlAccounts:GlAccount[]
+
+setting CashbackAccountNumber:String = "882000"
+setting TelephonieTypeOfServiceAccountId:String = "8110002"
+setting CrossDiscountGlAccountNumber:String = "815000"
+
+procedure SaveGlAccount(GlAccount)
+    GlAccountId = GlAccount.number + GlAccount.subCode
+    GlAccountCatalog[GlAccountId] = GlAccount
+
+// Standard DEMO of lsp-sample
+TypeScript lets you write JavaScript the way you really want to.
+TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
+ANY browser. ANY host. ANY OS. Open Source.
+
+setting PayableVat6GlAccountNumber:String = "190100"
+setting TelevisionTypeOfServiceAccountId:String = "8120002"
+setting DirectDebitSuspenseAccount:String = "116000"
+setting CashbackAccountNumber:String = "882000"
+setting TelephonieTypeOfServiceAccountId:String = "8110002"
+setting CrossDiscountGlAccountNumber:String = "815000"
+
+
+
+procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
+    AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+    Email = CreatePartnerAccountRequest.contactInfo.email
+    Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
+
+    PartnerAccount = CreatePartnerAccountRequest.FromDto(AccountId)
+    Accounts[AccountId] = PartnerAccount
+    PartnerAccounts[AccountId] = PartnerAccount
+    PartnerAccountsBySalesOfficeId[CreatePartnerAccountRequest.salesOfficeId] = PartnerAccount
+
+    AccountIdsByEmail[Email] ++= AccountId
+    Login = Email
+
+procedure CheckGlEventExisting(SourceCreationDate, GlEventType, SourceId)
+    if not GlEventsByDate.ContainsKey(SourceCreationDate)
+        error[GlEventNotFound] "General ledger events with for Date: "+SourceCreationDate+" were not found"
+    if not GlEventsByDate[SourceCreationDate].ContainsKey(GlEventType)
+        error[GlEventNotFound] "General ledger events with type: "+GlEventType+" were not found"
+    if not GlEventsByDate[SourceCreationDate][GlEventType].ContainsKey(SourceId)
+        error[GlEventNotFound] "General ledger event with sourceId: "+SourceId+" was not found"
+
+procedure SaveGlEvent(GlEvent, SourceCreationDate)
+    SourceCreationDate = SourceCreationDate.Date() as DateTime
+    if not IsEmpty(GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent)
+        GlEventLog = GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId]
+        GlEventLog.historyGlEvents ++= GlEventLog.currentGlEvent
+        GlEventLog.currentGlEvent = GlEvent
+    else
+        GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent = GlEvent
+
+procedure SaveGlAccount(GlAccount)
+    GlAccountId = GlAccount.number + GlAccount.subCode
+    GlAccountCatalog[GlAccountId] = GlAccount
+
+procedure GetGlEvent(SourceCreationDate, GlEventType, SourceId, out GlEvent)
+    SourceCreationDate = SourceCreationDate.Date() as DateTime
+    call CheckGlEventExisting(SourceCreationDate = SourceCreationDate, GlEventType = GlEventType, SourceId = SourceId)
+    GlEvent = GlEventsByDate[SourceCreationDate][GlEventType][SourceId].currentGlEvent
+
+procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
+    // call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
+    GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
+    call ReplaceProcessesCreatedBy(Processes = GetPagedAndFilteredAdjustingProcessesResponse.processes, AccountId = empty)
+    CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = asd
+
+object GlEventId:String
+object SourceId:String
+
+object GlEvent
+    id:GlEventId
+    eventType:GlEventType
+    createdOn:DateTime
+    sourceId:SourceId
+    records:GlRecord[]
+    serviceAccountId:String
+    subscriptionId:String
+    subscribedComponentId:String
+    subscribedDiscountId:String
+    subscribedCashbackId:String
+
+object GlEventLog
+    currentGlEvent:GlEvent
+    historyGlEvents:GlEvents
+
+object GlEventLogsBySourceId:GlEventLog[SourceId]
+
+object GlEventsByType:GlEventLogsBySourceId[GlEventType]
+
+object GlEvents:GlEvent[]
+
+object TempGLEvents:GlEvent[]
+
+object SourceCreationDate:DateTime
+
+
+formula GetCashbackAccountNumber(ServiceCategoryId):GlAccountId = if (ServiceCategoryId == AnnaServiceCategoryId, CashbackAccountNumber + "3",
+        if(ServiceCategoryId == TriplePlayServiceCategoryId, CashbackAccountNumber + "2",
+            if(ServiceCategoryId == HollandWarmteServiceCategoryId || ServiceCategoryId == MaintenanceServiceCategoryId, CashbackAccountNumber + "1", "")
+        ))
+
+formula ToServiceAccountDetailsDto(ServiceAccount):ServiceAccountDetailsDto[*] = new ServiceAccountDetailsDto(
+    id = ServiceAccount.id,
+    startOnDate = ServiceAccount.startOn,
+    endOnDate = ServiceAccount.endOn,
+    pendingBillingStatus = With(
+        ServiceAccount.serviceAccountStateHistory.Last(),
+        lastState => if(
+            lastState.endOn > now,
+            lastState.status,
+            ServiceAccount.getStatus(now)
+            )
+        ),
+    currentBillingStatus = ServiceAccount.getStatus(now),
+    paymentMethod = ServiceAccount.paymentMethod,
+    deliveryAddress = ServiceAccount.shippingAddress.ToDto(),
+    serviceCategoryId = ServiceAccount.serviceCategoryId
+    )
+
+
+generic formula ToProcessName(Flow):ProcessName = empty
+
+specific formula ToProcessName(Order):ProcessName = if
+    (
+    Order.type == OrderType.New,
+    "New contract",
+    "Order prolongation"
+    )
+
+specific formula ToProcessName(AdjustingOrder):ProcessName = "Adjusting order"
+
+specific formula ToProcessName(AutoProlongationOrder):ProcessName = "Order auto prolongation"
+
+specific formula ToProcessName(CeaseDslOrder):ProcessName = "Cease dsl"
+
+specific formula ToProcessName(PackageAddOrder):ProcessName = "Package add"
+
+specific formula ToProcessName(PackageDropOrder):ProcessName = "Package drop"
+
+specific formula ToProcessName(ExtraHardwareOrder):ProcessName = "Extra hardware"
+
+specific formula ToProcessName(StartTvOrder):ProcessName = "Start tv"
+
+specific formula ToProcessName(StartVoipOrder):ProcessName = "Start voip"
+
+specific formula ToProcessName(StopTvOrder):ProcessName = "Stop tv"
+
+specific formula ToProcessName(StopVoipOrder):ProcessName = "Stop voip"
+
+specific formula ToProcessName(UpgradeDslOrder):ProcessName = "Upgrade dsl"
+
+specific formula ToProcessName(MoveDslOrder):ProcessName = "Move Dsl"
+
+specific formula ToProcessName(ChangePriceForAutoProlongationOrder):ProcessName = "Change Price"
+
+generic formula ToProcessType(Flow):ProcessType = ProcessType.Flow
+
+specific formula ToProcessType(Order):ProcessType = if
+    (
+    Order.type == OrderType.New,
+
+    ProcessType.NewContract,
+    ProcessType.OrderProlongation
+    )
+
+specific formula ToProcessType(CeaseDslOrder):ProcessType = ProcessType.CeaseDslOrder
+
+specific formula ToProcessType(PackageAddOrder):ProcessType = ProcessType.PackageAddOrder
+
+
+hosted service HelloWorld on HelloWorld
+
+// external service <componentName> on <communication>
+
+hosted service GeneralLedger on GeneralLedger
+// hosted service GeneralLedgerAsync on Kompass
+hosted service GeneralLedgerMigrationTestApi on GeneralLedgerMigrationTestApi
+
+hosted service GeneralLedgerAdapterTestApi on GeneralLedgerAdapterTestApi
+
+external service InvoiceGenerator on [InvoiceGenerator]
+external service InvoiceGenerator on [InvoiceGenerator]
+external service InvoiceGenerator on [InvoiceGenerator]
+
+// external service GlAdapter on [Kompass]
+// external service GlAdapter on [Kompass]
+// external service GlAdapter on [Kompass]

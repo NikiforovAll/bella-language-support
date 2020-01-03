@@ -1,0 +1,29 @@
+{
+  "name": "bella-grammar",
+  "version": "1.0.0",
+  "description": "This repository contains Bella Programming Language grammar written with ANTLR.",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
+  "dependencies": {
+    "@types/node": "^13.1.2",
+    "antlr4": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.7",
+    "@types/mocha": "^5.2.7",
+    "antlr4ts": "^0.5.0-alpha.3",
+    "antlr4ts-cli": "^0.5.0-alpha.3",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.2",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "npm run build",
+    "antlr4ts": "antlr4ts -visitor src/grammars/Bella.g4 -o src/grammars/.antlr4",
+    "test": "mocha -r ts-node/register tests/**/*.ts"
+  },
+  "author": "",
+  "license": "ISC"
+}

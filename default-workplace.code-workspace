@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "bella-cookbook"
+		},
+		{
+			"path": "bella-grammar"
 		}
 	],
 	"tasks": {

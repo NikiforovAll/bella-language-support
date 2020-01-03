@@ -1,11 +1,9 @@
-import * as path from 'path';
-import { workspace, ExtensionContext, commands, env, Uri} from 'vscode';
-import {registerLanguageFeatures} from './bella-server-bootstrap';
-const COOKBOOK_URL='https://serene-mcnulty-01b0f0.netlify.com/syntax/bella-services.html/'
+import { commands, env, ExtensionContext, Uri } from 'vscode';
+import { LanguageClient } from 'vscode-languageclient';
 
-import {
-	LanguageClient,
-} from 'vscode-languageclient';
+import { registerLanguageFeatures } from './bella-server-bootstrap';
+
+const COOKBOOK_URL = 'https://serene-mcnulty-01b0f0.netlify.com/syntax/bella-services.html/'
 
 let client: LanguageClient;
 

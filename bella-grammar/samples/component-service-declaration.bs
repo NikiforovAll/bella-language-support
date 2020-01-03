@@ -1,0 +1,23 @@
+hosted service HelloWorld on HelloWorld
+
+hosted service GeneralLedger on GeneralLedger
+// hosted service GeneralLedgerAsync on Kompass
+hosted service GeneralLedgerMigrationTestApi on GeneralLedgerMigrationTestApi
+
+hosted service GeneralLedgerAdapterTestApi on GeneralLedgerAdapterTestApi
+
+external service InvoiceGenerator on [InvoiceGenerator]
+external service InvoiceGenerator on [InvoiceGenerator]
+external service InvoiceGenerator on [InvoiceGenerator]
+
+external service GlAdapter on [Kompass]
+// // external service GlAdapter on [Kompass]
+// // external service GlAdapter on [Kompass]
+// prog:	(expr NEWLINE)* ;
+// expr:	expr ('*'|'/') expr
+//     |	expr ('+'|'-') expr
+//     |	INT
+//     |	'(' expr ')'
+//     ;
+// NEWLINE : [\r\n]+ ;
+// INT     : [0-9]+ ;

@@ -1,0 +1,32 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "antlr4ts",
+            "type": "shell",
+            "command": "npm run-script antlr4ts",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "antlr4 compile-js",
+            "type": "shell",
+            "command": "antlr4 ./src/grammars/Bella.g4 -o src/grammars/.antlr4 -Dlanguage=JavaScript",
+        },
+        {
+            "label": "antlr4 compile-java",
+            "type": "shell",
+            "command": "antlr4 ./src/grammars/Bella.g4 -o ./src/grammars/.antlr",
+        },
+        // does not work atm
+        {
+            "label": "antlr4 grun",
+            "type": "shell",
+            "command": "cd ./.antlr4 && grun.bat Bella compilationUnit -tree compilationUnit -gui '../samples/bella-grammar1.bs'"
+        }
+    ]
+}

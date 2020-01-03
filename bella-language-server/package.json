@@ -73,8 +73,8 @@
   "scripts": {
     "vscode:prepublish": "npm run build-all",
     "build-all": "tsc -p ./client && tsc -p ./server",
-    "compile": "tsc -watch -p ./client",
     "watch": "tsc -b -w ./client",
+    "compile-client": "tsc -watch -p ./client",
     "compile-server": "tsc -watch -p ./server",
     "watch-server": "tsc -b -w ./server",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
@@ -83,10 +83,11 @@
   "devDependencies": {
     "@types/mocha": "^2.2.33",
     "@types/node": "^6.0.52",
-    "typescript": "^2.1.5",
+    "typescript": "^3.7.4",
     "vscode": "^1.1.18"
   },
   "dependencies": {
+    "bella-grammar": "file:../bella-grammar",
     "vscode-languageclient": "~3.3.0"
   }
 }

@@ -4,7 +4,7 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "compile",
+			"script": "build-all",
 			"group": "build",
 			"presentation": {
 				"panel": "dedicated",
@@ -16,7 +16,7 @@
 		},
 		{
 			"type": "npm",
-			"script": "watch",
+			"script": "compile-server",
 			"isBackground": true,
 			"group": "build",
 			"presentation": {
@@ -25,21 +25,6 @@
 			},
 			"problemMatcher": [
 				"$tsc-watch"
-			]
-		},
-		{
-			"type": "npm",
-			"script": "build-all",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
-			"presentation": {
-				"panel": "dedicated",
-				"reveal": "always"
-			},
-			"problemMatcher": [
-				"$tsc"
 			]
 		}
 	]

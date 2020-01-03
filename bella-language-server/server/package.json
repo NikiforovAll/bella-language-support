@@ -12,6 +12,7 @@
 		"url": ""
 	},
 	"dependencies": {
+		"bella-grammar": "file:../../bella-grammar",
 		"vscode-languageserver": "^5.2.1"
 	},
 	"scripts": {},

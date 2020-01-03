@@ -1,135 +1,83 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const vscode_languageserver_1 = require("vscode-languageserver");
-const diagnostics_factory_1 = require("./diagnostics-factory");
-// Create a connection for the server. The connection uses Node's IPC as a transport.
-// Also include all preview / proposed LSP features.
-let connection = vscode_languageserver_1.createConnection(vscode_languageserver_1.ProposedFeatures.all);
-// Create a simple text document manager. The text document manager
-// supports full document sync only
-let documents = new vscode_languageserver_1.TextDocuments();
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = true;
-connection.onInitialize((params) => {
-    let capabilities = params.capabilities;
-    // Does the client support the `workspace/configuration` request?
-    // If not, we will fall back using global settings
-    hasConfigurationCapability = !!(capabilities.workspace && !!capabilities.workspace.configuration);
-    hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders);
-    hasDiagnosticRelatedInformationCapability = !!(capabilities.textDocument &&
-        capabilities.textDocument.publishDiagnostics &&
-        capabilities.textDocument.publishDiagnostics.relatedInformation);
-    return {
-        capabilities: {
-            textDocumentSync: documents.syncKind,
-        }
-    };
-});
-connection.onInitialized(() => {
-    if (hasConfigurationCapability) {
-        // Register for all configuration changes.
-        connection.client.register(vscode_languageserver_1.DidChangeConfigurationNotification.type, undefined);
+const LSP = require("vscode-languageserver");
+const DocumentSymbolHandler_1 = require("./handlers/DocumentSymbolHandler");
+const analyzer_1 = require("./analyzer");
+const ParserProxy_1 = require("./ParserProxy");
+const DiagnosticsHandler_1 = require("./handlers/DiagnosticsHandler");
+/**
+ * The BashServer glues together the separate components to implement
+ * the various parts of the Language Server Protocol.
+ */
+class BellaServer {
+    constructor(connection, analyzer) {
+        this.documents = new LSP.TextDocuments();
+        this.connection = connection;
+        this.analyzer = analyzer;
+        this.diagnosticsHandler = new DiagnosticsHandler_1.DiagnosticsHandler(this.connection);
     }
-    if (hasWorkspaceFolderCapability) {
-        connection.workspace.onDidChangeWorkspaceFolders(_event => {
-            connection.console.log('Workspace folder change event received.');
+    /**
+     * Initialize the server based on a connection to the client and the protocols
+     * initialization parameters.
+     */
+    static initialize(connection, { rootPath }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const parser = BellaServer.initializeParser();
+            return Promise.all([analyzer_1.default.fromRoot({ connection, rootPath, parser }),
+            ]).then(xs => {
+                const analyzer = xs[0];
+                return new BellaServer(connection, analyzer);
+            });
         });
     }
-});
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
-const defaultSettings = { maxNumberOfProblems: 10 };
-let globalSettings = defaultSettings;
-// Cache the settings of all open documents
-let documentSettings = new Map();
-connection.onDidChangeConfiguration(change => {
-    if (hasConfigurationCapability) {
-        // Reset all cached document settings
-        documentSettings.clear();
-    }
-    else {
-        globalSettings = ((change.settings.languageServerExample || defaultSettings));
-    }
-    // Revalidate all open text documents
-    documents.all().forEach(validateTextDocument);
-});
-function getDocumentSettings(resource) {
-    if (!hasConfigurationCapability) {
-        return Promise.resolve(globalSettings);
-    }
-    let result = documentSettings.get(resource);
-    if (!result) {
-        result = connection.workspace.getConfiguration({
-            scopeUri: resource,
-            section: 'bellaLanguageServer'
+    /**
+     * Register handlers for the events from the Language Server Protocol that we
+     * care about.
+     */
+    register(connection) {
+        // The content of a text document has changed. This event is emitted
+        // when the text document first opened or when its content has changed.
+        this.documents.listen(this.connection);
+        this.documents.onDidChangeContent((change) => {
+            const { uri } = change.document;
+            this.diagnosticsHandler.validateTextDocument(change.document);
+            // const diagnostics = this.analyzer.analyze(uri, change.document)
         });
-        documentSettings.set(resource, result);
+        // Register all the handlers for the LSP events.
+        // connection.onHover(this.onHover.bind(this))
+        // connection.onDefinition(this.onDefinition.bind(this))
+        connection.onDocumentSymbol(this.onDocumentSymbol.bind(this));
+        // connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
+        // connection.onReferences(this.onReferences.bind(this))
+        // connection.onCompletion(this.onCompletion.bind(this))
+        // connection.onCompletionResolve(this.onCompletionResolve.bind(this))
     }
-    return result;
+    /**
+     * The parts of the Language Server Protocol that we are currently supporting.
+     */
+    capabilities() {
+        return {
+            // For now we're using full-sync even though tree-sitter has great support
+            // for partial updates.
+            textDocumentSync: this.documents.syncKind,
+        };
+    }
+    onDocumentSymbol(params) {
+        let handler = new DocumentSymbolHandler_1.DocumentSymbolHandler();
+        return handler.findSymbols(params);
+    }
+    static initializeParser() {
+        return new ParserProxy_1.BellaLanguageParser();
+    }
 }
-// Only keep settings for open documents
-documents.onDidClose(e => {
-    documentSettings.delete(e.document.uri);
-});
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-    validateTextDocument(change.document);
-});
-function validateTextDocument(textDocument) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // In this simple example we get the settings for every validate run.
-        let settings = yield getDocumentSettings(textDocument.uri);
-        let text = textDocument.getText();
-        // let pattern = /out\s+(\w+)/g;
-        // TODO: know issue, it doesn't work if procedure is defined as last in this file and there is no capturing end tokens for this case and $ symbol as end of line doesn't work
-        let pattern = /(?=(?<!\bcall\b.*?)out\s+(\w+\b))(?:[\s\S]*?)(?<matched>[^/]\s\1\b\s*\=|(?<stop>procedure|formula|generic|specific|object|setting|service|hosted|persistent|external))/g;
-        let m;
-        // var result = text.match(new RegExp(number + '\\s(\\w+)'))[1];
-        // pattern2 = /(?<=out\s+(\w+\b))(?:[\s\S]*)(?:procedure|object|formula|generic|specific)
-        let problems = 0;
-        let diagnostics = [];
-        while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-            let localParamIndexOf = m[0].indexOf(m[1]);
-            let capturedOutParam = {
-                name: m[1],
-                start: m.index + localParamIndexOf,
-                end: m.index + localParamIndexOf + (m[1] || '').length
-            };
-            // TODO: this should be possible via regex
-            let declarationPerformed = !m[3]; // do something with $m
-            // 	localDeclaration2.match(new RegExp(matchedContent + '\\\s+=', ''));
-            if (!declarationPerformed) {
-                let pattern = /out\s+(\w+)/g;
-                let factory = new diagnostics_factory_1.DiagnosticsFactory(hasDiagnosticRelatedInformationCapability);
-                let range = {
-                    start: textDocument.positionAt(capturedOutParam.start),
-                    end: textDocument.positionAt(capturedOutParam.end)
-                };
-                let diagnostic = factory.createDiagnostics(range, `Output parameter "${capturedOutParam.name}" is declared but never assigned.`, textDocument.uri);
-                diagnostics.push(diagnostic);
-                problems++;
-            }
-        }
-        // Send the computed diagnostics to VSCode.
-        connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-    });
-}
-connection.onDidChangeWatchedFiles(_change => {
-    // Monitored files have change in VSCode
-    connection.console.log('We received an file change event');
-});
-documents.listen(connection);
-// Listen on the connection
-connection.listen();
+exports.default = BellaServer;
 //# sourceMappingURL=server.js.map
