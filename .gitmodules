@@ -4,9 +4,9 @@
 [submodule "bella-cookbook"]
 	path = bella-cookbook
 	url = ./bella-cookbook/
-[submodule "bella-generator"]
-	path = bella-generator
-	url = ./bella-generator/
 [submodule "bella-grammar"]
 	path = bella-grammar
 	url = ./bella-grammar/
+[submodule "bella-generator"]
+	path = bella-generator
+	url = http://gitlab.hysdev.com/alexey.nikiforov/bella-generator/
