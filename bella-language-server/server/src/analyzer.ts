@@ -4,6 +4,7 @@ import { BellaDocumentParser } from "./ParserProxy";
 import * as glob from 'glob';
 import * as path from 'path'
 import * as fs from 'fs'
+import { LanguageServerCacheWrapper } from "./language-server-cache-wrapper";
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };
@@ -14,7 +15,7 @@ export default class BellaAnalyzer {
     private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
     private uriToFileContent: Texts = {}
     private connection: LSP.Connection;
-
+    public cache: LanguageServerCacheWrapper;
 
     /**
    * Initialize the Analyzer based on a connection to the client and an optional
@@ -46,7 +47,6 @@ export default class BellaAnalyzer {
                     // only analyze files, glob pattern may match directories
                     if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
                         const uri = `file://${absolute}`
-                        connection.console.log(`Analyzing ${uri}`)
                         analyzer.analyze(
                         uri,
                         LSP.TextDocument.create(
@@ -69,6 +69,7 @@ export default class BellaAnalyzer {
     public constructor(parser: BellaDocumentParser, connection: LSP.Connection) {
         this.parser = parser
         this.connection = connection;
+        this.cache = new LanguageServerCacheWrapper();
     }
 
     /**
@@ -96,9 +97,11 @@ export default class BellaAnalyzer {
         // const tree = this.parser.parse(contents)
         // TODO: add working with cache
         try {
+            this.connection.console.log(`Analyzing ${uri}`)
             let res = this.parser.parse(contents);
+            this.cache.setDeclarations(uri, res);
         } catch (error) {
-            this.connection.console.warn(error);
+            this.connection.console.warn(`Parsing Error: ${error}`);
         }
 
         // this.uriToTextDocument[uri] = document

@@ -81,13 +81,13 @@ export default class BellaServer {
 			// hoverProvider: true,
 			// documentHighlightProvider: true,
 			// definitionProvider: true,
-			// documentSymbolProvider: true,
+			documentSymbolProvider: true,
 			// referencesProvider: true,
 		}
 	}
 
 	private onDocumentSymbol(params: LSP.DocumentSymbolParams): LSP.SymbolInformation[] {
-		let handler = new DocumentSymbolHandler();
+		let handler = new DocumentSymbolHandler(this.analyzer.cache);
 		return handler.findSymbols(params);
 	}
 

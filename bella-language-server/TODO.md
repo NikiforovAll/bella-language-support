@@ -4,6 +4,7 @@
 
 * you could start client app and than attach via another debugger
 * you could debugg application via LSP inspector
+  * <https://microsoft.github.io/language-server-protocol/inspector/>
 
 ## TODOs
 

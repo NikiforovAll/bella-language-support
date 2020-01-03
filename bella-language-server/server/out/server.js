@@ -70,10 +70,17 @@ class BellaServer {
             // For now we're using full-sync even though tree-sitter has great support
             // for partial updates.
             textDocumentSync: this.documents.syncKind,
+            // completionProvider: {
+            // 	resolveProvider: true,
+            // },
+            // hoverProvider: true,
+            // documentHighlightProvider: true,
+            // definitionProvider: true,
+            documentSymbolProvider: true,
         };
     }
     onDocumentSymbol(params) {
-        let handler = new DocumentSymbolHandler_1.DocumentSymbolHandler();
+        let handler = new DocumentSymbolHandler_1.DocumentSymbolHandler(this.analyzer.cache);
         return handler.findSymbols(params);
     }
     static initializeParser() {
