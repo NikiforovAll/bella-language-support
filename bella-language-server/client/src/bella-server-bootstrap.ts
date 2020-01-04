@@ -18,7 +18,7 @@ import { getWorkspaceInformation } from './common';
 export function registerLanguageFeatures(context: vscode.ExtensionContext): LanguageClient {
     // The server is implemented in node
     let serverModule = context.asAbsolutePath(
-        path.join('server', 'out', 'index.js')
+        path.join('server', 'dist', 'index.js')
     );
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
@@ -37,16 +37,18 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'bella' }],
-        synchronize: {
-            // Notify the server about file changes
-            fileEvents: workspace.createFileSystemWatcher('**/.bs')
-        }
+        // synchronize: {
+        //     // Notify the server about file changes
+        //     fileEvents: workspace.createFileSystemWatcher('**/.bs')
+        // }
     };
-    // TODO: move this to configuration
-    let isLSPStreamingMode = false;
+    let isLSPStreamingMode = vscode.workspace
+    .getConfiguration().get('bellaLanguageServer.enableLSPInspectorForwarding', false);
+
     if (isLSPStreamingMode) {
         // Hijacks all LSP logs and redirect them to a specific port through WebSocket connection
-        clientOptions.outputChannel = createWebSocketListener()
+        const websocketOutputChannel: vscode.OutputChannel =  createWebSocketListener();
+        clientOptions.outputChannel = websocketOutputChannel;
     }
 
     // Create the language client and start the client.
@@ -90,7 +92,7 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
 }
 
 function createWebSocketListener(): vscode.OutputChannel {
-    const socketPort = workspace.getConfiguration('bellaLanguageSupport').get('port', 7000);
+    const socketPort = workspace.getConfiguration().get('bellaLanguageServer.LSPInspectorForwardingPortNumber', 7000);
     let socket: WebSocket | null = null;
     vscode.commands.registerCommand('bellaLanguageSupport.startStreaming', () => {
         // Establish websocket connection

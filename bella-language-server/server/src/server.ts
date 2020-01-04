@@ -48,9 +48,6 @@ export default class BellaServer {
 	 * care about.
 	 */
 	public register(connection: LSP.Connection): void {
-		//TODO: add state machine for status of server: started, indexing, working, error. As it described in apex LSP impl
-		// The content of a text document has changed. This event is emitted
-		// when the text document first opened or when its content has changed.
 		this.documents.listen(this.connection)
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			const { uri } = change.document

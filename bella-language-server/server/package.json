@@ -1,6 +1,6 @@
 {
 	"name": "bella-lsp-server",
-	"description": "Example implementation of a language server in node.",
+	"description": "Language Server Implementation for Bella Programming Language",
 	"version": "0.0.1",
 	"author": "",
 	"license": "MIT",
@@ -11,8 +11,8 @@
 		"type": "git",
 		"url": ""
 	},
+	"main": "src/index.ts",
 	"dependencies": {
-		"bella-grammar": "file:../../bella-grammar",
 		"glob": "^7.1.6",
 		"node-cache": "^5.1.0",
 		"vscode-languageserver": "^5.2.1"

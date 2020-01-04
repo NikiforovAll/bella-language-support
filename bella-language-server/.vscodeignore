@@ -2,4 +2,16 @@
 **/tsconfig.json
 server-csharp/
 .vscode
-release
+
+release/
+
+client/
+node_modules
+webpack.config.js
+
+server/out
+server/node_modules
+server/webpack.config.js
+
+vsc-extension-quickstart.md
+TODO.md

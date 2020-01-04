@@ -7,7 +7,7 @@
   "repository": {
     "url": "http://gitlab.hysdev.com/alexey.nikiforov/bella-language-support"
   },
-  "version": "0.1.2",
+  "version": "0.2.3",
   "engines": {
     "vscode": "^1.40.0"
   },
@@ -39,8 +39,20 @@
         "bellaLanguageServer.sourceCodeLocation": {
           "scope": "window",
           "type": "string",
-          "default": "src/domain",
+          "default": "src/Domain",
           "description": "Specifies root folder to identify components and common folders"
+        },
+        "bellaLanguageServer.enableLSPInspectorForwarding": {
+          "scope": "window",
+          "type": "boolean",
+          "default": false,
+          "description": "Forwards LSP output to LSP Inspector"
+        },
+        "bellaLanguageServer.LSPInspectorForwardingPortNumber": {
+          "scope": "window",
+          "type": "integer",
+          "default": 7000,
+          "description": "Forwards LSP output to LSP Inspector"
         }
       }
     },
@@ -85,31 +97,33 @@
       }
     ]
   },
-  "main": "./client/out/src/extension",
+  "main": "./dist/extension",
+  "mainLegacy": "./client/out/src/extension",
   "activationEvents": [
     "onLanguage:bella",
     "onCommand:bellaLanguageSupport.openCookBook"
   ],
   "scripts": {
+    "build-all": "webpack --mode production && webpack --mode production --config ./server/webpack.config.js",
+    "package": "vsce package -o release/",
     "vscode:prepublish": "npm run build-all",
-    "build-all": "tsc -p ./client && tsc -p ./server",
-    "watch": "tsc -b -w ./client",
-    "compile-client": "tsc -watch -p ./client",
-    "compile-server": "tsc -watch -p ./server",
-    "watch-server": "tsc -b -w ./server",
-    "package": "vsce package -o release/"
+    "webpack": "webpack --mode development",
+    "webpack-server": "webpack --mode development --config ./server/webpack.config.js",
+    "webpack-dev": "webpack --mode development --watch",
+    "webpack-server-dev": "webpack --mode development --watch --config ./server/webpack.config.js"
   },
   "devDependencies": {
     "@types/glob": "^7.1.1",
-    "@types/mocha": "^2.2.33",
-    "@types/node": "^6.0.52",
-    "typescript": "^3.7.4"
+    "@types/node": "^13.1.2",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.4",
+    "vscode": "^1.1.36",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
   },
   "dependencies": {
-    "bella-grammar": "file:../bella-grammar",
     "fs-extra": "^8.1.0",
     "glob": "^7.1.6",
-    "vscode": "^1.1.36",
     "vscode-languageclient": "^5.2.1",
     "ws": "^7.2.1"
   }

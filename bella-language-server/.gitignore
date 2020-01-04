@@ -1,5 +1,9 @@
-node_modules
 client/out
+dist
+node_modules
+
 server/out
+server/dist
 server/node_modules
+
 release

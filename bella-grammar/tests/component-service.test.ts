@@ -11,9 +11,9 @@ describe("component-hosted-service-declaration", () => {
             .map(t=>t.text)
         expect(result)
             .to.eql(["external", "service", "InvoiceGenerator", "on", "[" , "InvoiceGenerator" , "]"], 'failed tokenization')
-        let visitor = BellaLanguageSupport.generateComponentServiceVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor();
         let visitorRes = visitor.visit(tree);
-        let serviceDeclarations = visitor.services;
+        let serviceDeclarations = visitor.declarations;
         expect(serviceDeclarations).to.have.lengthOf(1);
     });
 });

@@ -32,7 +32,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             serviceTransportName: context.enclosedServiceIdentifier().text,
             name: serviceName,
             range: {
-                startPosition: {row: line, col: 0}, endPosition: {row: line, col: 0}
+                startPosition: {row: line, col: 0}, endPosition: {row: line, col: Number.MAX_SAFE_INTEGER}
             },
             type: DeclarationType.ComponentService
         }

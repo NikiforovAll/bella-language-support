@@ -4,16 +4,18 @@
 
 ### Addded
 
-* snippets
-  * `logi, loge, procedure, hosted-service, etc...`, for more details see: `snippets\bella.json`
-* Find Symbols in File `ctrl + shift + o`
+* Command: `Go To Symbol in File...`
+  * Keyboard shortcut: `ctrl + o`)
   * Component Service declaration e.g.: `hosted service MyAwesomeService on [Connector]`
   * TODO: rest of it
-* Find Symbols in Workspace/Project `ctrl + t`
-  * TODO:
+* Command: `Go To Symbol in Workspace...`
+  * Keyboard shortcut: `ctrl + t`
 * TODO: Go To Definition
 * Command: `Bella: Generate Project Assets`
-  * Now, you can compile all components via `ctrl+shift+b` (run default build task in vscode)
+  * Compile all components from vscode
+  * Keyboard shortcut:  `ctrl+shift+b`
+* Snippets
+  * `logi, loge, procedure, hosted-service, etc...`, for more details see: `snippets\bella.json`
 
 ## draft-version - v0.1.0
 

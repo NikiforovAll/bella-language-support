@@ -9,6 +9,9 @@
 			"path": "bella-language-server\\server"
 		},
 		{
+			"path": "bella-grammar"
+		},
+		{
 			"name": "hello-world-scaffolded",
 			"path": "hello-world-scaffolded"
 		},
@@ -17,38 +20,35 @@
 		},
 		{
 			"path": "bella-cookbook"
-		},
-		{
-			"path": "bella-grammar"
 		}
 	],
 	"tasks": {
 		"version": "2.0.0",
 		"tasks": [
-			{
-				"label": "compile-ts-client",
-				// we want to run npm
-				"command": "npm",
-				// the command is a shell script
-				// "isShellCommand": true,
-				"type": "shell",
-				// show the output window only if unrecognized errors occur.
-				// "showOutput": "silent",
-				"presentation": {
-					"echo": true,
-					"reveal": "always",
-					"focus": false,
-					"panel": "shared",
-					"showReuseMessage": true,
-					"clear": false
-				},
-				// we run the custom script "compile" as defined in package.json
-				"args": ["run", "compile", "--loglevel", "silent"],
-				// The tsc compiler is started in watching mode
-				"isBackground": true,
-				// use the standard tsc in watch mode problem matcher to find compile problems in the output.
-				"problemMatcher": "$tsc-watch"
-			}
+			// {
+			// 	"label": "compile-ts-client",
+			// 	// we want to run npm
+			// 	"command": "npm",
+			// 	// the command is a shell script
+			// 	// "isShellCommand": true,
+			// 	"type": "shell",
+			// 	// show the output window only if unrecognized errors occur.
+			// 	// "showOutput": "silent",
+			// 	"presentation": {
+			// 		"echo": true,
+			// 		"reveal": "always",
+			// 		"focus": false,
+			// 		"panel": "shared",
+			// 		"showReuseMessage": true,
+			// 		"clear": false
+			// 	},
+			// 	// we run the custom script "compile" as defined in package.json
+			// 	"args": ["run", "compile", "--loglevel", "silent"],
+			// 	// The tsc compiler is started in watching mode
+			// 	"isBackground": true,
+			// 	// use the standard tsc in watch mode problem matcher to find compile problems in the output.
+			// 	"problemMatcher": "$tsc-watch"
+			// }
 		]
 	},
 	"launch": {
@@ -67,7 +67,7 @@
 				],
 				"stopOnEntry": false,
 				"sourceMaps": true,
-				"outFiles": [ "${workspaceFolder:bella-language-server}/client/out/src/**/*.js" ],
+				"outFiles": [ "${workspaceFolder:bella-language-server}/dist/**/*.js"]
 				// "preLaunchTask": "npm"
 			},
 			{
@@ -77,7 +77,9 @@
 				"processId": "${command:PickProcess}",
 				"skipFiles": [
 					"<node_internals>/**"
-				]
+				],
+				"sourceMaps": true,
+				"outFiles": [ "${workspaceFolder:bella-language-server}/server/dist/**/*.js" ]
 			},
 			// {
 			// 	"name": "Bella Language Server: .NET Core  (console)",

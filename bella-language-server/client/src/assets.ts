@@ -101,8 +101,7 @@ async function promptToAddAssets(workspaceFolder: vscode.WorkspaceFolder) {
 export async function addInvokePSScript(generator: AssetGenerator) {
     return new Promise<void>((resolve, reject) => {
         const script = `
-start powershell {./.vscode./CompileAllComponents.ps1}
-        `
+start powershell {./.vscode./CompileAllComponents.ps1}`
         fs.writeFile(generator.invokePSFile, script, err => {
             if (err) {
                 return reject(err);

@@ -165,7 +165,7 @@ export interface WorkspaceFolderInformation {
 export function getWorkspaceInformation(): WorkspaceFolderInformation {
     // vscode.workspace.workspaceFolders[0];
     const rootPath = vscode.workspace.rootPath;
-    const sourceCodeLocation = vscode.workspace.getConfiguration('bellaLanguageSupport').get('sourceCodeLocation', 'src/Domain');
+    const sourceCodeLocation = vscode.workspace.getConfiguration().get('bellaLanguageServer.sourceCodeLocation', 'src/Domain');
     const domainPath = path.join(rootPath, sourceCodeLocation);
     const isValidProject = fs.existsSync(domainPath);
     return {
