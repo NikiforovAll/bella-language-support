@@ -1,6 +1,6 @@
 import { BellaLanguageSupport } from "bella-grammar";
 
-export class BellaDocumentParser {
+export class LSPParserProxy {
 
     constructor() {
     }

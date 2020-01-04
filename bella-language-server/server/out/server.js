@@ -10,10 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const LSP = require("vscode-languageserver");
-const DocumentSymbolHandler_1 = require("./handlers/DocumentSymbolHandler");
-const analyzer_1 = require("./analyzer");
-const ParserProxy_1 = require("./ParserProxy");
-const DiagnosticsHandler_1 = require("./handlers/DiagnosticsHandler");
+const document_symbol_handler_1 = require("./handlers/document-symbol.handler");
+const bella_analyzer_1 = require("./bella-analyzer");
+const lsp_parser_proxy_1 = require("./lsp-parser-proxy");
+const diagnostics_handler_1 = require("./handlers/diagnostics.handler");
 /**
  * The BashServer glues together the separate components to implement
  * the various parts of the Language Server Protocol.
@@ -23,7 +23,7 @@ class BellaServer {
         this.documents = new LSP.TextDocuments();
         this.connection = connection;
         this.analyzer = analyzer;
-        this.diagnosticsHandler = new DiagnosticsHandler_1.DiagnosticsHandler(this.connection);
+        this.diagnosticsHandler = new diagnostics_handler_1.DiagnosticsHandler(this.connection);
     }
     /**
      * Initialize the server based on a connection to the client and the protocols
@@ -32,7 +32,7 @@ class BellaServer {
     static initialize(connection, { rootPath }) {
         return __awaiter(this, void 0, void 0, function* () {
             const parser = BellaServer.initializeParser();
-            return Promise.all([analyzer_1.default.fromRoot({ connection, rootPath, parser }),
+            return Promise.all([bella_analyzer_1.default.fromRoot({ connection, rootPath, parser }),
             ]).then(xs => {
                 const analyzer = xs[0];
                 return new BellaServer(connection, analyzer);
@@ -80,11 +80,11 @@ class BellaServer {
         };
     }
     onDocumentSymbol(params) {
-        let handler = new DocumentSymbolHandler_1.DocumentSymbolHandler(this.analyzer.cache);
+        let handler = new document_symbol_handler_1.DocumentSymbolHandler(this.analyzer.cache);
         return handler.findSymbols(params);
     }
     static initializeParser() {
-        return new ParserProxy_1.BellaDocumentParser();
+        return new lsp_parser_proxy_1.LSPParserProxy();
     }
 }
 exports.default = BellaServer;

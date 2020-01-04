@@ -6,6 +6,12 @@
 
 * snippets
   * `logi, loge, procedure, hosted-service, etc...`, for more details see: `snippets\bella.json`
+* Find Symbols in File `ctrl + shift + o`
+  * Component Service declaration e.g.: `hosted service MyAwesomeService on [Connector]`
+  * TODO: rest of it
+* Find Symbols in Workspace/Project `ctrl + t`
+  * TODO:
+* TODO: Go To Definition
 
 ## draft-version - v0.1.0
 

@@ -1,10 +1,10 @@
 import * as LSP from "vscode-languageserver";
 
-import { BellaDocumentParser } from "./ParserProxy";
+import { LSPParserProxy } from "./lsp-parser-proxy";
 import * as glob from 'glob';
 import * as path from 'path'
 import * as fs from 'fs'
-import { LanguageServerCacheWrapper } from "./language-server-cache-wrapper";
+import { LSPDeclarationRegistry } from "./lsp-declaration-registry";
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };
@@ -15,7 +15,7 @@ export default class BellaAnalyzer {
     private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
     private uriToFileContent: Texts = {}
     private connection: LSP.Connection;
-    public cache: LanguageServerCacheWrapper;
+    public cache: LSPDeclarationRegistry;
 
     /**
    * Initialize the Analyzer based on a connection to the client and an optional
@@ -31,7 +31,7 @@ export default class BellaAnalyzer {
     }: {
         connection: LSP.Connection
         rootPath: string | null | undefined
-        parser: BellaDocumentParser
+        parser: LSPParserProxy
     }): Promise<BellaAnalyzer> {
         if (!rootPath) {
             return Promise.resolve(new BellaAnalyzer(parser, connection))
@@ -64,12 +64,12 @@ export default class BellaAnalyzer {
         })
     }
 
-    private parser: BellaDocumentParser
+    private parser: LSPParserProxy
 
-    public constructor(parser: BellaDocumentParser, connection: LSP.Connection) {
+    public constructor(parser: LSPParserProxy, connection: LSP.Connection) {
         this.parser = parser
         this.connection = connection;
-        this.cache = new LanguageServerCacheWrapper();
+        this.cache = new LSPDeclarationRegistry();
     }
 
     /**
@@ -95,7 +95,6 @@ export default class BellaAnalyzer {
         const contents = document.getText();
 
         // const tree = this.parser.parse(contents)
-        // TODO: add working with cache
         try {
             this.connection.console.log(`Analyzing ${uri}`)
             let res = this.parser.parse(contents);

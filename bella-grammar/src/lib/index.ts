@@ -1,7 +1,7 @@
 import { ANTLRInputStream, CommonTokenStream, Token, Lexer, Parser } from 'antlr4ts';
 import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer'
 import { CompilationUnitContext, BellaParser} from '../grammars/.antlr4/BellaParser';
-import { BellaDeclarationVisitor } from "./BellaVisitor";
+import { BellaDeclarationVisitor } from "./bella-declaration.visitor";
 // import {ComponentServiceDeclaration } from './models/component-service-declaration';
 
 export {BaseDeclaration, DeclarationType, Position, Range } from './models/base-declaration';

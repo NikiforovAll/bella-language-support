@@ -1,9 +1,9 @@
 import * as LSP from 'vscode-languageserver';
 
-import { DocumentSymbolHandler } from './handlers/DocumentSymbolHandler';
-import BellaAnalyzer from './analyzer';
-import { BellaDocumentParser } from './ParserProxy';
-import { DiagnosticsHandler } from './handlers/DiagnosticsHandler';
+import { DocumentSymbolHandler } from './handlers/document-symbol.handler';
+import BellaAnalyzer from './bella-analyzer';
+import { LSPParserProxy } from './lsp-parser-proxy';
+import { DiagnosticsHandler } from './handlers/diagnostics.handler';
 
 
 /**
@@ -92,7 +92,7 @@ export default class BellaServer {
 	}
 
 	private static initializeParser() {
-		return new BellaDocumentParser();
+		return new LSPParserProxy();
 	}
 }
 

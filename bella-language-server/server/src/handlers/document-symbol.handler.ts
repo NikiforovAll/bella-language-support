@@ -1,8 +1,8 @@
 import * as LSP from 'vscode-languageserver'
-import { LanguageServerCacheWrapper } from '../language-server-cache-wrapper';
+import { LSPDeclarationRegistry } from '../lsp-declaration-registry';
 
 export class DocumentSymbolHandler {
-    constructor(private cache: LanguageServerCacheWrapper) {
+    constructor(private cache: LSPDeclarationRegistry) {
         this.cache = cache;
     }
     public findSymbols(params: LSP.DocumentSymbolParams): LSP.SymbolInformation[] {

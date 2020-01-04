@@ -2,7 +2,7 @@ import * as NodeCache from 'node-cache';
 import { BaseDeclaration, DeclarationType, Position, Range } from 'bella-grammar';
 import * as LSP from 'vscode-languageserver';
 
-export class LanguageServerCacheWrapper {
+export class LSPDeclarationRegistry {
 
     private cache: NodeCache;
 
