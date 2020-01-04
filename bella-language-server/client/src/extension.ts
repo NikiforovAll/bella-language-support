@@ -2,6 +2,7 @@ import { commands, env, ExtensionContext, Uri, workspace } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient';
 
 import { registerLanguageFeatures } from './bella-server-bootstrap';
+import { generateAssets } from './assets';
 
 const COOKBOOK_URL = 'https://serene-mcnulty-01b0f0.netlify.com/syntax/bella-services.html/'
 
@@ -21,15 +22,16 @@ export function deactivate(): Thenable<void> | undefined {
 
 function registerCommands(context: ExtensionContext) {
 
-	const command = 'bellaLanguageSupport.openCookBook';
-
-	const commandHandler = () => {
-		env.openExternal(Uri.parse(COOKBOOK_URL));
-	};
+	context.subscriptions.push(
+		commands.registerCommand('bellaLanguageSupport.openCookBook', () => {
+			env.openExternal(Uri.parse(COOKBOOK_URL));
+		}
+	));
 	context.subscriptions.push(
 		commands
-			.registerCommand(command, commandHandler)
+			.registerCommand('bellaLanguageSupport.generateAssets', async () => generateAssets())
 	);
+
 }
 
 function registerServer(context: ExtensionContext) {

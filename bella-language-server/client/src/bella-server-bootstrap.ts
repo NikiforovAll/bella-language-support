@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { workspace } from 'vscode';
 import * as path from 'path';
 import * as WebSocket from 'ws';
+import * as fs from 'fs-extra';
+
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -10,6 +12,8 @@ import {
     InitializeParams,
     InitializeResult
 } from 'vscode-languageclient';
+import { addAssetsIfNecessary, AddAssetResult } from './assets';
+import { getWorkspaceInformation } from './common';
 
 export function registerLanguageFeatures(context: vscode.ExtensionContext): LanguageClient {
     // The server is implemented in node
@@ -72,6 +76,14 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
         if (!capabilities.documentSymbolProvider) {
             console.warn('DocumentSymbolProvider is not provided');
             // const provider = new BellaDocumentSymbolProvider()
+        }
+        const workspaceInformation = getWorkspaceInformation();
+        const shouldGenerateTasks = !(context.workspaceState.get<boolean>('assetPromptDisabled') && workspaceInformation.tasksGenerated);
+        //  );
+        if (shouldGenerateTasks) {
+            addAssetsIfNecessary().then(result => {
+                context.workspaceState.update('assetPromptDisabled', true);
+            });
         }
     });
     return client;

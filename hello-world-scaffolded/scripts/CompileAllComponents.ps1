@@ -19,7 +19,7 @@ function RunBellaComponent($exePath){
 
 $hasError = $false
 
-$files =Get-ChildItem "BellaDomain.exe" -Path ..\src\ -Recurse
+$files =Get-ChildItem "BellaDomain.exe" -Path ./src -Recurse
 
 $numberOfComponents=0
 

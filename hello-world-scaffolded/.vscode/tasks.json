@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "powershell",
+            "type": "shell",
+            "args": [
+                "-ExecutionPolicy",
+                "Unrestricted",
+                "-NoProfile",
+                "-File",
+                "./.vscode/Invoke.ps1"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Builds All Components",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

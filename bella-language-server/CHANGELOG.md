@@ -12,6 +12,8 @@
 * Find Symbols in Workspace/Project `ctrl + t`
   * TODO:
 * TODO: Go To Definition
+* Command: `Bella: Generate Project Assets`
+  * Now, you can compile all components via `ctrl+shift+b` (run default build task in vscode)
 
 ## draft-version - v0.1.0
 

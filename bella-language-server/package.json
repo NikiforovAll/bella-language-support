@@ -17,7 +17,7 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "Example configuration",
+      "title": "BellaLanguageSupport",
       "properties": {
         "bellaLanguageServer.maxNumberOfProblems": {
           "scope": "resource",
@@ -35,6 +35,12 @@
           ],
           "default": "off",
           "description": "Traces the communication between VS Code and the language server."
+        },
+        "bellaLanguageServer.sourceCodeLocation": {
+          "scope": "window",
+          "type": "string",
+          "default": "src/domain",
+          "description": "Specifies root folder to identify components and common folders"
         }
       }
     },
@@ -72,6 +78,10 @@
       {
         "command": "bellaLanguageSupport.startStreaming",
         "title": "Bella: Start Streaming to LSP"
+      },
+      {
+        "command": "bellaLanguageSupport.generateAssets",
+        "title": "Bella: Generate Project Assets"
       }
     ]
   },
@@ -97,6 +107,7 @@
   },
   "dependencies": {
     "bella-grammar": "file:../bella-grammar",
+    "fs-extra": "^8.1.0",
     "glob": "^7.1.6",
     "vscode": "^1.1.36",
     "vscode-languageclient": "^5.2.1",

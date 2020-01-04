@@ -4,6 +4,9 @@ import * as LSP from 'vscode-languageserver';
 
 export class LSPDeclarationRegistry {
 
+
+    //TODO: consider to have an array of this for each component to support global level cache
+    //TODO: need to be able to get all tokens for component
     private cache: NodeCache;
 
     constructor() {
