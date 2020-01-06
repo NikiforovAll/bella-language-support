@@ -43,12 +43,14 @@ export default class BellaAnalyzer {
                 } else {
                     const analyzer = new BellaAnalyzer(parser, connection)
                     paths.forEach(p => {
-                    const absolute = path.join(rootPath, p)
+                    let absolute = path.join(rootPath, p);
                     // only analyze files, glob pattern may match directories
                     if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
-                        const uri = `file://${absolute}`
+                        let uri = absolute;
+                        uri = uri.replace(":", "%3A");
+                        uri = uri.replace(/\\/g, "/");
+                        uri = "file:///" + uri;
                         analyzer.analyze(
-                        uri,
                         LSP.TextDocument.create(
                             uri,
                             'bella',
@@ -91,14 +93,14 @@ export default class BellaAnalyzer {
      * Returns all, if any, syntax errors that occurred while parsing the file.
      *
      */
-    public analyze(uri: string, document: LSP.TextDocument){
+    public analyze(document: LSP.TextDocument){
         const contents = document.getText();
-
+        let { uri } = document;
         // const tree = this.parser.parse(contents)
         try {
             this.connection.console.log(`Analyzing ${uri}`)
             let res = this.parser.parse(contents);
-            this.cache.setDeclarations(uri, res);
+            this.cache.setDeclarations(res, document.uri);
         } catch (error) {
             this.connection.console.warn(`Parsing Error: ${error}`);
         }

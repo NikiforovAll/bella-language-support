@@ -1,9 +1,25 @@
 
+param (
+    [bool]$run = $false,
+    [string]$componentRegex = "*"
+    )
+
+set-alias ?: Invoke-Ternary -Option AllScope -Description "PSCX filter alias"
+filter Invoke-Ternary ([scriptblock]$decider, [scriptblock]$ifTrue, [scriptblock]$ifFalse)
+{
+    if (&$decider) {
+        &$ifTrue
+    } else {
+        &$ifFalse
+    }
+}
+
 function RunBellaComponent($exePath){
-    Write-Host "Starting component $exePath"
     $pinfo = New-Object System.Diagnostics.ProcessStartInfo
     $pinfo.FileName = $exePath
-    $pinfo.Arguments = '-console -compileOnly'
+    $arguments = '-console ' + (?: {$run} {''} {'-compileOnly'})
+    Write-Host "Starting component $exePath, args: $arguments"
+    $pinfo.Arguments = $arguments
     $pinfo.RedirectStandardError = $true
     $pinfo.RedirectStandardOutput = $true
     $pinfo.UseShellExecute = $false
@@ -19,14 +35,18 @@ function RunBellaComponent($exePath){
 }
 
 $hasError = $false
-
-$files = Get-ChildItem "BellaDomain.exe" -Path src/Domain -Recurse
+$path = 'src/Domain/*/' + $componentRegex
+$files = Get-ChildItem "BellaDomain.exe" -Path $path -Recurse
 
 $numberOfComponents=0
 
 foreach ($file in $files)
 {
+    if($file.FullName -notmatch '.*BellaDomain.exe'){
+        continue
+    }
     $numberOfComponents++
+    Write-Host $file.FullName
     $exitCode = RunBellaComponent($file.FullName)
     $hasError = $hasError -or -not ($exitCode -eq 0)
 }

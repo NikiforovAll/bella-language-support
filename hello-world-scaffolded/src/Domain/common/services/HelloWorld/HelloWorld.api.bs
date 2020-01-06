@@ -6,6 +6,7 @@ service GeneralLedger
     SaveGlAccount(GlAccount) oneway
     RevertGlEvent(Date, GlEventType, SourceId) oneway
     GetGlEvent(Date, GlEventType, SourceId): GlEvent[*]
+
     GetRevertedGlEvents(Date, GlEventType, SourceId):GlEvents[Test]
     GelAllAccounts():GlAccounts
 

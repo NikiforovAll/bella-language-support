@@ -28,21 +28,21 @@ typeDeclaration
     ;
 
 
-componentServiceDeclaration : hosted service Identifier on enclosedServiceIdentifier ;
+componentServiceDeclaration : HOSTED SERVICE Identifier ON enclosedServiceIdentifier ;
 /*
  * Lexer Rules
  */
 
-hosted : ('hosted' | 'external') ;
-service:        'service';
-on     :             'on';
+SERVICE:        'service';
+ON     :             'on';
 
-obracket:                   '[';
-cbracket:                   ']';
+HOSTED : ('hosted' | 'external') ;
+OBRACKET:                   '[';
+CBRACKET:                   ']';
 
 
 enclosedServiceIdentifier
-    : obracket Identifier cbracket
+    : OBRACKET Identifier CBRACKET
     | Identifier
     ;
 

@@ -99,7 +99,7 @@
           "include": "#procedure-signature-declaration"
         }
       ],
-      "end": "(^\\s*$)"
+      "end": "(?=^\\S)"
     },
     "object-declaration": {
       "name": "meta.object.declaration.bella",

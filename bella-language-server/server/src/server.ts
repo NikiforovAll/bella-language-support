@@ -52,12 +52,13 @@ export default class BellaServer {
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			const { uri } = change.document
 			this.diagnosticsHandler.validateTextDocument(change.document);
-			this.analyzer.analyze(uri, change.document);
+			this.analyzer.analyze(change.document);
 		})
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))
 		// connection.onDefinition(this.onDefinition.bind(this))
-		connection.onDocumentSymbol(this.onDocumentSymbol.bind(this))
+		connection.onDocumentSymbol(this.onDocumentSymbol.bind(this));
+		connection.onWorkspaceSymbol(this.onWorkspaceSymbol.bind(this));
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
 		// connection.onReferences(this.onReferences.bind(this))
 		// connection.onCompletion(this.onCompletion.bind(this))
@@ -79,6 +80,7 @@ export default class BellaServer {
 			// documentHighlightProvider: true,
 			// definitionProvider: true,
 			documentSymbolProvider: true,
+			workspaceSymbolProvider: true
 			// referencesProvider: true,
 		}
 	}
@@ -87,7 +89,10 @@ export default class BellaServer {
 		let handler = new DocumentSymbolHandler(this.analyzer.cache);
 		return handler.findSymbols(params);
 	}
-
+	private onWorkspaceSymbol(params: LSP.WorkspaceSymbolParams): LSP.SymbolInformation[] {
+		let handler = new DocumentSymbolHandler(this.analyzer.cache);
+		return handler.findSymbolsInWorkspace(params);
+	}
 	private static initializeParser() {
 		return new LSPParserProxy();
 	}

@@ -13,11 +13,6 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     visitCompilationUnit?: ((ctx: import("../grammars/.antlr4/BellaParser").CompilationUnitContext) => any) | undefined;
     visitTypeDeclaration?: ((ctx: import("../grammars/.antlr4/BellaParser").TypeDeclarationContext) => any) | undefined;
-    visitHosted?: ((ctx: import("../grammars/.antlr4/BellaParser").HostedContext) => any) | undefined;
-    visitService?: ((ctx: import("../grammars/.antlr4/BellaParser").ServiceContext) => any) | undefined;
-    visitOn?: ((ctx: import("../grammars/.antlr4/BellaParser").OnContext) => any) | undefined;
-    visitObracket?: ((ctx: import("../grammars/.antlr4/BellaParser").ObracketContext) => any) | undefined;
-    visitCbracket?: ((ctx: import("../grammars/.antlr4/BellaParser").CbracketContext) => any) | undefined;
     visitEnclosedServiceIdentifier?: ((ctx: import("../grammars/.antlr4/BellaParser").EnclosedServiceIdentifierContext) => any) | undefined;
     defaultResult() {
         return [];
@@ -27,7 +22,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let serviceName = context.Identifier().text;
         let line = context.start.line - 1;
         let csd: ComponentServiceDeclaration = {
-            serviceType: context.hosted().text,
+            serviceType: context.HOSTED().text,
             serviceName: serviceName,
             serviceTransportName: context.enclosedServiceIdentifier().text,
             name: serviceName,

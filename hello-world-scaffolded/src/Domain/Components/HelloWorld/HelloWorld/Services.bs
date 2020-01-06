@@ -2,8 +2,8 @@ hosted service HelloWorld on HelloWorld
 hosted service HelloWorld5 on HelloWorld
 hosted service HelloWorl4 on HelloWorld
 // hosted service HelloWorld on HelloWorld
-// hosted service HelloWorld on HelloWorld
-// hosted service HelloWorld on HelloWorld
+// hosted service HelloWorld3 on HelloWorld
+
 hosted service HelloWorl3 on [HelloWorld]
 // hosted service HelloWorld on [HelloWorld]
 

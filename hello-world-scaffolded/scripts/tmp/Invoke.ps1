@@ -7,11 +7,11 @@ param (
 set-alias ?: Invoke-Ternary -Option AllScope -Description "PSCX filter alias"
 filter Invoke-Ternary ([scriptblock]$decider, [scriptblock]$ifTrue, [scriptblock]$ifFalse)
 {
-    if (&$decider) {
-        &$ifTrue
-    } else {
-        &$ifFalse
-    }
+   if (&$decider) {
+      &$ifTrue
+   } else {
+      &$ifFalse
+   }
 }
 
 Write-Host "Regex:" $componentRegex

@@ -4,7 +4,6 @@
         {
             "label": "build",
             "command": "powershell",
-            "problemMatcher": [],
             "type": "shell",
             "args": [
                 "-ExecutionPolicy",
@@ -30,18 +29,17 @@
         {
             "label": "run-component",
             "command": "powershell",
-            "problemMatcher": [],
             "type": "shell",
             "args": [
                 "-ExecutionPolicy",
                 "Unrestricted",
                 "-NoProfile",
                 "-File",
-                "./.vscode/Invoke.ps1",
-                "-componentRegex",
-                "'${input:componentName}'",
-                "-run"
+                "./.vscode/Invoke.ps1", "-componentRegex","'${input:componentName}'", "-run"
+                // "-componentRegex ${input:componentName}",
+                // "-run $true"
             ],
+            "problemMatcher": [],
             "presentation": {
                 "echo": true,
                 "reveal": "always",
@@ -59,9 +57,10 @@
     ],
     "inputs": [
         {
-            "id": "componentName",
-            "description": "Specify regex expression for component name. E.g. BillingEngine, Billing*",
-            "type": "promptString"
+          "id": "componentName",
+          "description": "Specify regex expression for component name:",
+          "type": "promptString"
+          // type specific configuration attributes
         }
-    ]
+      ]
 }

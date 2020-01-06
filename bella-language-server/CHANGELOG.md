@@ -7,15 +7,27 @@
 * Command: `Go To Symbol in File...`
   * Keyboard shortcut: `ctrl + o`)
   * Component Service declaration e.g.: `hosted service MyAwesomeService on [Connector]`
-  * TODO: rest of it
+  * TODO: procedure
+  * TODO: object
+  * TODO: formula
+  * TODO: setting
+  * TODO: service as interface declaration
 * Command: `Go To Symbol in Workspace...`
   * Keyboard shortcut: `ctrl + t`
 * TODO: Go To Definition
 * Command: `Bella: Generate Project Assets`
   * Compile all components from vscode
   * Keyboard shortcut:  `ctrl+shift+b`
+* Task: `Build All Components`
+  * Builds all components in `src/Domain`
+* Task: `Build and Run Component`
+  * Builds and runs specified component(s) (regex based names)
 * Snippets
   * `logi, loge, procedure, hosted-service, etc...`, for more details see: `snippets\bella.json`
+
+### Fixed
+
+* ISSUE: New line breaks highlighting of procedures inside service declaration
 
 ## draft-version - v0.1.0
 

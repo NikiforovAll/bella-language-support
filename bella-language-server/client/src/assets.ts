@@ -58,19 +58,58 @@ export class AssetGenerator {
         return {
             label: 'build',
             command: 'powershell',
+            problemMatcher: [],
             type: 'shell',
             args: commandArgs,
             presentation,
-            detail: "Builds All Components",
+            detail: "Build All Components",
+            group
+        };
+    }
+
+    private createRunComponentTaskDescription(): any {
+        let commandArgs = [
+            "-ExecutionPolicy",
+            "Unrestricted",
+            "-NoProfile",
+            "-File",
+            "./.vscode/Invoke.ps1", "-componentRegex","'${input:componentName}'", "-run"
+        ];
+        let presentation = {
+            "echo": true,
+            "reveal": "always",
+            "focus": true,
+            "panel": "shared",
+            "showReuseMessage": true,
+            "clear": false
+        }
+        let group = {
+            kind: "build",
+            isDefault: true
+        };
+        return {
+            label: 'run-component',
+            command: 'powershell',
+            problemMatcher: [],
+            type: 'shell',
+            args: commandArgs,
+            presentation,
+            detail: "Build and Run Component",
             group
         };
     }
 
 
     public createTasksConfiguration(): any {
+        let tasksInput = [{
+            id: "componentName",
+            description: "Specify regex expression for component name. E.g. BillingEngine, Billing*",
+            type: "promptString"
+        }];
         return {
             version: "2.0.0",
-            tasks: [this.createBuildTaskDescription()]
+            tasks: [this.createBuildTaskDescription(), this.createRunComponentTaskDescription()],
+            inputs: tasksInput
         };
     }
 }
@@ -101,7 +140,27 @@ async function promptToAddAssets(workspaceFolder: vscode.WorkspaceFolder) {
 export async function addInvokePSScript(generator: AssetGenerator) {
     return new Promise<void>((resolve, reject) => {
         const script = `
-start powershell {./.vscode./CompileAllComponents.ps1}`
+param (
+    [switch]$run,
+    [string]$componentRegex = "*"
+)
+
+set-alias ?: Invoke-Ternary -Option AllScope -Description "PSCX filter alias"
+filter Invoke-Ternary ([scriptblock]$decider, [scriptblock]$ifTrue, [scriptblock]$ifFalse)
+{
+    if (&$decider) {
+        &$ifTrue
+    } else {
+        &$ifFalse
+    }
+}
+
+Write-Host "Regex:" $componentRegex
+Write-Host "IsRun:" $run
+$scriptpath=".\\.vscode\\CompileAllComponents.ps1"
+$a = "$scriptpath -componentRegex " + $componentRegex + " -run " + (?: {$run} {'$true'} {'$false'})
+Start-Process -Verb runas -FilePath powershell.exe -ArgumentList $a -wait -PassThru | Out-Null
+`
         fs.writeFile(generator.invokePSFile, script, err => {
             if (err) {
                 return reject(err);
@@ -114,11 +173,27 @@ start powershell {./.vscode./CompileAllComponents.ps1}`
 export async function addCompilePSScript(generator: AssetGenerator) {
     return new Promise<void>((resolve, reject) => {
         const script = `
+param (
+    [bool]$run = $false,
+    [string]$componentRegex = "*"
+    )
+
+set-alias ?: Invoke-Ternary -Option AllScope -Description "PSCX filter alias"
+filter Invoke-Ternary ([scriptblock]$decider, [scriptblock]$ifTrue, [scriptblock]$ifFalse)
+{
+    if (&$decider) {
+        &$ifTrue
+    } else {
+        &$ifFalse
+    }
+}
+
 function RunBellaComponent($exePath){
-    Write-Host "Starting component $exePath"
     $pinfo = New-Object System.Diagnostics.ProcessStartInfo
     $pinfo.FileName = $exePath
-    $pinfo.Arguments = '-console -compileOnly'
+    $arguments = '-console ' + (?: {$run} {''} {'-compileOnly'})
+    Write-Host "Starting component $exePath, args: $arguments"
+    $pinfo.Arguments = $arguments
     $pinfo.RedirectStandardError = $true
     $pinfo.RedirectStandardOutput = $true
     $pinfo.UseShellExecute = $false
@@ -134,14 +209,18 @@ function RunBellaComponent($exePath){
 }
 
 $hasError = $false
-
-$files = Get-ChildItem "BellaDomain.exe" -Path ${generator.workspaceInfo.sourceCodeLocationRelativePath} -Recurse
+$path = 'src/Domain/*/' + $componentRegex
+$files = Get-ChildItem "BellaDomain.exe" -Path $path -Recurse
 
 $numberOfComponents=0
 
 foreach ($file in $files)
 {
+    if($file.FullName -notmatch '.*BellaDomain.exe'){
+        continue
+    }
     $numberOfComponents++
+    Write-Host $file.FullName
     $exitCode = RunBellaComponent($file.FullName)
     $hasError = $hasError -or -not ($exitCode -eq 0)
 }
