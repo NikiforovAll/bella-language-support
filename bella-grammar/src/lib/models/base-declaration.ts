@@ -9,6 +9,7 @@ export enum DeclarationType {
     Service,
     Procedure,
     Object,
+    CompositeObject,
     Enum
 }
 
@@ -20,4 +21,10 @@ export interface Range {
 export interface Position {
     row: number;
     col: number
+}
+
+export enum ObjectBase {
+    Alias,
+    POCO,
+    Collection
 }

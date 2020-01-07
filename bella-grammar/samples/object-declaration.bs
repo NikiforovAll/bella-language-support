@@ -1,0 +1,137 @@
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+object GlAccountNumber:String
+object GlAccountId:String
+object SubCode:String
+
+object GlAccount
+    number:GlAccountNumber
+    subCode:SubCode
+    description:String
+
+object GlAccounts:GlAccount[]
+
+
+setting PayableVat6GlAccountNumber:String = "190100"
+setting TelevisionTypeOfServiceAccountId:String = "8120002"
+setting DirectDebitSuspenseAccount:String = "116000"
+setting CashbackAccountNumber:String = "882000"
+setting TelephonieTypeOfServiceAccountId:String = "8110002"
+setting CrossDiscountGlAccountNumber:String = "815000"
+
+
+persistent object ExampleCatalog:ExamplePOCO[ExampleId]
+
+
+persistent object GlEventsByDate:GlEventsByType[DateTime]
+
+persistent object ServiceCategoryGlPartCatalog:ServiceCategoryGlPart[ServiceCategoryId]
+
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+persistent object TypeOfServiceGlPartCatalog:TypeOfServiceGlPart[TypeOfServiceId]
+
+persistent object BankAccountGlPartByServiceCategoryId:BankAccountGlPart[ServiceCategoryId]
+
+
+persistent object AccountLoginBlockInfos:AccountLoginBlockInfo[AccountId]
+persistent object AccountClaims:Claims[AccountId]
+
+persistent object UniqueKeys:UniqueKeyInfo[*]
+persistent object ResetUniqueKeys:ResetUniqueKeyInfo[*]
+persistent object RestoreUniqueKeys:RestoreUniqueKeyInfo[*]
+
+persistent object AuthorizationCredentials:LoginInfo[Login]
+persistent object UserRolesCollection:UserRole[*]
+
+persistent object UserRolesToUsersMap: LoginInfos[RoleName]
+persistent object UserSessionsCollection: UserSession[AccountId]
+persistent object AccountIdAccessTokenTuplesByAccessTokenHash:AccountIdAccessTokenTuples[String]
+
+persistent object RootPersistentObject
+    calendar:Calendar
+    dunningProcessesHistoryByServiceAccountIdByAccountId:DunningProcessesHistoryByServiceAccountId[AccountId]
+    serviceCategoryDunningPartMap:ServiceCategoryDunningPart[ServiceCategoryId]
+    invoiceOverviewByInvoiceId:InvoiceOverviewByInvoiceId
+    potentialInvoiceOverviewByInvoiceIdByServiceAccountId:InvoiceOverviewByInvoiceIdByServiceAccountId
+    serviceAccountDunningPartByServiceAccountId:ServiceAccountDunningPart[ServiceAccountId]
+    lockedDunningProcessMap:DunningProcessMap
+    usedDunningProcessIds:DunningProcessIds
+    dunningBlockReasons:FinancialBlockReason[FinancialBlockReasonId]
+    serviceAccountDunningBlocksByServiceAccountIdByAccountId:DunningBlocksByServiceAccountId[AccountId]
+    invoiceDunningBlocksByInvoiceIdByServiceAccountIdByAccountId:DunningBlocksByInvoiceIdByServiceAccountId[AccountId]
+    pendingDunningBlockCreationRequestByCorrelationId:DunningBlockCreationRequest[CorrelationId]
+    confirmedDunningBlockCreationRequestByCorrelationId:DunningBlockCreationRequest[CorrelationId]
+    endOfSupplyDunningProcessesByServiceAccountId:DunningProcesses[ServiceAccountId]
+    triplePlaySuspensionByServiceAccountId:TriplePlayServicesSuspension[ServiceAccountId]
+    criticalDunningProcessMap:DunningProcess[DunningProcessId]
+
+persistent object ApiUsersMap:ApiUser[Login]
+
+persistent object RunMigrationProceduresCatalog:ProcedureRunHistoryItem[ProcedureName]
+
+persistent object GlEventsByDate:GlEventsByType[DateTime]
+
+persistent object ServiceCategoryGlPartCatalog:ServiceCategoryGlPart[ServiceCategoryId]
+
+persistent object GlAccountCatalog:GlAccount[GlAccountId]
+
+persistent object TypeOfServiceGlPartCatalog:TypeOfServiceGlPart[TypeOfServiceId]
+
+persistent object BankAccountGlPartByServiceCategoryId:BankAccountGlPart[ServiceCategoryId]
+
+object AccountId:String
+object NutsCustomerAccountNumber:String
+object SelligentAccountId:String
+object MaxAccountId:Integer
+object FirstName:String
+object LastName:String
+object DateOfBirth:Date
+object Iban:String
+object SmileId:String
+object BusinessPartnerId:String
+object CustomerIdList:String[*]
+object Input:String
+object Inputs:Input[*]
+object ZipInput:Input
+object ZipInputs:ZipInput[*]
+object PageNumber:Integer
+object PerPage:Integer
+object FullName:String
+object StartOn:DateTime
+object EndOn:DateTime
+object SuspendOn:DateTime
+object ResumeOn:DateTime
+
+// General person information
+object Account
+    id:AccountId
+    firstName:FirstName[*]
+    initials:Initials
+    prefix:Prefix
+    lastName:LastName
+    fullName:FullName = firstName ++= 3   (if (IsEmpty(prefix, test), " ", (" " + prefix + " "))) + lastName
+    gender:Gender
+    dateOfBirth:DateOfBirth
+    contactInfo:ContactInfo
+
+object AccountIds:AccountId[*]
+
+
+enum BalanceRecordRevert
+    NotSpecified
+    Reverted
+    NotReverted
+
+
+object GlEventLog
+    currentGlEvent:GlEvent
+    historyGlEvents:GlEvents
+
+object GlEventLogsBySourceId:GlEventLog[SourceId]
+
+object GlEventsByType:GlEventLogsBySourceId[GlEventType]
+
+object GlEvents:GlEvent[]
+
+object TempGLEvents:GlEvent[]

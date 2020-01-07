@@ -4,8 +4,16 @@ import { CompilationUnitContext, BellaParser} from '../grammars/.antlr4/BellaPar
 import { BellaDeclarationVisitor } from "./bella-declaration.visitor";
 // import {ComponentServiceDeclaration } from './models/component-service-declaration';
 
-export {BaseDeclaration, DeclarationType, Position, Range } from './models/base-declaration';
+export {
+    BaseDeclaration,
+    DeclarationType,
+    Position,
+    Range,
+    ObjectBase } from './models/base-declaration';
 
+export {
+    SimpleObjectDeclaration,
+    CompositeObjectDeclaration} from './models/object-declaration';
 export class BellaLanguageSupport {
     public static process(expr: string): Token[]{
         return this.generateLexer(expr)

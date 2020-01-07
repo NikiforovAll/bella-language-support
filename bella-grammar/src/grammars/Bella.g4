@@ -20,33 +20,121 @@ compilationUnit
  */
 typeDeclaration
     : componentServiceDeclaration
+    | objectDeclaration
+    | settingsDeclaration
+    | enumDeclaration
     // :   classOrInterfaceModifier* classDeclaration
-    // |   classOrInterfaceModifier* enumDeclaration
     // |   classOrInterfaceModifier* interfaceDeclaration
     // |   classOrInterfaceModifier* annotationTypeDeclaration
     // |   ';'
     ;
 
+componentServiceDeclaration
+    :   HOSTED SERVICE Identifier ON enclosedServiceIdentifier ;
 
-componentServiceDeclaration : HOSTED SERVICE Identifier ON enclosedServiceIdentifier ;
+enclosedServiceIdentifier
+    :   OBRACKET Identifier CBRACKET
+    |   Identifier
+    ;
+
+objectDeclaration
+    :   simpleObjectDeclaration
+    |   compositeObjectDeclaration
+    ;
+
+simpleObjectDeclaration
+    : OBJECT_MODIFIER* OBJECT Identifier COLON type
+    ;
+
+compositeObjectDeclaration
+    :   OBJECT_MODIFIER* OBJECT Identifier objectBody
+    ;
+
+objectBody
+    :   (objectFieldDeclaration)+
+    ;
+objectFieldDeclaration
+    :   Identifier COLON type expression?
+    ;
+
+settingsDeclaration: SETTING objectFieldDeclaration;
+
+enumDeclaration
+    :   ENUM Identifier enumbBody
+    ;
+enumbBody
+    :   Identifier+
+    ;
+
+// STATEMENTS AND EXPRESSIONS
+statement
+    :   expression
+    ;
+expression
+    : primary
+    ;
+
+primary
+    :   '(' expression ')'
+    |   literal
+    |   Identifier
+    ;
+
+collectionDeclaration
+    : arrayDeclaration
+    | dictionaryDeclaration
+    ;
+
+arrayDeclaration
+    : (Identifier|primitiveType) OBRACKET '*'? CBRACKET
+    ;
+
+dictionaryDeclaration
+    : (Identifier|primitiveType) OBRACKET type CBRACKET
+    ;
+
+type
+    :   collectionDeclaration
+    |   Identifier
+    |   primitiveType
+    // |   systemType ('[' ']')*
+    ;
+
+// primitiveType
+//     : 'String'
+//     ;
+primitiveType
+    :   STRING
+    |   INT
+    |   BOOLEAN
+    |   DECIMAL
+    |   DATE
+    |   DATETIME
+    ;
+
+INT : I N T E G E R;
+STRING : S T R I N G;
+BOOLEAN : B O O L E A N;
+DECIMAL : D E C I M A L;
+DATE : D A T E;
+DATETIME : D A T E T I M E;
+
 /*
  * Lexer Rules
  */
 
-SERVICE:        'service';
-ON     :             'on';
-
-HOSTED : ('hosted' | 'external') ;
+COLON:                      ':';
 OBRACKET:                   '[';
 CBRACKET:                   ']';
+SERVICE:        'service';
+ON     :             'on';
+HOSTED : ('hosted' | 'external') ;
+OBJECT: 'object';
+OBJECT_MODIFIER: 'persistent';
 
 
-enclosedServiceIdentifier
-    : OBRACKET Identifier CBRACKET
-    | Identifier
-    ;
-
-
+ENUM: 'enum' ;
+SETTING : 'setting';
 //
 // Whitespace and comments
 //
@@ -71,7 +159,37 @@ QUOTE	:	'\'' -> skip;
 
 Identifier: IdentifierStart IdentifierPart*;
 
+literal
+    :   IntegerLiteral
+    |   FloatingPointLiteral
+    |   CharacterLiteral
+    |   StringLiteral
+    |   BooleanLiteral
+    |   NullLiteral
+    ;
 
+// ?3.10.4 Character Literals
+
+CharacterLiteral
+    :   QUOTE SingleCharacter QUOTE
+    |   QUOTE EscapeSequence QUOTE
+    ;
+
+fragment
+SingleCharacter
+    :   ~['\\]
+    ;
+// ?3.10.5 String Literals
+
+fragment
+StringCharacters
+    :   StringCharacter+
+    ;
+fragment
+StringCharacter
+    :   ~['\\]
+    |   EscapeSequence
+    ;
 /// Null Literals
 
 NullLiteral:                'null';
@@ -84,13 +202,50 @@ BooleanLiteral
         |                   'false';
 
 /// Numeric Literals
+
+// ?3.10.2 Floating-Point Literals
+
+FloatingPointLiteral
+    :   DecimalFloatingPointLiteral
+    ;
+
+fragment
+Digits
+    :   Digit (DigitOrUnderscore* Digit)?
+    ;
+fragment
+DigitOrUnderscore
+    :   Digit
+    |   '_'
+    ;
+
+fragment
+Digit
+    :   '0'
+    |   NonZeroDigit
+    ;
+fragment
+NonZeroDigit
+    :   [1-9]
+    ;
+
+fragment
+DecimalFloatingPointLiteral
+    :   Digits '.' Digits? ExponentPart?
+    |   '.' Digits ExponentPart?
+    |   Digits ExponentPart
+    |   Digits
+    ;
 DecimalLiteral
         :                   DecimalIntegerLiteral '.' [0-9] [0-9_]*
         |                   '.' [0-9] [0-9_]*
         |                    DecimalIntegerLiteral
         ;
 
+// ?3.10.1 Integer Literals
 
+IntegerLiteral
+    :   DecimalIntegerLiteral;
 
 /// Keywords
 
@@ -109,13 +264,15 @@ In:                             'in';
 As:                             'as';
 
 /// String Literals
-StringLiteral:                 '"' DoubleStringCharacter* '"'
-             |                 '\'' SingleStringCharacter* '\''
-             ;
+StringLiteral
+    :   '"' DoubleStringCharacter* '"'
+    |   '\'' SingleStringCharacter* '\''
+    ;
 
 WhiteSpaces:                    [\t\u000B\u000C\u0020\u00A0]+ -> channel(HIDDEN);
 
 LineTerminator:                 [\r\n\u2028\u2029] -> channel(HIDDEN);
+// LineTerminator:                 [\r\n\u2028\u2029];
 
 /// Comments
 
@@ -606,3 +763,32 @@ fragment RegularExpressionClassChar
 fragment RegularExpressionBackslashSequence
     : '\\' ~[\r\n\u2028\u2029]
     ;
+
+// characters
+fragment A : [aA];
+fragment B : [bB];
+fragment C : [cC];
+fragment D : [dD];
+fragment E : [eE];
+fragment F : [fF];
+fragment G : [gG];
+fragment H : [hH];
+fragment I : [iI];
+fragment J : [jJ];
+fragment K : [kK];
+fragment L : [lL];
+fragment M : [mM];
+fragment N : [nN];
+fragment O : [oO];
+fragment P : [pP];
+fragment Q : [qQ];
+fragment R : [rR];
+fragment S : [sS];
+fragment T : [tT];
+fragment U : [uU];
+fragment V : [vV];
+fragment W : [wW];
+fragment X : [xX];
+fragment Y : [yY];
+fragment Z : [zZ];
+fragment SPACE : ' ';

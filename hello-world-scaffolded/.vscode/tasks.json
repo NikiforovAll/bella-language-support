@@ -21,7 +21,7 @@
                 "showReuseMessage": true,
                 "clear": false
             },
-            "detail": "Builds All Components",
+            "detail": "Build All Components",
             "group": {
                 "kind": "build",
                 "isDefault": true
