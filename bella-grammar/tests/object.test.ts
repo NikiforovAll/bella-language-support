@@ -21,8 +21,8 @@ describe("object-declaration", () => {
 });
 
 describe("object-declaration-composite", () => {
-    it("should return parsed alias", () => {
-        let input = `
+    it("should return parsed composite object", () => {
+        let input = `//skipped line
 object TestName
     id:String
     category:CustomCategoryType
@@ -37,8 +37,13 @@ object TestName
         let declaration = d as CompositeObjectDeclaration;
         assert.ok(declaration);
         expect(declaration.name).to.equal('TestName', 'name of simple object is parsed incorrectly');
-        expect(declaration.objectBase).to.equal(ObjectBase.POCO);
+        expect(declaration.objectBase).to.equal(ObjectBase.Composite);
+        expect(declaration.range.endPosition.row).to.equal(4);
         expect(declaration.fields).to.have.lengthOf(3);
+        let [f1, f2, f3] = declaration.fields;
+        expect(f1.returnType).to.have.property('objectBase', ObjectBase.PrimitiveType);
+        expect(f2.returnType).to.have.property('objectBase', ObjectBase.Alias);
+        expect(f3.returnType).to.have.property('objectBase', ObjectBase.Collection);
     });
 });
 

@@ -60,9 +60,9 @@ objectFieldDeclaration
 settingsDeclaration: SETTING objectFieldDeclaration;
 
 enumDeclaration
-    :   ENUM Identifier enumbBody
+    :   ENUM Identifier enumBody
     ;
-enumbBody
+enumBody
     :   Identifier+
     ;
 

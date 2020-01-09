@@ -1,14 +1,21 @@
-// ...
 import { BellaVisitor } from "../grammars/.antlr4/BellaVisitor";
 import {
     ComponentServiceDeclarationContext,
     SimpleObjectDeclarationContext,
     CompositeObjectDeclarationContext,
-    ObjectFieldDeclarationContext} from "../grammars/.antlr4/BellaParser"
+    ObjectFieldDeclarationContext,
+    TypeContext,
+    EnumDeclarationContext,
+    EnumBodyContext} from "../grammars/.antlr4/BellaParser"
 import { AbstractParseTreeVisitor } from "antlr4ts/tree/AbstractParseTreeVisitor";
-import { BaseDeclaration, DeclarationType, ObjectBase } from "./models/base-declaration";
+import { BaseDeclaration} from "./models/base-declaration";
 import { ComponentServiceDeclaration } from "./models/component-service-declaration";
-import { SimpleObjectDeclaration, CompositeObjectDeclaration } from "./models/object-declaration";
+import { SimpleObjectDeclaration, CompositeObjectDeclaration, BaseObject } from "./models/object-declaration";
+import { TypeDeclaration } from "./models/type-declaration";
+import { DeclarationType } from "./models/declaration-type.enum";
+import { ObjectBase } from "./models/object-base.enum";
+import { EnumDeclaration } from "./models/enum-declaration";
+import { TerminalNode } from "antlr4ts/tree/TerminalNode";
 
 //TODO: fix any visitor result
 export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BaseDeclaration> {
@@ -22,12 +29,12 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     visitSimpleObjectDeclaration(context: SimpleObjectDeclarationContext): SimpleObjectDeclaration{
         let name = context.Identifier().text;
         let line = context.start.line - 1;
+        let returnTypeDeclaration = this.visitTypeLocal(context.type());
         let sod: SimpleObjectDeclaration = {
             name,
-            range: {
-                startPosition: {row: line, col: 0}, endPosition: {row: line, col: Number.MAX_SAFE_INTEGER}
-            },
+            range: BellaVisitorUtils.createRange(line, 0, line),
             type: DeclarationType.Object,
+            returnType: this.visitTypeLocal(context.type()),
             objectBase: ObjectBase.Alias
         };
         this.declarations.push(sod);
@@ -37,41 +44,35 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     visitCompositeObjectDeclaration(context: CompositeObjectDeclarationContext): CompositeObjectDeclaration {
         let name = context.Identifier().text;
-        let line = context.start.line - 1;
+        let startLine = context.start.line - 1;
+        let endLine = (context.stop?.line || startLine + 1 ) - 1;
         let body = context.objectBody();
-        let fields = body.children?.map(c => this.visitObjectFieldDeclaration(c as ObjectFieldDeclarationContext)) || [];
-        // let firstChildren = body.tryGetChild(0, ObjectFieldDeclarationContext);
-        // if(firstChildren){
-        //     let SimpleObjectDeclaration = this.visitObjectFieldDeclaration(firstChildren);
-        // }
+        let fields = body.children?.map(c => this.visitObjectFieldDeclarationLocal(c as ObjectFieldDeclarationContext)) || [];
         let sod: CompositeObjectDeclaration = {
             name,
-            range: {
-                startPosition: {row: line, col: 0}, endPosition: {row: line, col: Number.MAX_SAFE_INTEGER}
-            },
+            range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type: DeclarationType.Object,
-            objectBase: ObjectBase.POCO,
+            objectBase: ObjectBase.Composite,
             fields
         };
         this.declarations.push(sod);
         return sod;
     }
 
-    visitObjectFieldDeclaration(context: ObjectFieldDeclarationContext): SimpleObjectDeclaration {
-        let name = context.Identifier().text;
-        let line = context.start.line - 1;
-        let sod: SimpleObjectDeclaration = {
+    visitEnumDeclaration(context: EnumDeclarationContext): BaseDeclaration {
+        let name = context.Identifier().text
+        let startLine = context.start.line - 1;
+        let endLine = (context.stop?.line || startLine + 1 ) - 1;
+        let body = context.enumBody();
+        // let fields = body.children?.map(c => this.visitObjectFieldDeclaration(c as ObjectFieldDeclarationContext)) || [];
+        let sod: EnumDeclaration = {
             name,
-            range: {
-                // TODO: MINOR fix this, this is not completely correct,
-                // because object field declaration could contain expression
-                startPosition: {row: line, col: 0}, endPosition: {row: line, col: Number.MAX_SAFE_INTEGER}
-            },
+            range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type: DeclarationType.Object,
-            // TODO: MAJOR fix this, need to calculate real object base
-            objectBase: ObjectBase.Alias
+            //TODO: add parsing of enum entries
+            enumEntries: this.visitEnumBodyLocal(body)
         };
-        // this.declarations.push(sod);
+        this.declarations.push(sod);
         return sod;
     }
 
@@ -83,12 +84,77 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             serviceName: serviceName,
             serviceTransportName: context.enclosedServiceIdentifier().text,
             name: serviceName,
-            range: {
-                startPosition: {row: line, col: 0}, endPosition: {row: line, col: Number.MAX_SAFE_INTEGER}
-            },
+            range: BellaVisitorUtils.createRange(line, 0, line),
             type: DeclarationType.ComponentService
         }
         this.declarations.push(csd);
         return csd;
+    }
+
+    // top level declarations (END)
+
+    // local declarations
+    visitObjectFieldDeclarationLocal(context: ObjectFieldDeclarationContext): SimpleObjectDeclaration {
+        let name = context.Identifier().text;
+        let line = context.start.line - 1;
+        let returnType = context.type();
+        let sod: SimpleObjectDeclaration = {
+            name,
+            range: BellaVisitorUtils.createRange(line, 0, line, context.start.charPositionInLine + context.text.length),
+            type: DeclarationType.Object,
+            objectBase: ObjectBase.Field,
+            returnType: this.visitTypeLocal(context.type())
+        };
+        // this.declarations.push(sod);
+        return sod;
+    }
+
+    visitTypeLocal(context: TypeContext): TypeDeclaration {
+        let line = context.start.line - 1;
+
+        let endCol = context.start.charPositionInLine + context.text.length
+        let td: TypeDeclaration = {
+            name: context.text,
+            range: BellaVisitorUtils.createRange(
+                line,
+                context.start.charPositionInLine,
+                line,
+                endCol
+            ),
+            type: DeclarationType.Type,
+            objectBase: BellaVisitorUtils.getCollectionTypeFromContext(context),
+            fullQualifier: context.text
+        };
+        return td;
+    }
+
+    visitEnumBodyLocal(context: EnumBodyContext): BaseDeclaration[] {
+        let res = context.Identifier().map((enumEntry: TerminalNode): BaseDeclaration => {
+            let startLine = enumEntry.symbol.line - 1;
+            return {
+                name: enumEntry.text,
+                type: DeclarationType.EnumEntry,
+                range: BellaVisitorUtils.createRange(startLine, 0, startLine)
+            }
+        });
+        return res;
+    }
+}
+
+namespace BellaVisitorUtils {
+    export function getCollectionTypeFromContext(context: TypeContext): ObjectBase {
+        if(!!context.collectionDeclaration()) {
+            return ObjectBase.Collection;
+        }
+        if(!!context.primitiveType()) {
+            return ObjectBase.PrimitiveType;
+        }
+        return ObjectBase.Alias;
+    }
+
+    export function createRange(x1: number, x2: number, y1: number, y2: number = Number.MAX_SAFE_INTEGER) {
+        return {
+            startPosition: {row: x1, col: x2}, endPosition: {row: y1, col: y2}
+        };
     }
 }

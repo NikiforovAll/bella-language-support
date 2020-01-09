@@ -1,0 +1,27 @@
+procedure CreateEmployeeAccount(CreateEmployeeAccountRequestDto, out AccountId)
+    if IsEmpty(CreateEmployeeAccountRequestDto.lastName)
+        error[EmptyLastName] "Employee account last name cannot be empty"
+    if IsEmpty(CreateEmployeeAccountRequestDto.contactInfo.email)
+        error[EmptyEmail] "Employee account email cannot be empty"
+
+    AccountId = IdGenerator.GetNextAvailableId(TypeOfId.AccountId)
+    Email = CreateEmployeeAccountRequestDto.contactInfo.email
+    Name = CreateEmployeeAccountRequestDto.firstName + " " + CreateEmployeeAccountRequestDto.lastName
+
+    EmployeeAccount = CreateEmployeeAccountRequestDto.FromDto(AccountId)
+    Accounts[AccountId] = EmployeeAccount
+    EmployeeAccounts[AccountId] = EmployeeAccount
+    AccountIdsByEmail[Email] ++= AccountId
+
+object EmployeeAccount:Account
+
+object Account
+    id:AccountId
+    firstName:FirstName
+    initials:Initials
+    prefix:Prefix
+    lastName:LastName
+    fullName:FullName = firstName + (if (IsEmpty(prefix), " ", (" " + prefix + " "))) + lastName
+    gender:Gender
+    dateOfBirth:DateOfBirth
+    contactInfo:ContactInfo

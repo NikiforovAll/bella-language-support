@@ -6,10 +6,11 @@ import { BellaDeclarationVisitor } from "./bella-declaration.visitor";
 
 export {
     BaseDeclaration,
-    DeclarationType,
     Position,
-    Range,
-    ObjectBase } from './models/base-declaration';
+    Range} from './models/base-declaration';
+
+export { ObjectBase } from './models/object-base.enum';
+export { DeclarationType } from './models/declaration-type.enum';
 
 export {
     SimpleObjectDeclaration,
