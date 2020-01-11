@@ -5,6 +5,7 @@ import * as glob from 'glob';
 import * as path from 'path'
 import * as fs from 'fs'
 import { LSPDeclarationRegistry } from "./lsp-declaration-registry";
+import { LSPReferenceRegistry } from "./lsp-references-registry";
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };
@@ -14,8 +15,9 @@ export default class BellaAnalyzer {
     private uriToDeclarations: FileDeclarations = {}
     private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
     private uriToFileContent: Texts = {}
+    public declarationCache: LSPDeclarationRegistry;
+    public referencesCache: LSPReferenceRegistry;
     private connection: LSP.Connection;
-    public cache: LSPDeclarationRegistry;
 
     /**
    * Initialize the Analyzer based on a connection to the client and an optional
@@ -71,7 +73,8 @@ export default class BellaAnalyzer {
     public constructor(parser: LSPParserProxy, connection: LSP.Connection) {
         this.parser = parser
         this.connection = connection;
-        this.cache = new LSPDeclarationRegistry();
+        this.declarationCache = new LSPDeclarationRegistry();
+        this.referencesCache = new LSPReferenceRegistry();
     }
 
     /**
@@ -100,7 +103,8 @@ export default class BellaAnalyzer {
         try {
             this.connection.console.log(`Analyzing ${uri}`)
             let res = this.parser.parse(contents);
-            this.cache.setDeclarations(res, document.uri);
+            this.declarationCache.setDeclarations(res.declarations, uri);
+            this.referencesCache.setReferences(res.references, uri);
         } catch (error) {
             this.connection.console.warn(`Parsing Error: ${error}`);
         }

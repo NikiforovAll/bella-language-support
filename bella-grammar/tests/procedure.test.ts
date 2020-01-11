@@ -1,5 +1,6 @@
-import { BellaLanguageSupport, ProcedureDeclaration, ThrowingErrorListener, BellaErrorStrategy } from "../src/lib/index";
-import { expect, assert } from "chai";
+import { expect } from 'chai';
+import { BellaErrorStrategy, BellaLanguageSupport, ProcedureDeclaration } from '../src/lib';
+
 
 describe("procedure-declaration", () => {
     it("should return parsed procedure", () => {
@@ -14,9 +15,11 @@ procedure TestProcedure(Param1, Param2, out ParamOut1)
             startPosition: input.indexOf(param1) - 1,
             endPosition: input.indexOf(param1) + param1.length - 1
         };
-        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
         // let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
-        // let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parse(input);
+        // let parser = BellaLanguageSupport.generateParser(input);
+        // let tree = parser.statement();
         let visitor = BellaLanguageSupport.generateVisitor();
         visitor.visit(tree);
         let declarations = visitor.declarations;
@@ -44,9 +47,8 @@ specific procedure Test1(TS1, out T2)
     AdditionalTaskInformationItemList = new
     AdditionalTaskInformationItemList ++= AdditionalTaskInformationItem`;
 
-        // let tree = BellaLanguageSupport.parse(input);
-        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
-
+        let tree = BellaLanguageSupport.parse(input);
+        // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
         let visitor = BellaLanguageSupport.generateVisitor();
         visitor.visit(tree);
         let declarations = visitor.declarations;

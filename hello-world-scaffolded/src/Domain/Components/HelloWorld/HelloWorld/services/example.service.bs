@@ -8,6 +8,8 @@ object GlAccountNumber:String
 object GlAccountId:String
 object SubCode:String
 
+object Code: SubCode
+
 object GlAccount
     number:GlAccountNumber
     subCode:SubCode

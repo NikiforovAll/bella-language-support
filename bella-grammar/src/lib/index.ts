@@ -31,6 +31,9 @@ export { ProcedureDeclaration } from './models/procedure-declaration';
 export { FormulaDeclaration } from './models/formula-declaration';
 export { ThrowingErrorListener } from './error-listener';
 export { BellaErrorStrategy } from './bella-error-strategy';
+
+export { BellaReference } from './models/bella-reference';
+
 export class BellaLanguageSupport {
     public static tokenize(expr: string): Token[]{
         return this.generateLexer(expr)
@@ -63,7 +66,8 @@ export class BellaLanguageSupport {
         let parser = BellaLanguageSupport.generateParser(expr);
         parser.errorHandler = new BellaErrorStrategy();
         // parser.errorHandler = new BailErrorStrategy();
-        return parser.compilationUnit();
+        let ctx = parser.compilationUnit();
+        return ctx;
     }
 
     public static generateVisitor(): BellaDeclarationVisitor {
@@ -72,6 +76,7 @@ export class BellaLanguageSupport {
 
     public static generateParser(input: string): BellaParser {
         let lexer = this.generateLexer(input);
+        // let names = lexer.getAllTokens().filter(t => t.type === BellaParser.Identifier);
         var commonTokenStream = new CommonTokenStream(lexer);
         var parser = new BellaParser(commonTokenStream);
         return parser;

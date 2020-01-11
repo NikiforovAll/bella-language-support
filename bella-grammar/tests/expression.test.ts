@@ -1,12 +1,11 @@
-import { BellaLanguageSupport, ProcedureDeclaration } from "../src/lib/index";
-import { expect } from "chai";
+import { BellaErrorStrategy, BellaLanguageSupport } from "../src/lib/index";
 
 describe("expression-simple-lambda", () => {
     it("should return parsed expression", () => {
         let input = `
 TestCollection.Where(i => i.Data.Date() == now)`;
 
-        let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
         let visitor = BellaLanguageSupport.generateVisitor();
         visitor.visit(tree);
     });
@@ -22,7 +21,7 @@ PropositionFilteredCollection = PropositionCollection.Where(p => p.startOn.Date(
 else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.EndOn
 PropositionFilteredCollection = PropositionCollection.Where(p => p.endOn.Date() < ProductCatalogDateFilter.targetDate.Date())`;
 
-        let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
         let visitor = BellaLanguageSupport.generateVisitor();
         visitor.visit(tree);
     });

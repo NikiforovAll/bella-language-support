@@ -87,16 +87,18 @@ export default class BellaServer {
 	}
 
 	private onDocumentSymbol(params: LSP.DocumentSymbolParams): LSP.SymbolInformation[] {
-		let handler = new DocumentSymbolHandler(this.analyzer.cache);
+		let handler = new DocumentSymbolHandler(this.analyzer.declarationCache);
 		return handler.findSymbols(params);
 	}
 	private onWorkspaceSymbol(params: LSP.WorkspaceSymbolParams): LSP.SymbolInformation[] {
-		let handler = new DocumentSymbolHandler(this.analyzer.cache);
+		let handler = new DocumentSymbolHandler(this.analyzer.declarationCache);
 		return handler.findSymbolsInWorkspace(params);
 	}
 
 	private onDefinition(params: LSP.TextDocumentPositionParams) {
-		let handler = new DefinitionHandler(this.analyzer.cache);
+		let handler = new DefinitionHandler(
+			this.analyzer.declarationCache,
+			this.analyzer.referencesCache);
 		return handler.findDefinitions(params);
 	}
 

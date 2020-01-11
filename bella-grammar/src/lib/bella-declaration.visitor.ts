@@ -15,7 +15,9 @@ import {
     ProcedureParamListContext,
     ProcedureParamContext,
     FormulaDeclarationContext,
-    ProcedureBodyContext} from "../grammars/.antlr4/BellaParser"
+    ProcedureBodyContext,
+    BellaParser,
+    StatementContext} from "../grammars/.antlr4/BellaParser"
 import { AbstractParseTreeVisitor } from "antlr4ts/tree/AbstractParseTreeVisitor";
 import { BaseDeclaration} from "./models/base-declaration";
 import { ComponentServiceDeclaration } from "./models/component-service-declaration";
@@ -27,8 +29,8 @@ import { EnumDeclaration } from "./models/enum-declaration";
 import { TerminalNode } from "antlr4ts/tree/TerminalNode";
 import { ServiceDeclaration } from "./models/service-declaration";
 import { ProcedureDeclaration } from "./models/procedure-declaration";
-import { Token } from "antlr4ts";
 import { FormulaDeclaration } from "./models/formula-declaration";
+import { BellaReference } from "./models/bella-reference";
 
 //TODO: fix any visitor result
 export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BaseDeclaration> {
@@ -38,6 +40,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     // top level declarations
     public declarations: BaseDeclaration[] = [];
+    public references: BellaReference[] = [];
 
     visitSimpleObjectDeclaration(context: SimpleObjectDeclarationContext): SimpleObjectDeclaration{
         let type = DeclarationType.Object;
@@ -54,6 +57,13 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             returnType: returnTypeDeclaration,
             objectBase: ObjectBase.Alias
         };
+        if(returnTypeDeclaration.objectBase === ObjectBase.Alias){
+            this.references.push({
+                nameTo: returnTypeDeclaration.name,
+                range: returnTypeDeclaration.range,
+                referenceTo: DeclarationType.Object
+            });
+        }
         this.declarations.push(sod);
         return sod;
     }
@@ -136,7 +146,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let signature = context.procedureSignature().text.replace("out", "out ");
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || (startLine + 1)) - 1;
-        let calls = this.visitProcedureBodyLocal(context.procedureBody());
+        // let calls = this.visitProcedureBodyLocal(context.procedureBody());
         let pd: ProcedureDeclaration = {
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
@@ -159,6 +169,19 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         this.declarations.push(fd);
         return fd;
     }
+
+    // this is not invoked when there is already top level parser rule invoked
+    visitStatement(context: StatementContext): BaseDeclaration{
+        let fd: FormulaDeclaration = {
+            name: 'Expression',
+            range: BellaVisitorUtils.createRange(0, 0, 0),
+            type: DeclarationType.Object
+        };
+        const identifierTokenNumber = BellaParser.Identifier;
+        let filtered = context.getTokens(identifierTokenNumber).filter((t: TerminalNode) => t.text);
+        return fd;
+    }
+
 
     // top level declarations (END)
 
@@ -248,13 +271,13 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         return res;
     }
 
-    visitProcedureBodyLocal(context: ProcedureBodyContext): BaseDeclaration[] {
-        // TODO: major - get this on the fly
-        // TODO: major - add complete bella grammar to get all real identifiers separate from keywords
-        const identifierTokenNumber = 56;
-        let filtered = context.getTokens(56).filter((t: TerminalNode) => t.text);
-        return [];
-    }
+    // visitProcedureBodyLocal(context: ProcedureBodyContext): BaseDeclaration[] {
+    //     // TODO: major - get this on the fly
+    //     // TODO: major - add complete bella grammar to get all real identifiers separate from keywords
+    //     const identifierTokenNumber = BellaParser.Identifier;
+    //     let filtered = context.getTokens(identifierTokenNumber).filter((t: TerminalNode) => t.text);
+    //     return [];
+    // }
 }
 
 namespace BellaVisitorUtils {

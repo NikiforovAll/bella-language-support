@@ -1,4 +1,4 @@
-import { BellaLanguageSupport } from "bella-grammar";
+import { BellaLanguageSupport, BaseDeclaration, BellaReference } from "bella-grammar";
 
 export class LSPParserProxy {
 
@@ -11,7 +11,15 @@ export class LSPParserProxy {
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor();
         visitor.visit(tree);
-        let declarations = visitor.declarations;
-        return declarations;
+        let {declarations, references} = visitor;
+        return {
+            declarations, references
+        };
     }
+
+}
+
+export interface ParsingResult {
+    declarations: BaseDeclaration[];
+    references: BellaReference[];
 }
