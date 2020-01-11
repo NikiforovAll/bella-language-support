@@ -12,28 +12,25 @@
 grammar Bella;
 
 compilationUnit
-    :   typeDeclaration* EOF
+    : typeDeclaration* EOF
+    | statement* EOF
     ;
 
-/*
- * Parser Rules
- */
 typeDeclaration
     : componentServiceDeclaration
     | objectDeclaration
     | settingsDeclaration
     | enumDeclaration
-    // :   classOrInterfaceModifier* classDeclaration
-    // |   classOrInterfaceModifier* interfaceDeclaration
-    // |   classOrInterfaceModifier* annotationTypeDeclaration
-    // |   ';'
+    | serviceDeclaration
+    | procedureDeclaration
+    | formulaDeclaration
     ;
 
 componentServiceDeclaration
     :   HOSTED SERVICE Identifier ON enclosedServiceIdentifier ;
 
 enclosedServiceIdentifier
-    :   OBRACKET Identifier CBRACKET
+    :   LBRACK Identifier RBRACK
     |   Identifier
     ;
 
@@ -43,18 +40,23 @@ objectDeclaration
     ;
 
 simpleObjectDeclaration
-    : OBJECT_MODIFIER* OBJECT Identifier COLON type
+    : OBJECT_MODIFIER? OBJECT Identifier COLON type
     ;
 
 compositeObjectDeclaration
-    :   OBJECT_MODIFIER* OBJECT Identifier objectBody
+    :   OBJECT_MODIFIER? OBJECT Identifier objectBody
     ;
 
 objectBody
     :   (objectFieldDeclaration)+
     ;
 objectFieldDeclaration
-    :   Identifier COLON type expression?
+    :   Identifier COLON type ( objectFieldDeclarationRest | expression)
+    ;
+
+// TODO: replace it with approriate grammar parsing of expressions
+objectFieldDeclarationRest
+    : .*?
     ;
 
 settingsDeclaration: SETTING objectFieldDeclaration;
@@ -62,23 +64,176 @@ settingsDeclaration: SETTING objectFieldDeclaration;
 enumDeclaration
     :   ENUM Identifier enumBody
     ;
+
 enumBody
-    :   Identifier+
+    :   (Identifier (ASSIGN literal)*)+
+    ;
+
+serviceDeclaration
+    :   SERVICE Identifier serviceBody
+    ;
+
+serviceBody
+    :   serviceDeclarationEntry+
+    ;
+
+// paramList is not needed atm
+serviceDeclarationEntry
+    : Identifier LPAREN .*? RPAREN (ONEWAY? | COLON .*?)
+    ;
+
+procedureDeclaration
+    :  ProcedureModifier? PROCEDURE procedureSignature procedureBody
+    ;
+
+procedureSignature
+    :   Identifier LPAREN procedureParamList? RPAREN
+    ;
+procedureParamList
+    : procedureParam (COMMA procedureParam)*
+    ;
+
+procedureParam
+    : 'out'? (Identifier COLON)? type
+    ;
+
+procedureBody: statement*?;
+
+// TODO: more robust approach for formula parsing
+formulaDeclaration
+    :  ProcedureModifier? FORMULA formulaSignature ASSIGN? expression
+    ;
+formulaSignature
+    : procedureSignature COLON type
     ;
 
 // STATEMENTS AND EXPRESSIONS
+
+/// Keywords
+
+Break:                          'break';
+Else:                           'else';
+New:                            'new';
+Let:                            'let';
+Return:                         'return';
+Continue:                       'continue';
+This:                           'this';
+Default:                        'default';
+If:                             'if';
+Error:                          'error';
+ForEach:                        'foreach';
+In:                             'in';
+Call:                           'call';
+As:                             'as';
+Not:                            'not';
+
 statement
-    :   expression
-    ;
-expression
-    : primary
+    : ifStatement
+    | forEachStatement
+    | callStatement
+    | errorStatement
+    | localVariableDeclarationStatement
+    | statementExpression
     ;
 
-primary
-    :   '(' expression ')'
-    |   literal
-    |   Identifier
+
+expression
+    :   literal
+    |   LPAREN expression RPAREN
+    |   expression DOT PrimitiveType
+    |   expression DOT Identifier
+    |   expression DOT explicitGenericInvocation// | Identifier | PrimitiveType)
+    |   expression LBRACK expression RBRACK
+    // |   expression LPAREN expressionList? RPAREN
+    |   Not expression
+    |   expression As type
+    |   expression ('++' | '--')
+    |   ('+'|'-'|'++'|'--') expression
+    |   ('~'|'!') expression
+    |   expression ('*'|'/'|'%') expression
+    |   expression ('+'|'-') expression
+    |   expression ('<=' | '>=' | '>' | '<') expression
+    |   expression ('==' | '!=' | '<>') expression
+    |   expression '&' expression
+    |   expression '^' expression
+    |   expression '|' expression
+    |   expression '&&' expression
+    |   expression '||' expression
+    |   If LPAREN expression COMMA expression COMMA expression RPAREN
+    |   <assoc=right> expression
+        (   '='
+        |   LAMBDA_LIKE
+        |   '+='
+        |   '++='
+        |   '-='
+        |   '--='
+        |   '*='
+        |   '/='
+        |   '&='
+        |   '|='
+        |   '^='
+        |   '>>='
+        |   '>>>='
+        |   '<<='
+        |   '%='
+        )
+        expression
+    | (Identifier | PrimitiveType)
     ;
+
+explicitGenericInvocation
+    : (Identifier | PrimitiveType) arguments
+    ;
+
+arguments
+    :   LPAREN expressionList? RPAREN
+    ;
+
+expressionList
+    :  'out'? expression (',' 'out'? expression)*
+    ;
+
+callStatement
+    : Call explicitGenericInvocation
+    ;
+ifStatement
+    : If expression
+    | Else If expression
+    | Else
+    // : If expression blockStatement (Else If expression blockStatement)? (Else blockStatement)?
+    ;
+// TODO: blocked statement engulfing is ambiguous since whitespacing is not supported see ambiguous.bs
+forEachStatement
+    : ForEach Identifier In expression // blockStatement
+    | ForEach expression // blockStatement
+    ;
+
+errorStatement
+    : Error LBRACK Identifier RBRACK expression
+    ;
+
+localVariableDeclarationStatement
+    :    Let? localVariableDeclaration
+    ;
+
+localVariableDeclaration
+    :   type ASSIGN New? expression
+    |   type ASSIGN (New | EmptyLiteral)
+    ;
+
+statementExpression
+    :   expression
+    ;
+
+// blockStatement
+//     :   statement*?
+//     ;
+
+// primary
+//     :   LPAREN expression RPAREN
+//     |   literal
+//     |   Identifier
+//     ;
 
 collectionDeclaration
     : arrayDeclaration
@@ -86,24 +241,72 @@ collectionDeclaration
     ;
 
 arrayDeclaration
-    : (Identifier|primitiveType) OBRACKET '*'? CBRACKET
+    : (Identifier|PrimitiveType) LBRACK '*'? RBRACK
     ;
 
 dictionaryDeclaration
-    : (Identifier|primitiveType) OBRACKET type CBRACKET
+    : (Identifier|PrimitiveType) LBRACK type RBRACK
     ;
 
-type
-    :   collectionDeclaration
-    |   Identifier
-    |   primitiveType
-    // |   systemType ('[' ']')*
-    ;
+/*
+ * Lexer Rules
+ */
 
-// primitiveType
-//     : 'String'
-//     ;
-primitiveType
+// ?3.11 Separators
+COLON           : ':';
+LPAREN          : '(';
+RPAREN          : ')';
+LBRACE          : '{';
+RBRACE          : '}';
+LBRACK          : '[';
+RBRACK          : ']';
+SEMI            : ';';
+COMMA           : ',';
+DOT             : '.';
+
+// ?3.12 Operators
+ASSIGN          : '=';
+GT              : '>';
+LT              : '<';
+BANG            : '!';
+TILDE           : '~';
+QUESTION        : '?';
+EQUAL           : '==';
+LE              : '<=';
+GE              : '>=';
+NOTEQUAL        : '!=';
+AND             : '&&';
+OR              : '||';
+INC             : '++';
+DEC             : '--';
+ADD             : '+';
+SUB             : '-';
+MUL             : '*';
+DIV             : '/';
+BITAND          : '&';
+BITOR           : '|';
+CARET           : '^';
+MOD             : '%';
+LAMBDA_LIKE     : '=>';
+
+SERVICE:   'service';
+PROCEDURE: 'procedure';
+FORMULA: 'formula';
+ON:   'on';
+OBJECT:   'object';
+OBJECT_MODIFIER:   'persistent';
+
+HOSTED:   ('hosted' | 'external' ) ;
+
+ProcedureModifier: ('generic' | 'specific');
+
+ENUM:   'enum' ;
+SETTING :   'setting';
+
+ONEWAY: 'oneway';
+
+
+PrimitiveType
     :   STRING
     |   INT
     |   BOOLEAN
@@ -119,22 +322,12 @@ DECIMAL : D E C I M A L;
 DATE : D A T E;
 DATETIME : D A T E T I M E;
 
-/*
- * Lexer Rules
- */
+type
+    :   collectionDeclaration
+    |   PrimitiveType
+    |   Identifier
+    ;
 
-COLON:                      ':';
-OBRACKET:                   '[';
-CBRACKET:                   ']';
-SERVICE:        'service';
-ON     :             'on';
-HOSTED : ('hosted' | 'external') ;
-OBJECT: 'object';
-OBJECT_MODIFIER: 'persistent';
-
-
-ENUM: 'enum' ;
-SETTING : 'setting';
 //
 // Whitespace and comments
 //
@@ -154,10 +347,7 @@ LINE_COMMENT
 //
 QUOTE	:	'\'' -> skip;
 
-
 /// Identifier Names and Identifiers
-
-Identifier: IdentifierStart IdentifierPart*;
 
 literal
     :   IntegerLiteral
@@ -165,7 +355,9 @@ literal
     |   CharacterLiteral
     |   StringLiteral
     |   BooleanLiteral
+    |   DateLiteral
     |   NullLiteral
+    |   EmptyLiteral
     ;
 
 // ?3.10.4 Character Literals
@@ -192,14 +384,19 @@ StringCharacter
     ;
 /// Null Literals
 
-NullLiteral:                'null';
-EmptyLiteral:                'empty';
+NullLiteral: 'null';
+EmptyLiteral: 'empty';
+
+DateLiteral: 'now';
 
 /// Boolean Literals
 
 BooleanLiteral
         :                   'true'
         |                   'false';
+
+Identifier
+    : IdentifierStart IdentifierPart*;
 
 /// Numeric Literals
 
@@ -247,22 +444,6 @@ DecimalLiteral
 IntegerLiteral
     :   DecimalIntegerLiteral;
 
-/// Keywords
-
-Break:                          'break';
-Else:                           'else';
-New:                            'new';
-Var:                            'let';
-Return:                         'return';
-Continue:                       'continue';
-For:                            'foreach';
-This:                           'this';
-Default:                        'default';
-If:                             'if';
-Throw:                          'throw';
-In:                             'in';
-As:                             'as';
-
 /// String Literals
 StringLiteral
     :   '"' DoubleStringCharacter* '"'
@@ -273,16 +454,13 @@ WhiteSpaces:                    [\t\u000B\u000C\u0020\u00A0]+ -> channel(HIDDEN)
 
 LineTerminator:                 [\r\n\u2028\u2029] -> channel(HIDDEN);
 // LineTerminator:                 [\r\n\u2028\u2029];
-
 /// Comments
-
 
 HtmlComment:                    '<!--' .*? '-->' -> channel(HIDDEN);
 CDataComment:                   '<![CDATA[' .*? ']]>' -> channel(HIDDEN);
 // UnexpectedCharacter:            . -> channel(ERROR);
 
 // Fragment rules
-
 fragment DoubleStringCharacter
     : ~["\\\r\n]
     | '\\' EscapeSequence

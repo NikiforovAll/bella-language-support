@@ -345,6 +345,17 @@
           }
         },
         {
+          "match": "\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b\\s*:\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b",
+          "captures": {
+            "1": {
+              "name": "meta.variable.definition.parameter.procedure.bella"
+            },
+            "2": {
+              "name": "variable.parameter.function.procedure.bella"
+            }
+          }
+        },
+        {
           "match": "\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b",
           "captures": {
             "1": {

@@ -1,0 +1,21 @@
+    if PageNumber < 1
+        Date = now
+    else if PerPage < 1
+        Date = now
+
+// AND
+
+    if PageNumber < 1
+        Date = now
+    else if PerPage < 1
+
+    Date = now
+
+
+    // test.T(p => Test.id(Test)) // but atm (need to consider precedence into account)
+    //test.T(p => Test.id.Date()) // bug atm
+    //PropositionCollection.Where(p => Test.id.id) // BUG atm
+
+
+
+

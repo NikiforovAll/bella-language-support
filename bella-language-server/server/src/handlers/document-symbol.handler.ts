@@ -15,9 +15,8 @@ export class DocumentSymbolHandler {
             uriFilter: {
                 active: false
             },
-            parentFilter: {
-                active: true,
-                hasParent: false
+            descendantsFilter: {
+                active: false
             }
         });
     }

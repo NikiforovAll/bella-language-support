@@ -1,5 +1,5 @@
 import * as NodeCache from 'node-cache';
-import { BaseDeclaration, DeclarationType, Position, Range } from 'bella-grammar';
+import { BaseDeclaration, DeclarationType, Range, MemberComposite } from 'bella-grammar';
 import * as LSP from 'vscode-languageserver';
 import { Dictionary } from 'typescript-collections';
 import { isEmpty, isNil } from 'lodash';
@@ -34,13 +34,25 @@ export class LSPDeclarationRegistry {
         return this.getLSPDeclarationsForQuery({
             uriFilter: {
                 active: true, uri
+            },
+            descendantsFilter: {
+                active: true
             }
         });
     }
 
     public getLSPDeclarationsForQuery(query: NodeRegistrySearchQuery): LSP.SymbolInformation[] {
-        return RegistryUtils.toLSPDeclarations(
-            this.getDeclarationsForQuery(query));
+        let declarations: KeyedDeclaration[] = this.getDeclarationsForQuery(query);
+        let result = RegistryUtils.toLSPDeclarations(declarations);
+        if(query.descendantsFilter?.active) {
+            for (const declaration of declarations) {
+                let keyedDeclarations = declaration.members?.map( (d: BaseDeclaration): KeyedDeclaration => ({
+                    ...d, uri: declaration.uri, parentName: declaration.name
+                })) || [];
+                result.push(...RegistryUtils.toLSPDeclarations(keyedDeclarations));
+            }
+        }
+        return result;
     }
 
     private getDeclarationsForQuery(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
@@ -51,7 +63,7 @@ export class LSPDeclarationRegistry {
         let mergedResult: KeyedDeclaration[] = [];
         for (const registry_key of this.cache.keys()) {
             let registry = this.cache.get<DeclarationRegistryNode>(registry_key);
-            if(!isNil(registry)){
+            if (!isNil(registry)) {
                 mergedResult.push(...registry.getDeclarations());
             }
         }
@@ -64,15 +76,15 @@ class DeclarationRegistryNode {
     }
     getDeclarations(query?: NodeRegistrySearchQuery): KeyedDeclaration[] {
         let result = this.nodes.values();
-        if(!isNil(query)) {
-            let { typeFilter, parentFilter } =  query;
+        if (!isNil(query)) {
+            let { typeFilter, descendantsFilter: parentFilter } = query;
             result = result.filter(d => {
                 let passed = true;
                 if (!isNil(typeFilter) && typeFilter?.active) {
-                    passed = passed && (d.content.type === typeFilter.type);
+                    passed = passed && (d.type === typeFilter.type);
                 }
-                // TODO: add parent filter
-                if(!isNil(parentFilter)) {
+                if (!isNil(parentFilter)) {
+
                 }
                 return true;
             });
@@ -81,13 +93,9 @@ class DeclarationRegistryNode {
     }
 }
 
-class KeyedDeclaration {
-    constructor(
-        public content: BaseDeclaration,
-        public uri: string,
-        parent?: BaseDeclaration) {
-    }
-
+interface KeyedDeclaration extends BaseDeclaration, MemberComposite {
+    uri: string;
+    parentName?: string
 }
 
 class DeclarationKey {
@@ -108,9 +116,9 @@ interface NodeRegistrySearchQuery {
         type?: DeclarationType
     } & Activatable
 
-    parentFilter?: {
-        hasParent?: boolean
-        parentName?: string
+    descendantsFilter?: {
+        // hasParent?: boolean
+        // parentName?: string
     } & Activatable
 }
 
@@ -123,9 +131,13 @@ namespace RegistryUtils {
     export function createRegistryNode(declarations: BaseDeclaration[], uri: string): DeclarationRegistryNode {
         let dict = new Dictionary<DeclarationKey, KeyedDeclaration>();
         for (let declaration of declarations) {
+            let members = (declaration as MemberComposite).members;
+            if (!members) {
+                members = [];
+            }
             dict.setValue(
                 new DeclarationKey(declaration.name, declaration.type),
-                new KeyedDeclaration(declaration, uri)
+                { ...declaration, uri }
             );
         }
         let registry = new DeclarationRegistryNode(dict, getNamespaceFromURI(uri));
@@ -138,11 +150,11 @@ namespace RegistryUtils {
 
     function createLSPDeclaration(declaration: KeyedDeclaration): LSP.SymbolInformation {
         return LSP.SymbolInformation.create(
-            declaration.content.name,
-            parserTypeToLSPType(declaration.content.type),
-            range(declaration.content.range),
-            declaration.uri
-            //TODO: add containerName
+            declaration.name,
+            parserTypeToLSPType(declaration.type),
+            range(declaration.range),
+            declaration.uri,
+            declaration.parentName
         )
     }
 
@@ -167,6 +179,30 @@ namespace RegistryUtils {
             case DeclarationType.ComponentService:
                 return LSP.SymbolKind.Variable;
                 break;
+            case DeclarationType.Service:
+                return LSP.SymbolKind.Interface;
+            case DeclarationType.ServiceEntry:
+                return LSP.SymbolKind.Method;
+            case DeclarationType.CompositeObject:
+                return LSP.SymbolKind.Class;
+            case DeclarationType.Object:
+                return LSP.SymbolKind.Class;
+            case DeclarationType.PersistentObject:
+                return LSP.SymbolKind.Variable;
+            case DeclarationType.ObjectField:
+                return LSP.SymbolKind.Field;
+            case DeclarationType.Enum:
+                return LSP.SymbolKind.Enum;
+            case DeclarationType.EnumEntry:
+                return LSP.SymbolKind.EnumMember;
+            case DeclarationType.Setting:
+                return LSP.SymbolKind.Constant;
+            case DeclarationType.Param:
+                return LSP.SymbolKind.Variable;
+            case DeclarationType.Procedure:
+                return LSP.SymbolKind.Method;
+            case DeclarationType.Formula:
+                return LSP.SymbolKind.Function;
             default:
                 return LSP.SymbolKind.Null;
                 break;

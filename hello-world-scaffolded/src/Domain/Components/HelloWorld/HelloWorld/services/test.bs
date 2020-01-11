@@ -1,3 +1,4 @@
+
 procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
     Email = CreatePartnerAccountRequest.contactInfo.email
     Name = CreatePartnerAccountRequest.firstName + " " + CreatePartnerAccountRequest.lastName
@@ -13,10 +14,10 @@ procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
 
 
 procedure CreateServiceCallData(Test, out Test)
-    // Test = "1"
+    Test = "1"
     call Test(out Test)
+    test.T(p => Test.id(Test).id)
     AccountId = 'Test'
-
 
 procedure CreatePartnerAccount(out AccountId)
     Email = CreatePartnerAccountRequest.contactInfo.email

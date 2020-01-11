@@ -1,0 +1,12 @@
+object TotalEntities:Integer
+
+formula GetTotalPages(TotalEntities, RecordsPerPage):TotalPages =
+    With(TotalEntities % RecordsPerPage == 0, TotalEntities / RecordsPerPage,
+    (IsAliquot, TotalPages) => if(IsAliquot, TotalPages, TotalPages + 1))
+
+
+procedure ValidatePagination(PageNumber, PerPage)
+    if PageNumber < 1
+        error [InvalidPageNumber] "Page number cannot be less than 1"
+    if PerPage < 1
+        error [InvalidPerPage] "Per page cannot be less than 1"

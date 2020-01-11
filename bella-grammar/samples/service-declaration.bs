@@ -1,0 +1,6 @@
+service TestService
+    MethodWithNamedParams(gle: GlEvent, scd: SourceCreationDate) oneway
+    MethodWithInferredParam(GlAccount) oneway
+    MethodWithArrayInReturn(Date, GlEventType, SourceId): GlEvent[*]
+    MethodWithDictionaryInReturn(Date, GlEventType, SourceId):GlEvents[Test]
+    MethodWithNothing()

@@ -6,7 +6,16 @@ import {
     ObjectFieldDeclarationContext,
     TypeContext,
     EnumDeclarationContext,
-    EnumBodyContext} from "../grammars/.antlr4/BellaParser"
+    EnumBodyContext,
+    ServiceDeclarationContext,
+    ServiceBodyContext,
+    ProcedureDeclarationContext,
+    ServiceDeclarationEntryContext,
+    SettingsDeclarationContext,
+    ProcedureParamListContext,
+    ProcedureParamContext,
+    FormulaDeclarationContext,
+    ProcedureBodyContext} from "../grammars/.antlr4/BellaParser"
 import { AbstractParseTreeVisitor } from "antlr4ts/tree/AbstractParseTreeVisitor";
 import { BaseDeclaration} from "./models/base-declaration";
 import { ComponentServiceDeclaration } from "./models/component-service-declaration";
@@ -16,6 +25,10 @@ import { DeclarationType } from "./models/declaration-type.enum";
 import { ObjectBase } from "./models/object-base.enum";
 import { EnumDeclaration } from "./models/enum-declaration";
 import { TerminalNode } from "antlr4ts/tree/TerminalNode";
+import { ServiceDeclaration } from "./models/service-declaration";
+import { ProcedureDeclaration } from "./models/procedure-declaration";
+import { Token } from "antlr4ts";
+import { FormulaDeclaration } from "./models/formula-declaration";
 
 //TODO: fix any visitor result
 export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BaseDeclaration> {
@@ -27,14 +40,18 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     public declarations: BaseDeclaration[] = [];
 
     visitSimpleObjectDeclaration(context: SimpleObjectDeclarationContext): SimpleObjectDeclaration{
+        let type = DeclarationType.Object;
+        if(!!context.OBJECT_MODIFIER()) {
+            type = DeclarationType.PersistentObject;
+        }
         let name = context.Identifier().text;
         let line = context.start.line - 1;
         let returnTypeDeclaration = this.visitTypeLocal(context.type());
         let sod: SimpleObjectDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(line, 0, line),
-            type: DeclarationType.Object,
-            returnType: this.visitTypeLocal(context.type()),
+            type,
+            returnType: returnTypeDeclaration,
             objectBase: ObjectBase.Alias
         };
         this.declarations.push(sod);
@@ -44,16 +61,20 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     visitCompositeObjectDeclaration(context: CompositeObjectDeclarationContext): CompositeObjectDeclaration {
         let name = context.Identifier().text;
+        let type = DeclarationType.Object;
+        if(!!context.OBJECT_MODIFIER()) {
+            type = DeclarationType.PersistentObject;
+        }
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || startLine + 1 ) - 1;
         let body = context.objectBody();
-        let fields = body.children?.map(c => this.visitObjectFieldDeclarationLocal(c as ObjectFieldDeclarationContext)) || [];
+        let members = body.children?.map(c => this.visitObjectFieldDeclarationLocal(c as ObjectFieldDeclarationContext)) || [];
         let sod: CompositeObjectDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
-            type: DeclarationType.Object,
+            type,
             objectBase: ObjectBase.Composite,
-            fields
+            members
         };
         this.declarations.push(sod);
         return sod;
@@ -68,9 +89,8 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let sod: EnumDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
-            type: DeclarationType.Object,
-            //TODO: add parsing of enum entries
-            enumEntries: this.visitEnumBodyLocal(body)
+            type: DeclarationType.Enum,
+            members: this.visitEnumBodyLocal(body)
         };
         this.declarations.push(sod);
         return sod;
@@ -79,10 +99,10 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     visitComponentServiceDeclaration(context: ComponentServiceDeclarationContext): BaseDeclaration{
         let serviceName = context.Identifier().text;
         let line = context.start.line - 1;
-        let csd: ComponentServiceDeclaration = {
-            serviceType: context.HOSTED().text,
-            serviceName: serviceName,
-            serviceTransportName: context.enclosedServiceIdentifier().text,
+        let csd: BaseDeclaration = {
+            // serviceType: context.HOSTED().text,
+            // serviceName: serviceName,
+            // serviceTransportName: context.enclosedServiceIdentifier().text,
             name: serviceName,
             range: BellaVisitorUtils.createRange(line, 0, line),
             type: DeclarationType.ComponentService
@@ -91,17 +111,65 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         return csd;
     }
 
+    visitServiceDeclaration(context: ServiceDeclarationContext): BaseDeclaration {
+        let serviceName = context.Identifier().text;
+        let startLine = context.start.line - 1;
+        let endLine = (context.stop?.line || (startLine + 1)) - 1;
+        let sd: ServiceDeclaration = {
+            name: serviceName,
+            range: BellaVisitorUtils.createRange(startLine, 0, endLine),
+            type: DeclarationType.Service,
+            members: this.visitServiceBodyLocal(context.serviceBody())
+        };
+        this.declarations.push(sd);
+        return sd;
+    }
+
+    visitSettingsDeclaration(context: SettingsDeclarationContext): BaseDeclaration {
+        let fieldDeclaration = this.visitObjectFieldDeclarationLocal(context.objectFieldDeclaration());
+        fieldDeclaration.type = DeclarationType.Setting;
+        this.declarations.push(fieldDeclaration);
+        return fieldDeclaration;
+    }
+
+    visitProcedureDeclaration(context: ProcedureDeclarationContext): BaseDeclaration {
+        let signature = context.procedureSignature().text.replace("out", "out ");
+        let startLine = context.start.line - 1;
+        let endLine = (context.stop?.line || (startLine + 1)) - 1;
+        let calls = this.visitProcedureBodyLocal(context.procedureBody());
+        let pd: ProcedureDeclaration = {
+            name: signature,
+            range: BellaVisitorUtils.createRange(startLine, 0, endLine),
+            type: DeclarationType.Procedure,
+            members: this.visitProcedureParamListLocal(context.procedureSignature().procedureParamList())
+        };
+        this.declarations.push(pd);
+        return pd;
+    }
+
+    visitFormulaDeclaration(context: FormulaDeclarationContext): BaseDeclaration {
+        let signature = context.formulaSignature().text;
+        let startLine = context.start.line - 1;
+        let endLine = (context.stop?.line || (startLine + 1)) - 1;
+        let fd: FormulaDeclaration = {
+            name: signature,
+            range: BellaVisitorUtils.createRange(startLine, 0, endLine),
+            type: DeclarationType.Procedure
+        };
+        this.declarations.push(fd);
+        return fd;
+    }
+
     // top level declarations (END)
 
     // local declarations
     visitObjectFieldDeclarationLocal(context: ObjectFieldDeclarationContext): SimpleObjectDeclaration {
         let name = context.Identifier().text;
         let line = context.start.line - 1;
-        let returnType = context.type();
         let sod: SimpleObjectDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(line, 0, line, context.start.charPositionInLine + context.text.length),
-            type: DeclarationType.Object,
+            type: DeclarationType.ObjectField,
             objectBase: ObjectBase.Field,
             returnType: this.visitTypeLocal(context.type())
         };
@@ -134,10 +202,58 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             return {
                 name: enumEntry.text,
                 type: DeclarationType.EnumEntry,
-                range: BellaVisitorUtils.createRange(startLine, 0, startLine)
+                range: BellaVisitorUtils.createRange(
+                    startLine,
+                    enumEntry.symbol.charPositionInLine,
+                    startLine
+                )
             }
         });
         return res;
+    }
+
+    visitServiceBodyLocal(context: ServiceBodyContext): BaseDeclaration[] {
+        let res = context.serviceDeclarationEntry().map((ctx: ServiceDeclarationEntryContext): BaseDeclaration => {
+            let startLine = ctx.start.line - 1;
+            return {
+                name: ctx.Identifier().text,
+                type: DeclarationType.ServiceEntry,
+                range: BellaVisitorUtils.createRange(startLine, ctx.start.charPositionInLine, startLine)
+            }
+        });
+        return res;
+    }
+
+    visitProcedureParamListLocal(context: ProcedureParamListContext | undefined) :BaseDeclaration[] {
+        if(!context) {
+            return [];
+        }
+        let res = context.procedureParam().map((ctx: ProcedureParamContext): BaseDeclaration => {
+            let startLine = ctx.start.line - 1;
+            // let nameContext = ctx.Identifier()[0];
+            let nameContext = ctx.type();
+            // let nameStart = nameContext.symbol.charPositionInLine;
+            let nameStart = nameContext.start.charPositionInLine;
+            return {
+                name: nameContext.text,
+                type: DeclarationType.Param,
+                range: BellaVisitorUtils.createRange(
+                    startLine,
+                    nameStart,
+                    startLine,
+                    nameStart + nameContext.text.length
+                    )
+            }
+        });
+        return res;
+    }
+
+    visitProcedureBodyLocal(context: ProcedureBodyContext): BaseDeclaration[] {
+        // TODO: major - get this on the fly
+        // TODO: major - add complete bella grammar to get all real identifiers separate from keywords
+        const identifierTokenNumber = 56;
+        let filtered = context.getTokens(56).filter((t: TerminalNode) => t.text);
+        return [];
     }
 }
 
@@ -146,7 +262,7 @@ namespace BellaVisitorUtils {
         if(!!context.collectionDeclaration()) {
             return ObjectBase.Collection;
         }
-        if(!!context.primitiveType()) {
+        if(!!context.PrimitiveType()) {
             return ObjectBase.PrimitiveType;
         }
         return ObjectBase.Alias;

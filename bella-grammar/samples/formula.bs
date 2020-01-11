@@ -1,0 +1,24 @@
+specific formula ToBaseTransactionMatchDetailDto(CreditTransferBankTransactionMatchDetail, ChangedOn, IsMatched, ChangedBy): BankTransactionDetailsDto = new BankTransactionDetailsDto(
+    date = ChangedOn,
+    operationType = if (IsMatched, BankTransactionOperationType.Matched, BankTransactionOperationType.Unmatched),
+    changedBy = ChangedBy,
+    serviceAccountId = CreditTransferBankTransactionMatchDetail.serviceAccountId,
+    invoiceId = "",
+    generalLedgerAccountId = "",
+    amount = CreditTransferBankTransactionMatchDetail.amount,
+    matchedOn = CreditTransferBankTransactionMatchDetail.matchedOn
+    )
+
+ if ProductCatalogDateFilter.propositionDateField == PropositionDateField.CreatedOn
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.createdOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.StartOn
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.startOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.EndOn
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.endOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+
+
+formula AddDelay(DateTime, Delay, HolydaysCallendar):NewDateTime =
+    if(Delay.onlyWorking,
+    DateTime.AddWorkingDays(Delay.days, HolydaysCallendar),
+    DateTime.AddDays(Delay.days)
+    )

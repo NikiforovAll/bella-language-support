@@ -1,4 +1,4 @@
-procedure CreateEmployeeAccount(CreateEmployeeAccountRequest, out AccountId) // Test
+procedure CreateEmployeeAccount(test: CreateEmployeeAccountRequest, out AccountId) // Test
     if IsEmpty(CreateEmployeeAccountRequest.lastName)
         error[EmptyLastName] "Employee account last name cannot be empty"
     if IsEmpty(CreateEmployeeAccountRequest.contactInfo.email)

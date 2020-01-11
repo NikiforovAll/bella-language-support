@@ -1,0 +1,18 @@
+            if ProductCatalogDateFilter.propositionDateField == PropositionDateField.CreatedOn
+                PropositionFilteredCollection = PropositionCollection.Where(p => p.createdOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+            else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.StartOn
+                PropositionFilteredCollection = PropositionCollection.Where(p => p.startOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+            else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.EndOn
+                PropositionFilteredCollection = PropositionCollection.Where(p => p.endOn.Date() < ProductCatalogDateFilter.targetDate.Date())
+
+foreach CustomerAccountMatch in CustomerMatchesFoundTask.customerAccountMatches
+    Index = Index + 1
+
+
+if ProductCatalogDateFilter.propositionDateField == PropositionDateField.CreatedOn
+    Date = now
+else if ProductCatalogDateFilter.propositionDateField == PropositionDateField.StartOn
+    Date = empty
+
+foreach CustomerMatchesFoundTask.customerAccountMatches
+        Index = Index + 1

@@ -1,4 +1,23 @@
-enum BalanceRecordRevert
-    NotSpecified
-    Reverted
-    NotReverted
+    //T = ProductCatalogIdFilter.Id.Test.Date(Test)
+    //p.id.ToLower() == ProductCatalogIdFilter.id.Trim().ToLower()
+    //PropositionFilteredCollection = PropositionCollection.Where(Test)
+    //PropositionFilteredCollection = PropositionCollection.Where(p => Test)
+    //Test.id == Test.Date()
+    //test.T(d.Date())
+    // test.T(p => Test.id(Test)) // but atm (need to consider precedence into account)
+    //test.T(p => Test.id.Date()) // bug atm
+    //test.T(Test.Test(0))
+    // Test.id.id.Test()
+    //PropositionCollection.Where(p => Test.id.id) // BUG atm
+    //PropositionCollection.Where(p => Test.id == 3)
+    // PropositionCollection.Where(p => 3 == 3)
+    //PropositionCollection.Where(p => Test.id == Test.Trim())
+    //PropositionCollection.Where(p => ProductCatalogIdFilter.id.ToLower())
+    //PropositionFilteredCollection = PropositionCollection.Where(p => p.id.ToLower() == ProductCatalogIdFilter.id.Trim().ToLower())
+
+// TestCollection.Where(i => i.Data.Date()) // bugged
+
+procedure TestProcedure(Param1, Param2, out ParamOut1)
+    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
+    TaskId = BaseTask.id
+    TaskCatalog[TaskId] = BaseTask

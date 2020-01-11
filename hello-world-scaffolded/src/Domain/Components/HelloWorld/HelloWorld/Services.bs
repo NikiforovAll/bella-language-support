@@ -7,5 +7,5 @@ hosted service HelloWorl4 on HelloWorld
 hosted service HelloWorl3 on [HelloWorld]
 // hosted service HelloWorld on [HelloWorld]
 
-// hosted service HelloWorld on [HelloWorld]
+external service ExternalHelloWorld on [HelloWorld]
 hosted service HelloWorld2 on [HelloWorld]

@@ -8,9 +8,9 @@ export class LSPParserProxy {
      * parse
      */
     public parse(input: string)  {
-        let tree = BellaLanguageSupport.generateTree(input);
+        let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor();
-        let visitorRes = visitor.visit(tree);
+        visitor.visit(tree);
         let declarations = visitor.declarations;
         return declarations;
     }

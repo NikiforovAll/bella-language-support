@@ -1,0 +1,61 @@
+service TaskManager
+    CreateTask(taskCreationRequest):TaskId
+    GetPagedAndFilteredTaskList(taskFilterList:TaskFilterList, tasksPerPage:TasksPerPage, pageNumber:PageNumber):GetFilteredAndPagedTasksResponse
+    GetFilteredTaskList(taskFilterList:TaskFilterList):TaskList
+    CreateTaskRule(taskRuleCreationRequest:TaskRuleCreationRequest):TaskRuleId
+    CreateTaskSkill(taskSkill:TaskSkill)
+    DeleteTaskRuleById(taskRuleId:TaskRuleId)
+    GetPagedTaskRuleList(pageNumber:PageNumber, taskRulesPerPage:TaskRulesPerPage):PagedTaskRulesResponse
+    GetAllTasks():TaskList
+    GetTotalTasksCountInTheSystem():TotalTasksInTheSystem
+    GetTaskSkillList():TaskSkillList
+    GetTaskUrgencyList():TaskUrgencyList
+    GetTaskImportanceList():TaskImportanceList
+    GetTaskComponentList():TaskComponentList
+    GetTaskSubcomponentList():TaskSubcomponentList
+    GetTaskRelatedServiceList():TaskRelatedServiceList
+    GetTaskTypeList():TaskTypeList
+    GetCategoriesList():CategoriesList
+    GetLastOpenTaskWithoutRulesList(tasksPerPage:TasksPerPage, pageNumber:PageNumber):GetLastOpenTaskWithoutRulesListResponse
+    GetGroupedTaskWithoutRulesCountList(recordsPerPage:RecordsPerPage, pageNumber:PageNumber):GetGroupedTaskWithoutRulesCountListReponse
+    GetTaskSkillListByAccountId(accountId:AccountId):TaskSkillList
+    EnsureEmployeeHaveRequiredTaskSkill(accountId:AccountId, taskSkill:TaskSkill)
+    AssignTaskSkillsToEmployee(accountId:AccountId, taskSkillToAssign:TaskSkillList)
+    GetTaskForEmployee(accountId:AccountId):BaseTask
+    CloseTaskById(accountId:AccountId, taskId:TaskId, relatedTaskIdList:RelatedTaskIdList, comment:Comment)
+    CloseTaskBySystem(taskId:TaskId, relatedTaskIdList:RelatedTaskIdList)
+    PutTaskInProgressBySystem(taskId:TaskId)
+    ReassignTaskById(accountId:AccountId, taskId:TaskId, taskSkill:TaskSkill, comment:Comment)
+    PostponeTaskById(accountId:AccountId, taskId:TaskId, delay:DelayValue, comment:Comment)
+    PostponeTaskPerUser(accountId:AccountId, taskId:TaskId)
+    GetRelatedTaskListByTaskId(taskId:TaskId):TaskList
+    ReopenPostponedTasks(dateTime:DateTime)
+    ClearExcludeListForTaskPostponingPerUser(dateTime:DateTime)
+    GetTaskListByTaskIdList(taskIdList:TaskIdList):TaskList
+    CreateMultipleTasks(requests:BaseTaskCreationRequests) oneway
+    GetProcessesByAccountId(AccountId):Processes
+    GetTasksByTaskType(type:TaskType):TaskList
+    GetTaskById(taskId:TaskId):BaseTask
+    MakeTaskClosable(taskId:TaskId)
+    GetPendingTasksBelongsToCustomer(customerId:CustomerId, perPage:PerPage, pageNumber:PageNumber):PagedTasksForCustomer
+    GetClosedTasksBelongsToCustomer(customerId:CustomerId, perPage:PerPage, pageNumber:PageNumber):PagedTasksForCustomer
+    UpdateAssignedEmployeeTaskSkills(accountId:AccountId, taskSkillToAssign:TaskSkillList)
+    AddCommentToTask(accountId:AccountId, taskId:TaskId, comment:Comment)
+    ForceApplyRule(taskRuleId:TaskRuleId)
+    FillOrderIdAndRemoveEmptyCoinTasks():Integer
+    ReassignTaskFromTaskRule(taskId:TaskId)
+    AssignTaskToEmployee(taskId:TaskId, accountId:AccountId):BaseTask
+    IsEmployeeHaveTask(accountId:AccountId):Boolean
+    IsTaskAssignedToEmployee(taskId:TaskId):Boolean
+    UpdateExternalSystemIssueFoundTaskCustomerIdByOrderId():Integer
+    ReopenInProgressTasks(DateTime)
+    FillAccountIdForTvPackageTasks():CountOfTaskWithoutCustomerId
+    ForceCloseTaskById(taskId:TaskId)
+    RemoveTaskByTaskId(taskId:TaskId)
+
+
+service TaskManagerAsync
+    CreateTaskAsync(baseTaskCreationRequest:BaseTaskCreationRequest)
+    MakeTaskClosable(taskId:TaskId)
+    CreateAutoProlongationFailedTaskForServiceAccountsAsync(AutoProlongationFailedTaskCreationDtoMap)
+

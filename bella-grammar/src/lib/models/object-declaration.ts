@@ -1,4 +1,4 @@
-import { BaseDeclaration } from './base-declaration';
+import { BaseDeclaration, MemberComposite } from './base-declaration';
 import { TypeDeclaration } from './type-declaration';
 import { ObjectBase } from './object-base.enum';
 
@@ -10,6 +10,5 @@ export interface SimpleObjectDeclaration extends BaseObject {
     //TODO: add information about declared type
 }
 
-export interface CompositeObjectDeclaration extends BaseObject{
-    fields: SimpleObjectDeclaration[]
+export interface CompositeObjectDeclaration extends BaseObject, MemberComposite{
 }

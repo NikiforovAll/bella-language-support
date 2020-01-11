@@ -7,6 +7,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "experimentalDecorators": true
   },
   "include": [
     "src/lib/**.ts",

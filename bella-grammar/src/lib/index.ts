@@ -1,22 +1,38 @@
-import { ANTLRInputStream, CommonTokenStream, Token, Lexer, Parser } from 'antlr4ts';
-import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer'
-import { CompilationUnitContext, BellaParser} from '../grammars/.antlr4/BellaParser';
-import { BellaDeclarationVisitor } from "./bella-declaration.visitor";
-// import {ComponentServiceDeclaration } from './models/component-service-declaration';
+import {
+    ANTLRErrorStrategy,
+    ANTLRInputStream,
+    CommonTokenStream,
+    DiagnosticErrorListener,
+    Lexer,
+    ParserRuleContext,
+    Token,
+} from 'antlr4ts';
+
+import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer';
+import { BellaParser } from '../grammars/.antlr4/BellaParser';
+import { BellaDeclarationVisitor } from './bella-declaration.visitor';
+import { BellaErrorStrategy } from './bella-error-strategy';
 
 export {
     BaseDeclaration,
     Position,
     Range} from './models/base-declaration';
 
+export { MemberComposite } from './models/base-declaration';
 export { ObjectBase } from './models/object-base.enum';
 export { DeclarationType } from './models/declaration-type.enum';
 
 export {
     SimpleObjectDeclaration,
     CompositeObjectDeclaration} from './models/object-declaration';
+
+export { ServiceDeclaration } from './models/service-declaration';
+export { ProcedureDeclaration } from './models/procedure-declaration';
+export { FormulaDeclaration } from './models/formula-declaration';
+export { ThrowingErrorListener } from './error-listener';
+export { BellaErrorStrategy } from './bella-error-strategy';
 export class BellaLanguageSupport {
-    public static process(expr: string): Token[]{
+    public static tokenize(expr: string): Token[]{
         return this.generateLexer(expr)
             .getAllTokens();
     }
@@ -27,14 +43,37 @@ export class BellaLanguageSupport {
         return lexer;
     }
 
-    public static generateTree(expr: string): CompilationUnitContext  {
-        let lexer = this.generateLexer(expr);
-        var commonTokenStream = new CommonTokenStream(lexer);
-        var parser = new BellaParser(commonTokenStream);
+    public static parse(expr: string): ParserRuleContext  {
+        let parser = BellaLanguageSupport.generateParser(expr);
+        return parser.compilationUnit();
+    }
+
+    public static parseWithErrorListener(
+        expr: string,
+        listener: DiagnosticErrorListener) {
+        let parser = BellaLanguageSupport.generateParser(expr);
+        // https://stackoverflow.com/questions/18132078/handling-errors-in-antlr4/18137301#18137301
+        // https://stackoverflow.com/questions/18484869/how-to-collect-errors-during-run-time-given-by-a-parser-in-antlr4
+        parser.removeErrorListeners();
+        parser.addErrorListener(listener);
+        return parser.compilationUnit();
+    }
+
+    public static parseWithErrorStrategy(expr: string, strategy: ANTLRErrorStrategy) {
+        let parser = BellaLanguageSupport.generateParser(expr);
+        parser.errorHandler = new BellaErrorStrategy();
+        // parser.errorHandler = new BailErrorStrategy();
         return parser.compilationUnit();
     }
 
     public static generateVisitor(): BellaDeclarationVisitor {
         return new BellaDeclarationVisitor();
+    }
+
+    public static generateParser(input: string): BellaParser {
+        let lexer = this.generateLexer(input);
+        var commonTokenStream = new CommonTokenStream(lexer);
+        var parser = new BellaParser(commonTokenStream);
+        return parser;
     }
 }

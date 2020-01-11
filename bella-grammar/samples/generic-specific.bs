@@ -1,0 +1,5 @@
+generic procedure GetPropositionsFilteredBy(FilterQuery, PropositionCollection, out PropositionFilteredCollection)
+    error [GenericObjectPassed] "You've passed generic FilterQuery object. Try specific one (ProductCatalogNameFilter, ProductCatalogServiceFilter, etc.)"
+
+specific procedure GetPropositionsFilteredBy(ProductCatalogIdFilter, PropositionCollection, out PropositionFilteredCollection)
+    PropositionFilteredCollection = PropositionCollection.Where(p => p.id.ToLower() == ProductCatalogIdFilter.id.Trim().ToLower())

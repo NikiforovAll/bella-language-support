@@ -23,11 +23,6 @@ procedure SaveGlAccount(GlAccount)
     GlAccountId = GlAccount.number + GlAccount.subCode
     GlAccountCatalog[GlAccountId] = GlAccount
 
-// Standard DEMO of lsp-sample
-TypeScript lets you write JavaScript the way you really want to.
-TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
-ANY browser. ANY host. ANY OS. Open Source.
-
 setting PayableVat6GlAccountNumber:String = "190100"
 setting TelevisionTypeOfServiceAccountId:String = "8120002"
 setting DirectDebitSuspenseAccount:String = "116000"
@@ -143,31 +138,10 @@ specific formula ToProcessName(Order):ProcessName = if
     "New contract",
     "Order prolongation"
     )
+
 formula ToString():String =
 
 specific formula ToProcessName(AdjustingOrder):ProcessName = "Adjusting order"
-
-specific formula ToProcessName(AutoProlongationOrder):ProcessName = "Order auto prolongation"
-
-specific formula ToProcessName(CeaseDslOrder):ProcessName = "Cease dsl"
-
-specific formula ToProcessName(PackageAddOrder):ProcessName = "Package add"
-
-specific formula ToProcessName(PackageDropOrder):ProcessName = "Package drop"
-
-specific formula ToProcessName(ExtraHardwareOrder):ProcessName = "Extra hardware"
-
-specific formula ToProcessName(StartTvOrder):ProcessName = "Start tv"
-
-specific formula ToProcessName(StartVoipOrder):ProcessName = "Start voip"
-
-specific formula ToProcessName(StopTvOrder):ProcessName = "Stop tv"
-
-specific formula ToProcessName(StopVoipOrder):ProcessName = "Stop voip"
-
-specific formula ToProcessName(UpgradeDslOrder):ProcessName = "Upgrade dsl"
-
-specific formula ToProcessName(MoveDslOrder):ProcessName = "Move Dsl"
 
 specific formula ToProcessName(ChangePriceForAutoProlongationOrder):ProcessName = "Change Price"
 

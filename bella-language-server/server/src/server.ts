@@ -4,6 +4,7 @@ import { DocumentSymbolHandler } from './handlers/document-symbol.handler';
 import BellaAnalyzer from './bella-analyzer';
 import { LSPParserProxy } from './lsp-parser-proxy';
 import { DiagnosticsHandler } from './handlers/diagnostics.handler';
+import { DefinitionHandler } from './handlers/definition.handler';
 
 
 /**
@@ -56,7 +57,7 @@ export default class BellaServer {
 		})
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))
-		// connection.onDefinition(this.onDefinition.bind(this))
+		connection.onDefinition(this.onDefinition.bind(this));
 		connection.onDocumentSymbol(this.onDocumentSymbol.bind(this));
 		connection.onWorkspaceSymbol(this.onWorkspaceSymbol.bind(this));
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
@@ -78,7 +79,7 @@ export default class BellaServer {
 			// },
 			// hoverProvider: true,
 			// documentHighlightProvider: true,
-			// definitionProvider: true,
+			definitionProvider: true,
 			documentSymbolProvider: true,
 			workspaceSymbolProvider: true
 			// referencesProvider: true,
@@ -93,6 +94,12 @@ export default class BellaServer {
 		let handler = new DocumentSymbolHandler(this.analyzer.cache);
 		return handler.findSymbolsInWorkspace(params);
 	}
+
+	private onDefinition(params: LSP.TextDocumentPositionParams) {
+		let handler = new DefinitionHandler(this.analyzer.cache);
+		return handler.findDefinitions(params);
+	}
+
 	private static initializeParser() {
 		return new LSPParserProxy();
 	}

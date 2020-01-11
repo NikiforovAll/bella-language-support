@@ -1,5 +1,4 @@
-import { BaseDeclaration } from "./base-declaration";
+import { BaseDeclaration, MemberComposite } from "./base-declaration";
 
-export interface EnumDeclaration extends BaseDeclaration {
-    enumEntries: BaseDeclaration[]
+export interface EnumDeclaration extends BaseDeclaration, MemberComposite {
 }
