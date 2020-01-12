@@ -40,18 +40,22 @@ objectDeclaration
     ;
 
 simpleObjectDeclaration
-    : OBJECT_MODIFIER? OBJECT Identifier COLON type
+    : OBJECT_MODIFIER? OBJECT Identifier (COLON type)?
     ;
 
 compositeObjectDeclaration
-    :   OBJECT_MODIFIER? OBJECT Identifier objectBody
+    :   OBJECT_MODIFIER? OBJECT Identifier objectExtension? objectBody
+    ;
+
+objectExtension
+    : COLON Identifier
     ;
 
 objectBody
     :   (objectFieldDeclaration)+
     ;
 objectFieldDeclaration
-    :   Identifier COLON type ( objectFieldDeclarationRest | expression)
+    :   Identifier (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions
@@ -83,16 +87,18 @@ serviceDeclarationEntry
     ;
 
 procedureDeclaration
-    :  ProcedureModifier? PROCEDURE procedureSignature procedureBody
+    :  (HOSTED | ProcedureModifier)? PROCEDURE procedureSignature procedureBody
     ;
 
 procedureSignature
-    :   Identifier LPAREN procedureParamList? RPAREN
+    :   Identifier LPAREN procedureParamList? RPAREN procedureChron?
     ;
 procedureParamList
     : procedureParam (COMMA procedureParam)*
     ;
-
+procedureChron
+    : 'at' .*? 'every' ('Minutes' | 'Day' | 'Week' |'Month')
+    ;
 procedureParam
     : 'out'? (Identifier COLON)? type
     ;
@@ -101,7 +107,7 @@ procedureBody: statement*?;
 
 // TODO: more robust approach for formula parsing
 formulaDeclaration
-    :  ProcedureModifier? FORMULA formulaSignature ASSIGN? expression
+    :  ProcedureModifier? FORMULA formulaSignature ASSIGN? .*?
     ;
 formulaSignature
     : procedureSignature COLON type
@@ -125,6 +131,7 @@ ForEach:                        'foreach';
 In:                             'in';
 Call:                           'call';
 As:                             'as';
+Is:                             'is';
 Not:                            'not';
 
 statement
@@ -134,6 +141,8 @@ statement
     | errorStatement
     | localVariableDeclarationStatement
     | statementExpression
+    | newStatement
+    | Return
     ;
 
 
@@ -144,9 +153,11 @@ expression
     |   expression DOT Identifier
     |   expression DOT explicitGenericInvocation// | Identifier | PrimitiveType)
     |   expression LBRACK expression RBRACK
-    // |   expression LPAREN expressionList? RPAREN
+    |   expression LPAREN expressionList? RPAREN
     |   Not expression
+    |   New expression
     |   expression As type
+    |   expression Is Not? (type | literal)
     |   expression ('++' | '--')
     |   ('+'|'-'|'++'|'--') expression
     |   ('~'|'!') expression
@@ -210,6 +221,13 @@ forEachStatement
 
 errorStatement
     : Error LBRACK Identifier RBRACK expression
+    ;
+newStatement
+    : New expression
+    ;
+
+chronStatement
+    : 'at' .*?
     ;
 
 localVariableDeclarationStatement
@@ -294,11 +312,11 @@ PROCEDURE: 'procedure';
 FORMULA: 'formula';
 ON:   'on';
 OBJECT:   'object';
-OBJECT_MODIFIER:   'persistent';
+OBJECT_MODIFIER:   ('persistent' | 'shared');
 
 HOSTED:   ('hosted' | 'external' ) ;
 
-ProcedureModifier: ('generic' | 'specific');
+ProcedureModifier: ('generic' | 'specific' | 'onfirstrun');
 
 ENUM:   'enum' ;
 SETTING :   'setting';

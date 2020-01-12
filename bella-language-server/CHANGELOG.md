@@ -13,7 +13,7 @@
   * Object declaration traversing
   * Procedure Params
   * Procedure calls via 'call' statement
-  * NOTE: implementation assume you store component in `src/Domain/Components`
+  * NOTE: implementation assumes you store component in `src/Domain/Components`
   * HINT: you can use `alt+[left mouse click]` to go to definition in a quick manner
 * Command: `Bella: Generate Project Assets`
   * Compile all components from vscode

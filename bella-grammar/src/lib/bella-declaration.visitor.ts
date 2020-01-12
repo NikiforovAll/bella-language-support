@@ -50,7 +50,11 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         }
         let name = context.Identifier().text;
         let line = context.start.line - 1;
-        let returnTypeDeclaration = this.visitTypeLocal(context.type());
+        let returnTypeDeclaration;
+        let ctxType = context.type();
+        if(!!ctxType){
+            returnTypeDeclaration = this.visitTypeLocal(ctxType);
+        }
         let sod: SimpleObjectDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(line, 0, line),

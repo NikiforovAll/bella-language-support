@@ -17,7 +17,5 @@
 
 // TestCollection.Where(i => i.Data.Date()) // bugged
 
-procedure TestProcedure(Param1, Param2, out ParamOut1)
-    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
-    TaskId = BaseTask.id
-    TaskCatalog[TaskId] = BaseTask
+object RegularReminderMtpTemplateGeneration:MtpTemplateGeneration
+    unusedFormula():Boolean = false

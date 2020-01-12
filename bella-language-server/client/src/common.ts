@@ -173,7 +173,7 @@ export function getWorkspaceInformation(): WorkspaceFolderInformation {
         rootPath,
         sourceCodeLocationRelativePath: sourceCodeLocation,
         domainPath,
-        componentsPath: path.join(domainPath, 'Components'),
+        componentsPath: path.join(domainPath, 'components'),
         commonPath: path.join(domainPath, 'common'),
         tasksGenerated: fs.existsSync(path.join(rootPath, '.vscode', 'tasks.json'))
     };

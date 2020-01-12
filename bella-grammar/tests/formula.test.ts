@@ -22,7 +22,7 @@ formula ToProcessType(Flow):ProcessType = ProcessType.Flow`;
 });
 
 
-describe("procedure-declaration-generic-specific", () => {
+describe("formula-declaration-generic-specific", () => {
     it("should return parsed generic/specific formula", () => {
         let input = `
 generic formula ToProcessName(Flow):ProcessName = empty
@@ -41,3 +41,57 @@ specific formula ToProcessName(Order):ProcessName = if(Order.type == OrderType.N
 });
 
 
+describe("formula-declaration-complex", () => {
+    it("should return parsed generic/specific formula", () => {
+        let input = `formula AddDelay(DateTime, Delay, HolydaysCallendar):NewDateTime =
+    if(Delay.onlyWorking,
+    DateTime.AddWorkingDays(Delay.days, HolydaysCallendar),
+    DateTime.AddDays(Delay.days)
+    )
+
+formula SubtractDelay(DateTime, Delay, HolydaysCallendar):NewDateTime =
+    if(Delay.onlyWorking,
+    DateTime.AddWorkingDays(-Delay.days, HolydaysCallendar),
+    DateTime.AddDays(-Delay.days)
+    )
+
+formula AddDelays(DateTime, Delays, HolydaysCallendar):NewDateTime =
+    if(Delays.Count() == 0,
+    DateTime,
+    DateTime.AddDelay(Delays.First(), HolydaysCallendar).AddDelays(Delays.RemoveFirstDelay(), HolydaysCallendar))
+
+
+formula SubtractDelays(DateTime, Delays, HolydaysCallendar):NewDateTime =
+    if(Delays.Count() == 0,
+    DateTime,
+    DateTime.SubtractDelay(Delays.First(), HolydaysCallendar).SubtractDelays(Delays.RemoveFirstDelay(), HolydaysCallendar))
+
+formula RemoveFirstDelay(Delays):NewDelays = Delays.Where(x => x != Delays.First())
+
+formula AddWorkingDays(DateTime, Integer, HolydaysCallendar):NewDateTime =
+    if(HolydaysCallendar[DateTime.Date()],
+    DateTime.AddDays(1).AddWorkingDays(Integer, HolydaysCallendar),
+    if(Integer > 0, DateTime.AddDays(1).AddWorkingDays(Integer - 1, HolydaysCallendar), DateTime)
+    )
+
+formula GetMonthsDifference(EndOn, StartOn):Integer = (EndOn.Year() - StartOn.Year()) * 12 + EndOn.Month() - StartOn.Month()
+
+formula GetDutchMonthName(Integer):String = if(Integer == 1, "januari",
+    if(Integer == 2, "februari",
+    if(Integer == 3, "maart",
+    if(Integer == 4, "april",
+    if(Integer == 5, "mei",
+    if(Integer == 6, "juni",
+    if(Integer == 7, "juli",
+    if(Integer == 8, "augustus",
+    if(Integer == 9, "september",
+    if(Integer == 10, "oktober",
+    if(Integer == 11, "november", "december")))))))))))`;
+
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        expect(declarations).to.have.lengthOf(8);
+    });
+});

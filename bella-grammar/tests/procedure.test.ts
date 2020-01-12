@@ -36,6 +36,17 @@ procedure TestProcedure(Param1, Param2, out ParamOut1)
         }).to.eql(param1Pos);
     });
 });
+describe("procedure-declaration-generic-specific", () => {
+    it("should return parsed generic/specific procedure", () => {
+        let input = `hosted procedure Test1(T1, out T2)`;
+        // let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations ;
+        expect(declarations).to.have.lengthOf(1);
+    });
+});
 
 
 describe("procedure-declaration-generic-specific", () => {
@@ -78,6 +89,51 @@ procedure SaveGlEvent(GlEvent, SourceCreationDate)
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
+    });
+});
+
+describe("procedure-declaration-fairly-complex", () => {
+    it("should return parsed procedure body", () => {
+        let input = `
+procedure CrmPortalGetFilteredPagedEmployeeAccounts(CrmEmployeeFilterDto, PageNumber, PerPage, out PagedEmployeeAccountsDto)
+call NormalizeFilter(CrmEmployeeFilterDto)
+    if CrmEmployeeFilterDto.login is empty && CrmEmployeeFilterDto.roleNames is empty
+        PagedEmployeeAccounts = CrmBackend.GetFilteredPagedEmployeeAccounts(CrmEmployeeFilterDto.fullName, PageNumber, PerPage)
+
+        PagedEmployeeAccountsDto = new PagedEmployeeAccountsDto(
+            totalEmployeeAccounts = PagedEmployeeAccounts.totalEmployeeAccounts,
+            employeeAccountDtos = PagedEmployeeAccounts.employeeAccountsList.Select(
+                x =>
+                    x.ToDtoEmployee(
+                        IdentityServer.TryGetLoginInfoByAccountId(x.id)
+                        )
+                )
+            )
+    else
+        EmployeeAccountMap = if(
+            CrmEmployeeFilterDto.fullName is empty,
+            CrmBackend.GetEmployeeAccounts(),
+            CrmBackend.GetFilteredEmployeeAccounts(CrmEmployeeFilterDto.fullName)
+            )
+            .ToMap(id)
+        AccountIds = EmployeeAccountMap.Keys()
+        PagedLoginInfos = IdentityServer.GetFilteredPagedLoginInfos(AccountIds, CrmEmployeeFilterDto.login, CrmEmployeeFilterDto.roleNames, PageNumber, PerPage)
+
+        PagedEmployeeAccountsDto = new PagedEmployeeAccountsDto(
+            totalEmployeeAccounts = PagedLoginInfos.totalItemsCount,
+            employeeAccountDtos = PagedLoginInfos.loginInfos.Select(
+                x =>
+                    EmployeeAccountMap[x.accountId]
+                        .ToDtoEmployee(x)
+                )
+            )`;
+
+        let tree = BellaLanguageSupport.parse(input);
+        // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        // expect(declarations).to.have.lengthOf(1);
     });
 });
 

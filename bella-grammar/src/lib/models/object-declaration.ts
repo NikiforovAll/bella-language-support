@@ -6,7 +6,7 @@ export interface BaseObject extends BaseDeclaration {
     objectBase: ObjectBase
 }
 export interface SimpleObjectDeclaration extends BaseObject {
-    returnType: TypeDeclaration
+    returnType?: TypeDeclaration
     //TODO: add information about declared type
 }
 

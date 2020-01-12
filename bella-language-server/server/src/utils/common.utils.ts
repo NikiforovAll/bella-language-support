@@ -12,7 +12,7 @@ export namespace CommonUtils {
     export function getNamespaceFromURI(uri: string): string {
         // TODO: CRITICAL add functionally to get this token from configuration passed by client
         // getWorkspaceInformation() but for server
-        const sourceCodeLocation = 'src/Domain/Components/';
+        const sourceCodeLocation = 'src/Domain/components/';
         const componentDelimiter = '/'
         const pos = uri.lastIndexOf(sourceCodeLocation);
         let result;
