@@ -69,7 +69,6 @@ object Account
 
 object AccountIds:AccountId[*]
 
-
 enum BalanceRecordRevert
     NotSpecified
     Reverted

@@ -1,0 +1,1 @@
+object CustomType2: CustomType

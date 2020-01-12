@@ -1,0 +1,4 @@
+
+object Test:CustomType
+
+object Test2: CustomType2

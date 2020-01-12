@@ -6,15 +6,11 @@
 
 * Command: `Go To Symbol in File...`
   * Keyboard shortcut: `ctrl + o`)
-  * Component Service declaration e.g.: `hosted service MyAwesomeService on [Connector]`
-  * TODO: procedure
-  * TODO: object
-  * TODO: formula
-  * TODO: setting
-  * TODO: service as interface declaration
 * Command: `Go To Symbol in Workspace...`
   * Keyboard shortcut: `ctrl + t`
-* TODO: Go To Definition
+* TODO: Command: `Go To Definition...`
+  * Component scoped search
+  * NOTE: implementation assume you store component in `src/Domain/Components`
 * Command: `Bella: Generate Project Assets`
   * Compile all components from vscode
   * Keyboard shortcut:  `ctrl+shift+b`

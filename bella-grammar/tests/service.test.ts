@@ -3,6 +3,7 @@ import {
     ObjectBase,
     ServiceDeclaration} from "../src/lib/index";
 import { expect, assert } from "chai";
+import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 describe("service-declaration", () => {
     it("should return parsed service", () => {
         let input = `
@@ -14,7 +15,7 @@ service TestService
     MethodWithNothing()`;
 
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);

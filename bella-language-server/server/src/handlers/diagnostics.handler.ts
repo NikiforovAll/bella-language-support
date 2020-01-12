@@ -1,6 +1,6 @@
 import * as LSP from 'vscode-languageserver'
 import { TextDocument, Diagnostic } from 'vscode-languageserver';
-import { DiagnosticsFactory } from '../diagnostics-factory';
+import { DiagnosticsFactory } from '../factories/diagnostics.factory';
 
 
 // The example settings

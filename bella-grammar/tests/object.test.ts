@@ -4,11 +4,12 @@ import {
     CompositeObjectDeclaration,
     ObjectBase } from "../src/lib/index";
 import { expect, assert } from "chai";
+import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 describe("object-declaration", () => {
     it("should return parsed alias", () => {
         let input = "object Test:String";
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
@@ -28,7 +29,7 @@ object TestName
     category:CustomCategoryType
     dates:DateTime[*]`;
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
@@ -56,7 +57,7 @@ object Account
     fullName:FullName = firstName ++= 3   (if (IsEmpty(prefix, test), " ", (" " + prefix + " "))) + lastName
     lastName:LastName`;
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);

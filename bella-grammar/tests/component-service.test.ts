@@ -1,5 +1,6 @@
 import { BellaLanguageSupport } from "../src/lib/index";
 import { expect } from "chai";
+import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 
 describe("component-hosted-service-declaration", () => {
     it("should return parsed component service", () => {
@@ -12,7 +13,7 @@ describe("component-hosted-service-declaration", () => {
         // expect(result)
         //     .to.eql(["external", "service", "InvoiceGenerator", "on", "[" , "InvoiceGenerator" , "]"], 'failed tokenization');
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let serviceDeclarations = visitor.declarations;
         expect(serviceDeclarations).to.have.lengthOf(1);

@@ -1,6 +1,7 @@
 import {DocumentSymbolParams, LocationLink, Position} from 'vscode-languageserver'
 import { LSPDeclarationRegistry } from '../lsp-declaration-registry';
 import { LSPReferenceRegistry } from '../lsp-references-registry';
+import { ReferenceFactoryMethods } from '../factories/reference.factory';
 
 export class DefinitionHandler {
     constructor(
@@ -16,12 +17,17 @@ export class DefinitionHandler {
         if(!referenceToken){
             return [];
         }
-        let declarations = this.cache
-            .getLSPDeclarationsForName(
+        let symbols = this.cache.getLSPDeclarationsForNameAndType(
                 referenceToken.nameTo,
+                referenceToken.referenceTo,
                 params.textDocument.uri);
-        //TODO: major Map Declaration to LocationLink
-        return [];
+        let result: LocationLink[] = [];
+        for (const symbol of symbols) {
+            let ll = ReferenceFactoryMethods
+                .createLSPLocationLink(symbol, referenceToken);
+            result.push(ll);
+        }
+        return result;
     }
 }
 

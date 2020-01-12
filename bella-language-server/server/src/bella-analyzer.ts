@@ -107,7 +107,7 @@ export default class BellaAnalyzer {
             this.referencesCache.setReferences(res.references, uri);
         } catch (error) {
             this.connection.console.warn(`Parsing Error: ${error}`);
-        }
+    }
 
         // this.uriToTextDocument[uri] = document
         // this.uriToTreeSitterTrees[uri] = tree

@@ -12,6 +12,7 @@ import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer';
 import { BellaParser } from '../grammars/.antlr4/BellaParser';
 import { BellaDeclarationVisitor } from './bella-declaration.visitor';
 import { BellaErrorStrategy } from './bella-error-strategy';
+import { BellaReferenceVisitor } from './bella-reference.visitor';
 
 export {
     BaseDeclaration,
@@ -70,8 +71,15 @@ export class BellaLanguageSupport {
         return ctx;
     }
 
-    public static generateVisitor(): BellaDeclarationVisitor {
-        return new BellaDeclarationVisitor();
+    public static generateVisitor(type: VisitorType = VisitorType.DeclarationVisitor) {
+        switch (type) {
+            case VisitorType.DeclarationVisitor:
+                return new BellaDeclarationVisitor();
+            case VisitorType.ReferencesVisitor:
+                return new BellaReferenceVisitor();
+            default:
+                throw Error('Can\'t create visitor: unknown type');
+        }
     }
 
     public static generateParser(input: string): BellaParser {
@@ -81,4 +89,9 @@ export class BellaLanguageSupport {
         var parser = new BellaParser(commonTokenStream);
         return parser;
     }
+}
+
+export enum VisitorType {
+    DeclarationVisitor,
+    ReferencesVisitor
 }

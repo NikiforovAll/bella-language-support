@@ -11,7 +11,7 @@ describe("throws-error", () => {
         expect( () =>{
             let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
             // let tree = BellaLanguageSupport.parse(input);
-            visitor = BellaLanguageSupport.generateVisitor();
+            visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
             visitor.visit(tree);
         }).to.throw(BellaRecognitionException, /extraneous/g, "Error doesn't contain 'extraneous' in it");
     });

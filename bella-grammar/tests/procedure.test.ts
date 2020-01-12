@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { BellaErrorStrategy, BellaLanguageSupport, ProcedureDeclaration } from '../src/lib';
+import { BellaDeclarationVisitor } from '../src/lib/bella-declaration.visitor';
 
 
 describe("procedure-declaration", () => {
@@ -20,7 +21,7 @@ procedure TestProcedure(Param1, Param2, out ParamOut1)
         let tree = BellaLanguageSupport.parse(input);
         // let parser = BellaLanguageSupport.generateParser(input);
         // let tree = parser.statement();
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
@@ -49,9 +50,9 @@ specific procedure Test1(TS1, out T2)
 
         let tree = BellaLanguageSupport.parse(input);
         // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
-        let declarations = visitor.declarations;
+        let declarations = visitor.declarations ;
         expect(declarations).to.have.lengthOf(2);
         let [ d1, d2 ] = declarations as ProcedureDeclaration[];
         expect(d1.name).to.equal('Test1(T1,out T2)', 'declaration is parsed incorrectly');
@@ -73,7 +74,7 @@ procedure SaveGlEvent(GlEvent, SourceCreationDate)
 
         // let tree = BellaLanguageSupport.parse(input);
         let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);

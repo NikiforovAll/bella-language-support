@@ -1,5 +1,7 @@
 import { BellaLanguageSupport, ProcedureDeclaration, FormulaDeclaration } from "../src/lib/index";
 import { expect, assert } from "chai";
+import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
+import { BellaReferenceVisitor } from "../src/lib/bella-reference.visitor";
 describe("formula-declaration", () => {
     it("should return parsed formula", () => {
         let input = `
@@ -10,7 +12,7 @@ formula ToProcessType(Flow):ProcessType = ProcessType.Flow`;
             endPosition: input.indexOf(param1) + param1.length - 1
         };
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
@@ -28,7 +30,7 @@ generic formula ToProcessName(Flow):ProcessName = empty
 specific formula ToProcessName(Order):ProcessName = if(Order.type == OrderType.New,"New contract","Order prolongation")`;
 
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(2);

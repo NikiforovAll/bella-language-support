@@ -27,6 +27,11 @@
             "label": "antlr4 grun",
             "type": "shell",
             "command": "cd ./.antlr4 && grun.bat Bella compilationUnit -tree compilationUnit -gui '../samples/bella-grammar1.bs'"
+        },
+        {
+            "label": "run-mocha-current-file",
+            "type": "shell",
+            "command": "npx mocha -r ts-node/register '${file}'"
         }
     ]
 }

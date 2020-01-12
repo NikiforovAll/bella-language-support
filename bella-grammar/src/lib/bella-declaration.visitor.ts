@@ -31,6 +31,7 @@ import { ServiceDeclaration } from "./models/service-declaration";
 import { ProcedureDeclaration } from "./models/procedure-declaration";
 import { FormulaDeclaration } from "./models/formula-declaration";
 import { BellaReference } from "./models/bella-reference";
+import { BellaVisitorUtils } from "./visitor.utils";
 
 //TODO: fix any visitor result
 export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BaseDeclaration> {
@@ -40,7 +41,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     // top level declarations
     public declarations: BaseDeclaration[] = [];
-    public references: BellaReference[] = [];
+    // public references: BellaReference[] = [];
 
     visitSimpleObjectDeclaration(context: SimpleObjectDeclarationContext): SimpleObjectDeclaration{
         let type = DeclarationType.Object;
@@ -57,13 +58,6 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             returnType: returnTypeDeclaration,
             objectBase: ObjectBase.Alias
         };
-        if(returnTypeDeclaration.objectBase === ObjectBase.Alias){
-            this.references.push({
-                nameTo: returnTypeDeclaration.name,
-                range: returnTypeDeclaration.range,
-                referenceTo: DeclarationType.Object
-            });
-        }
         this.declarations.push(sod);
         return sod;
     }
@@ -278,22 +272,4 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     //     let filtered = context.getTokens(identifierTokenNumber).filter((t: TerminalNode) => t.text);
     //     return [];
     // }
-}
-
-namespace BellaVisitorUtils {
-    export function getCollectionTypeFromContext(context: TypeContext): ObjectBase {
-        if(!!context.collectionDeclaration()) {
-            return ObjectBase.Collection;
-        }
-        if(!!context.PrimitiveType()) {
-            return ObjectBase.PrimitiveType;
-        }
-        return ObjectBase.Alias;
-    }
-
-    export function createRange(x1: number, x2: number, y1: number, y2: number = Number.MAX_SAFE_INTEGER) {
-        return {
-            startPosition: {row: x1, col: x2}, endPosition: {row: y1, col: y2}
-        };
-    }
 }

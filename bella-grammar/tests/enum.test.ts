@@ -2,6 +2,7 @@ import {
     BellaLanguageSupport, MemberComposite } from "../src/lib/index";
 import { expect, assert } from "chai";
 import { EnumDeclaration } from "../src/lib/models/enum-declaration";
+import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 describe("enum-declaration", () => {
     it("should return parsed enum", () => {
         let input = `
@@ -9,7 +10,7 @@ enum TestEnumName
     One
     Two`;
         let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor();
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);

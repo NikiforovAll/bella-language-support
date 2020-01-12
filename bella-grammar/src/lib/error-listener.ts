@@ -4,6 +4,7 @@ export class ThrowingErrorListener extends DiagnosticErrorListener {
     public static INSTANCE: ThrowingErrorListener = new ThrowingErrorListener();
 
 
+    //TODO: check impl https://github.com/GeorgDangl/antlr-calculator/blob/master/Calculator.ts
     syntaxError(
         recognizer: any,
         offendingSymbol: any,
