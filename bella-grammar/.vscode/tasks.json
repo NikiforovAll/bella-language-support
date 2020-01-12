@@ -15,14 +15,13 @@
         {
             "label": "antlr4 compile-js",
             "type": "shell",
-            "command": "antlr4 ./src/grammars/Bella.g4 -o src/grammars/.antlr4 -Dlanguage=JavaScript",
+            "command": "antlr4 ./src/grammars/Bella.g4 -o src/grammars/.antlr4 -Dlanguage=JavaScript"
         },
         {
             "label": "antlr4 compile-java",
             "type": "shell",
-            "command": "antlr4 ./src/grammars/Bella.g4 -o ./src/grammars/.antlr",
+            "command": "antlr4 ./src/grammars/Bella.g4 -o ./src/grammars/.antlr"
         },
-        // does not work atm
         {
             "label": "antlr4 grun",
             "type": "shell",
@@ -31,7 +30,8 @@
         {
             "label": "run-mocha-current-file",
             "type": "shell",
-            "command": "npx mocha -r ts-node/register '${file}'"
+            "command": "npx mocha -r ts-node/register '${file}'",
+            "problemMatcher": []
         }
     ]
 }

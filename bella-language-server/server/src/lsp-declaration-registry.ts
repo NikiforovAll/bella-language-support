@@ -155,7 +155,12 @@ export class DeclarationKey {
 
     }
     toString() {
-        return `${this.name} - ${this.type}`;
+        const name = this.name;
+        const takeNumChars = name
+            .indexOf('(') === -1 ? name.length : name.indexOf('(');
+        let truncatedName = name.substr(0, takeNumChars);
+        return `${truncatedName} - ${this.type}`;
+        // return `${this.name} - ${this.type}`;
     }
 }
 

@@ -1,6 +1,6 @@
 # Bella Language Server Changelog
 
-## draft-version - v0.2.0
+## draft-version - v0.2.5
 
 ### Addded
 
@@ -8,9 +8,13 @@
   * Keyboard shortcut: `ctrl + o`)
 * Command: `Go To Symbol in Workspace...`
   * Keyboard shortcut: `ctrl + t`
-* TODO: Command: `Go To Definition...`
+* Command: `Go To Definition...` (limited implementation)
   * Component scoped search
+  * Object declaration traversing
+  * Procedure Params
+  * Procedure calls via 'call' statement
   * NOTE: implementation assume you store component in `src/Domain/Components`
+  * HINT: you can use `alt+[left mouse click]` to go to definition in a quick manner
 * Command: `Bella: Generate Project Assets`
   * Compile all components from vscode
   * Keyboard shortcut:  `ctrl+shift+b`

@@ -73,6 +73,7 @@ procedure GetGlEvent(SourceCreationDate, GlEventType, SourceId, out GlEvent)
     call CheckGlEventExisting(SourceCreationDate = SourceCreationDate, GlEventType = GlEventType, SourceId = SourceId)
     GlEvent = GlEventsByDate[SourceCreationDate][GlEventType][SourceId].currentGlEvent
 
+
 procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
     // call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
     GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
@@ -80,7 +81,6 @@ procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProce
     CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = asd
 
 object GlEventId:String
-object SourceId:String
 object GlRecord:String
 
 object GlEvent
