@@ -55,7 +55,7 @@ objectBody
     :   (objectFieldDeclaration)+
     ;
 objectFieldDeclaration
-    :   Identifier (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
+    :   (Identifier|PrimitiveType) (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions

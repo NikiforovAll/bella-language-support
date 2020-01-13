@@ -52,7 +52,7 @@ export default class BellaServer {
 		this.documents.listen(this.connection)
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			const { uri } = change.document
-			this.diagnosticsHandler.validateTextDocument(change.document);
+			// this.diagnosticsHandler.validateTextDocument(change.document);
 			this.analyzer.analyze(change.document);
 		})
 		// Register all the handlers for the LSP events.

@@ -17,5 +17,1304 @@
 
 // TestCollection.Where(i => i.Data.Date()) // bugged
 
-object RegularReminderMtpTemplateGeneration:MtpTemplateGeneration
-    unusedFormula():Boolean = false
+
+setting PlannedDeliveryDateDelay:Number = 30
+object TotalMatches:Integer
+object OrderOnHoldSettingListDto:OrderOnHoldSettingDto[*]
+object OrderInfoShortDtoList:OrderInfoShortDto[*]
+
+object AddressDtoList:AddressDto[*]
+object VoipSettingsId:String
+object ValidationResult: Integer
+
+object SetCreditRiskLevelRequest
+    orderId: OrderId
+    creditRiskLevel: CreditRiskLevel
+
+object SetOrderInstallationDateRequest
+    orderId: OrderId
+    installationDate: InstallationDate
+
+object OrderInfoShortDto
+    id:OrderId
+    status:OrderStatus
+    isNewCustomer:Boolean
+    isInstallationHelpNeeded:Boolean
+    isOrderFromMyNle:Boolean
+    createdOn:DateTime
+    startOn:StartOn
+    endOn:EndOn
+    canOnHoldBeManuallyResolved:Boolean
+    canBePutOnHold:CanBePutOnHold
+    salesOfficeId:SalesOfficeId
+    salesPartnerName:AccountName
+    customerName:AccountName
+    customerId:AccountId
+    zipcode:Zip
+    type:OrderType
+    startWishDate:StartWishDate
+
+
+object AddressDto
+    zip:String
+    country:Country
+    city:City
+    street:Street
+    houseNumber:String
+    extension:String
+    apartment:String
+
+formula ToDto(Address):AddressDto = new AddressDto(
+    zip = Address.zip,
+    country = Address.country,
+    city = Address.city,
+    street = Address.street,
+    houseNumber = Address.houseNumber,
+    extension = Address.extension,
+    apartment = Address.apartment)
+
+object CustomerAccountListDtos:CustomerAccountListDto[*]
+
+object CrmCustomerAccountDetails
+    customerAccount:CustomerAccountDto
+    serviceAccounts:ServiceAccountDto[*]
+    serviceCategoryIds:ServiceCategoryId[*]
+
+object CustomerAccountDto
+    id:AccountId
+    firstName:FirstName
+    lastName:LastName
+    initials:Initials
+    prefix:Prefix
+    gender:Gender
+    dateOfBirth:DateOfBirth
+    contactInfo:ContactInfoDto
+    billingAddress:AddressDto
+    login:Login
+    assignedMemberIbans:MemberIban[*]
+    emails:CustomerAccountEmail[*]
+    warning:WarningMessage
+
+object CrmCustomerAccountDto
+    id:AccountId
+    fullName:FullName
+    gender:Gender
+    dateOfBirth:DateOfBirth
+    email:Email
+    phoneNumbers:String
+    fullAddress:String
+    serviceAccountsIds:ServiceAccountId[*]
+    isFullMatch:Boolean
+    assignedMemberIbans:MemberIban[*]
+
+object CrmCustomerAccountDtos:CrmCustomerAccountDto[*]
+
+object DuplicateCheckInfoForOrder
+    isDuplicateCheckPending:Boolean
+    isBlockedByDuplicateCheck:Boolean
+    duplicatedOrderInfoItems:DuplicateOrderInfoDto[*]
+
+object CustomerAccountListDto
+    id:AccountId
+    firstName:FirstName
+    lastName:LastName
+    gender:Gender
+    contactInfo:ContactInfoDto
+
+formula ToDto(CustomerAccount):CustomerAccountDto = new CustomerAccountDto(
+    id = CustomerAccount.id,
+    firstName = CustomerAccount.firstName,
+    lastName = CustomerAccount.lastName,
+    initials = CustomerAccount.initials,
+    prefix = CustomerAccount.prefix,
+    gender = CustomerAccount.gender,
+    dateOfBirth = CustomerAccount.dateOfBirth,
+    contactInfo = CustomerAccount.contactInfo.ToDto(),
+    billingAddress = CustomerAccount.billingAddress.ToDto(),
+    assignedMemberIbans = CustomerAccount.assignedMemberIbans,
+    emails = CustomerAccount.emails)
+
+formula ToListDto(CustomerAccount):CustomerAccountListDto = new CustomerAccountListDto(id = CustomerAccount.id,
+    firstName = CustomerAccount.firstName, lastName = CustomerAccount.lastName,
+    gender = CustomerAccount.gender, contactInfo = CustomerAccount.contactInfo.ToDto())
+
+formula ToCrmDto(CustomerAccount):CrmCustomerAccountDto = new CrmCustomerAccountDto(
+    id = CustomerAccount.id,
+    fullName = CustomerAccount.fullName,
+    gender = CustomerAccount.gender,
+    dateOfBirth = CustomerAccount.dateOfBirth,
+    email = CustomerAccount.contactInfo.email,
+    phoneNumbers = CustomerAccount.contactInfo.phoneInfoList.Select(pi => pi.phoneNumber).JoinToString(", "),
+    fullAddress = CustomerAccount.billingAddress.fullAddress,
+    assignedMemberIbans = CustomerAccount.assignedMemberIbans)
+
+
+object ServiceAccountListDtos:ServiceAccountListDto[*]
+
+
+object ServiceAccountDto
+    id:ServiceAccountId
+    startOn:StartOn
+    endOn:EndOn
+    shippingAddress:AddressDto
+    state:ServiceAccountStatus
+    subscriptionsIds:SubscriptionId[*]
+    serviceCategoryId:ServiceCategoryId
+    isProlongationOfferExits:Boolean
+
+object CrmServiceAccountDto
+    id:ServiceAccountId
+    startOn:StartOn
+    endOn:EndOn
+    shippingAddress:AddressDto
+    state:ServiceAccountStatus
+    subscriptionsIds:SubscriptionId[*]
+    paymentMethod:PaymentMethod
+
+object CrmServiceAccountDtos:CrmServiceAccountDto[*]
+
+object MyNleServiceAccountDto
+    id:ServiceAccountId
+    startOn:StartOn
+    endOn:EndOn
+    shippingAddress:AddressDto
+    state:ServiceAccountStatus
+    subscriptionsIds:SubscriptionId[*]
+
+object MyNleServiceAccountDtos:MyNleServiceAccountDto[*]
+
+object ServiceAccountListDto
+    id:ServiceAccountId
+    startOn:StartOn
+    endOn:EndOn
+    shippingAddress:AddressDto
+    state:ServiceAccountStatus
+
+formula ToDto(ServiceAccount):ServiceAccountDto = new ServiceAccountDto(id = ServiceAccount.id,
+    startOn = ServiceAccount.startOn, endOn = ServiceAccount.endOn,
+    shippingAddress = ServiceAccount.shippingAddress.ToDto(),
+    state = ServiceAccount.serviceAccountStateHistory.Last().status,
+    subscriptionsIds = ServiceAccount.subscriptions.Select(id),
+    serviceCategoryId = ServiceAccount.serviceCategoryId)
+
+formula ToListDto(ServiceAccount):ServiceAccountListDto = new ServiceAccountListDto(id = ServiceAccount.id,
+    startOn = ServiceAccount.startOn, endOn = ServiceAccount.endOn,
+    shippingAddress = ServiceAccount.shippingAddress.ToDto(), state = ServiceAccount.getStatus(now))
+
+formula ToCrmDto(ServiceAccount):CrmServiceAccountDto = new CrmServiceAccountDto(
+    id = ServiceAccount.id,
+    startOn = ServiceAccount.startOn,
+    endOn = ServiceAccount.endOn,
+    shippingAddress = ServiceAccount.shippingAddress.ToDto(),
+    state = ServiceAccount.getStatus(now),
+    subscriptionsIds = ServiceAccount.subscriptions.Select(id),
+    paymentMethod = ServiceAccount.paymentMethod
+    )
+
+
+formula ToMyNleDto(ServiceAccount):MyNleServiceAccountDto = new MyNleServiceAccountDto(
+    id = ServiceAccount.id,
+    startOn = ServiceAccount.startOn,
+    endOn = ServiceAccount.endOn,
+    shippingAddress = ServiceAccount.shippingAddress.ToDto(),
+    state = ServiceAccount.getStatus(now),
+    subscriptionsIds = ServiceAccount.subscriptions.Select(id))
+
+object SubscriptionListDtos:SubscriptionListDto[*]
+
+object SubscriptionListDto
+    id:SubscriptionId
+    startOn:DateTime
+    endOn:DateTime
+    productName:ProductName
+
+object CrmSubscriptionListDto
+    id:SubscriptionId
+    startOn:DateTime
+    endOn:DateTime
+    productName:String
+
+object CrmSubscriptionListDtos:CrmSubscriptionListDto[*]
+
+formula ToCrmDto(Subscription, ProductName):CrmSubscriptionListDto = new CrmSubscriptionListDto
+    (
+    id = Subscription.id,
+    startOn = Subscription.startOn,
+    endOn = Subscription.endOn,
+    productName = ProductName
+    )
+
+formula ToListDto(Subscription, ProductName):SubscriptionListDto = new SubscriptionListDto
+    (
+    id = Subscription.id,
+    startOn = Subscription.startOn,
+    endOn = Subscription.endOn,
+    productName = ProductName
+    )
+
+object EventRateClassCoverageDto
+    id:EventRateClassCoverageId
+    eventRateClassId:RateClassId
+    coversFixedPrice:CoversFixedPrice
+    coversVariablePrice:CoversVariablePrice
+    startOn:StartOn
+    endOn:EndOn
+
+object EventRateClassCoverageDtos:EventRateClassCoverageDto[*]
+
+object EventRateClassCoverageDtosCollection:EventRateClassCoverageDtos[RateClassId]
+
+object BundleCoverageDto
+    size:Size
+    measure:BundleMeasure
+    rateClassCoverages:EventRateClassCoverageDtosCollection
+    warningLimit:WarningLimit
+
+object BundleDto
+    id:BundleId
+    name:BundleName
+    startSupplyOn:DateTime
+    endSupplyOn:DateTime
+    bundlePeriodicity:BundlePeriodicity
+    isMonthlyTerminable:IsMonthlyTerminable
+    typeOfServiceId:TypeOfServiceId
+    bundleTypeId:BundleTypeId
+
+object BundleDtos:BundleDto[*]
+
+formula ToPartnerPortalDto(Bundle):BundleDto = new BundleDto(
+    id = Bundle.id,
+    name = Bundle.name,
+    startSupplyOn = Bundle.startSupplyOn,
+    endSupplyOn = Bundle.endSupplyOn,
+    bundlePeriodicity = Bundle.bundlePeriodicity,
+    isMonthlyTerminable = Bundle.isMonthlyTerminable,
+    bundleTypeId = Bundle.bundleTypeId,
+    typeOfServiceId = Bundle.typeOfServiceId)
+
+formula ToCrmDto(Bundle):BundleDto = new BundleDto(
+    id = Bundle.id,
+    name = Bundle.name,
+    startSupplyOn = Bundle.startSupplyOn,
+    endSupplyOn = Bundle.endSupplyOn,
+    bundlePeriodicity = Bundle.bundlePeriodicity,
+    isMonthlyTerminable = Bundle.isMonthlyTerminable,
+    bundleTypeId = Bundle.bundleTypeId,
+    typeOfServiceId = Bundle.typeOfServiceId)
+
+formula ToCrmDto(EventRateClassCoverage):EventRateClassCoverageDto = new EventRateClassCoverageDto(
+    id = EventRateClassCoverage.id,
+    eventRateClassId = EventRateClassCoverage.eventRateClass.id,
+    coversFixedPrice = EventRateClassCoverage.coversFixedPrice,
+    coversVariablePrice = EventRateClassCoverage.coversVariablePrice,
+    startOn = EventRateClassCoverage.startOn,
+    endOn = EventRateClassCoverage.endOn)
+
+object PropositionCheckInfoDto
+    saleDate:DateTime
+    errors:OrderPropositionErrorList
+    propositionId:PropositionId
+    vendorName:String
+    propositionName:PropositionName
+    isSuccessful:Boolean = !errors.Any()
+    isPostponed:Boolean
+
+object DashboardOrderDto
+    id:OrderId
+    assignedOrderInfo:AssignedOrderInfoDto
+    serviceCategoryId:ServiceCategoryId
+    mandate:MandateDto
+    isMandateCreated:IsMandateCreated
+    currentState:OrderEventType
+    customerMatches:CustomerAccountMatches
+    stateHistory:OrderEventType[*]
+    status:OrderStatus
+    log:OrderEventDto[*]
+    lastOrderEvent:OrderEventDto
+    dateOfGeneration: Date
+    customer:OrderCustomerInfoDto
+    matchedCustomer: CustomerAccountDto
+    isNewCustomer:IsNewCustomer
+    type:OrderType
+    inCooldownTill:Date
+
+    creditCheckScore:CreditScore
+    creditCheckRiskLevel:CreditRiskLevel
+    internetBundles:AvailableBundles
+    tvBundles:AvailableBundles
+    voipBundles:AvailableBundles
+    isInstallationOrderActive:Boolean
+
+    allAvailablePropositionProducts:AvailableProducts
+    propositionId: PropositionId
+    maxMatchScoreInSystem: Integer
+    propositionCheckInfo:PropositionCheckInfoDto
+
+    startSupplyInfo:StartSupplyInfoDto
+    cooldownDaysLeft: Integer
+
+    contractId:StorageFileId
+    contractSentOn:SentOn
+    createdOn:CreatedOn
+    endOn:EndOn
+
+    paymentMethod:PaymentMethod
+
+    awaitsDeepCheck:AwaitsDeepCheck
+    shippingAddress:Address
+    salesPartnerOrderId:String
+
+    warrantyDepositAmount:Amount
+
+object CheckAndSetCreditScoreResponse
+    creditCheckScore:CreditScore
+    creditCheckRiskLevel:CreditRiskLevel
+
+formula ToDashboardOrderDto(Order): DashboardOrderDto = new DashboardOrderDto(
+    id = Order.id,
+    assignedOrderInfo = Order.assignedOrderInfo.ToDto(),
+    mandate = Order.mandate.ToDto(),
+    isMandateCreated = Order.isMandateCreated,
+    currentState = Order.state.type,
+    stateHistory = Order.stateHistory.Select(s => s.type),
+    customerMatches = if(Order.state is AwaitsSetOfCustomerAccountOrderState, (Order.state as AwaitsSetOfCustomerAccountOrderState).customerAccountMatches,
+                        if(Order.state is CustomerIdCheckPerformedOrderState, (Order.state as CustomerIdCheckPerformedOrderState).customerAccountMatches, new CustomerAccountMatches())),
+    status = Order.status,
+    inCooldownTill = Order.inCooldownTill,
+    type = Order.type,
+    log = Order.stateHistory.Select(x => x.ToDto()),
+    lastOrderEvent = Order.state.ToDto(),
+    dateOfGeneration = today,
+    customer = Order.customer.ToDto(),
+    isNewCustomer = Order.isNewCustomer,
+    creditCheckRiskLevel = Order.riskLevel,
+    propositionId = Order.propositionId,
+    createdOn = Order.createdOn,
+    endOn = Order.endOn,
+    serviceCategoryId = Order.serviceCategoryId,
+    paymentMethod = Order.initialInvoicePaymentMethod,
+    awaitsDeepCheck = false,
+    shippingAddress = Order.shippingAddress,
+    salesPartnerOrderId = Order.salesPartnerOrderId)
+
+object CrmPortalInvoiceDto
+    id:InvoiceId
+    accountId:AccountId
+    serviceAccountId:ServiceAccountId
+    iban:String
+    paylink:PaylinkDto
+    paymentMethod:PaymentMethod
+    createdOn:DateTime
+    paidOn:DateTime
+    status:InvoiceStatus
+    amount:Amount
+    billPeriod:BillPeriod
+    sentToBank:SentToBank
+    hasDunningBlock:HasDunningBlock
+    hasClearingBlock:HasClearingBlock
+    type:InvoiceType
+    leftToPay:LeftToPay
+    dueDate:DueDate
+    invoiceItems:CrmPortalInvoiceItemDtoCollection
+    isRejected:Boolean
+    dunningStarted:Boolean
+    hasUnrespondedPaymentRequest:Boolean
+    hasDirectDebitBlock:HasDirectDebitBlock
+    paymentFailed:Boolean
+    dunningLevel:Integer
+
+formula ToCrmPortalInvoiceDto(Invoice): CrmPortalInvoiceDto = Invoice.ToCrmPortalInvoiceDto(Invoice.amount, Invoice.leftToPay, Invoice.invoiceItems)
+
+formula ToCrmPortalInvoiceDto(Invoice, Amount, LeftToPay, InvoiceItems): CrmPortalInvoiceDto = new CrmPortalInvoiceDto(
+    id = Invoice.id,
+    accountId = Invoice.accountId,
+    serviceAccountId = Invoice.serviceAccountId,
+    iban = Invoice.iban,
+    paymentMethod = Invoice.paymentMethod,
+    createdOn = Invoice.createdOn,
+    paidOn = Invoice.GetInvoicePaidDate(),
+    status = Invoice.status,
+    amount = Amount,
+    type = Invoice.type,
+    leftToPay = LeftToPay,
+    dueDate = Invoice.dueDate,
+    billPeriod = Invoice.billPeriod,
+    paymentFailed = !Invoice.HasUnrespondedPaymentRequest() && Invoice.eventHistory.Any(eventType == InvoiceEventType.PaymentReversed || eventType == InvoiceEventType.MtPRequestExpired),
+    sentToBank = if(Invoice.eventHistory.Any(e => e.eventType == InvoiceEventType.PostedToBank),true,false),
+    invoiceItems = InvoiceItems.Select(ii => ii.ToCrmPortalDto()),
+    isRejected = Invoice.eventHistory.Any(e => e.eventType == InvoiceEventType.PaymentReversed || e.eventType == InvoiceEventType.MtPRequestExpired),
+    dunningStarted = Invoice.eventHistory.Any(e => e.eventType == InvoiceEventType.DunningStarted),
+    hasUnrespondedPaymentRequest = Invoice.HasUnrespondedPaymentRequest())
+
+formula GetInvoicePaidDate(Invoice): DateTime = if(Invoice.status == InvoiceStatus.Paid, Invoice.eventHistory.First(ie => ie.eventType == InvoiceEventType.Paid).dateTime, emptyDateTime as DateTime)
+
+
+object MyNleInvoiceDto
+    id:InvoiceId
+    accountId:AccountId
+    serviceAccountId:ServiceAccountId
+    createdOn:DateTime
+    dueDate:DateTime
+    type:InvoiceType
+    status:InvoiceStatus
+    amount:Decimal
+    leftToPay:Decimal
+    paylink:PaylinkDto
+    dunningLevel:Integer
+
+object PaylinkDto
+    mpId:MpId
+    url:String
+    status:MtpPaymentRequestStatus
+
+object PaylinkDtoByInvoiceId:PaylinkDto[InvoiceId]
+
+object MyNleInvoiceDtos:MyNleInvoiceDto[*]
+
+formula ToMyNleEntryDto(Invoice):MyNleInvoiceDto = new MyNleInvoiceDto(
+    amount = Invoice.amount,
+    createdOn = Invoice.createdOn,
+    dueDate = Invoice.dueDate,
+    id = Invoice.id,
+    leftToPay = Invoice.leftToPay,
+    serviceAccountId = Invoice.serviceAccountId,
+    status = Invoice.status,
+    type = Invoice.type)
+
+formula ToDto(MtpPaylinkPaymentRequest):PaylinkDto = new PaylinkDto(
+    mpId = MtpPaylinkPaymentRequest.mpId,
+    url = MtpPaylinkPaymentRequest.url,
+    status = MtpPaylinkPaymentRequest.status
+    )
+
+object PartnerPortalProductDto
+    id:ProductId
+    name:ProductName
+
+object PartnerPortalProductDtos:PartnerPortalProductDto[*]
+
+formula ToPartnerPortalDto(Product):PartnerPortalProductDto = new PartnerPortalProductDto(
+    id = Product.id,
+    name = Product.name)
+
+object CrmPagedCustomerAccountsDto
+    customerAccounts: CrmCustomerAccountDto[*]
+    totalCustomerAccounts: Integer
+    totalPages: Integer
+    pageNumber: PageNumber
+
+object OrderOnHoldSettingDto
+    id:SettingId
+    name:SettingName
+    filters:String
+
+formula ToCrmDto(CustomerAccountWrapper):CrmCustomerAccountDto = new CrmCustomerAccountDto(
+    id = CustomerAccountWrapper.customerAccount.id,
+    fullName = CustomerAccountWrapper.customerAccount.fullName,
+    gender = CustomerAccountWrapper.customerAccount.gender,
+    dateOfBirth = CustomerAccountWrapper.customerAccount.dateOfBirth,
+    email = CustomerAccountWrapper.customerAccount.contactInfo.email,
+    phoneNumbers = CustomerAccountWrapper.customerAccount.contactInfo.phoneInfoList.Select(pi => pi.phoneNumber).JoinToString(", "),
+    fullAddress = CustomerAccountWrapper.customerAccount.billingAddress.fullAddress,
+    isFullMatch = CustomerAccountWrapper.isFullMatch
+    )
+
+formula ToPagedCustomerAccountsDto(PagedCustomerAccounts):CrmPagedCustomerAccountsDto = new CrmPagedCustomerAccountsDto(
+    customerAccounts = PagedCustomerAccounts.customerAccountsWrapperList.Select(caw => caw.ToCrmDto()),
+    totalPages = PagedCustomerAccounts.totalPages,
+    pageNumber = PagedCustomerAccounts.pageNumber)
+
+formula ToDto(AnnaOrder):AnnaOrderDto = new AnnaOrderDto(orderId = AnnaOrder.id,
+   orderDate=AnnaOrder.createdOn,
+   customerId= AnnaOrder.assignedOrderInfo.customerId,
+   initials = AnnaOrder.customer.initials,
+   firstName=AnnaOrder.customer.firstName,
+   prefix=AnnaOrder.customer.prefix,
+   lastName=AnnaOrder.customer.lastName,
+   email=AnnaOrder.customer.contactInfo.email,
+   city=AnnaOrder.shippingAddress.city,
+   street=AnnaOrder.shippingAddress.street,
+   zipcode=AnnaOrder.shippingAddress.zip,
+   houseNumber=AnnaOrder.shippingAddress.houseNumber,
+   houseNumberExtra=AnnaOrder.shippingAddress.extension,
+   )
+
+object CustomerLoginAndEmailDto
+    email:Email
+    login:Login
+
+formula ToDto(CustomerLoginAndEmail):CustomerLoginAndEmailDto = new CustomerLoginAndEmailDto(
+    email = CustomerLoginAndEmail.email,
+    login = CustomerLoginAndEmail.login)
+
+object ReasonDtos:ReasonDto[*]
+
+formula ToCrmDto(ReasonCode):ReasonDto = new ReasonDto(
+    reasonCodeId = ReasonCode.id,
+    description = ReasonCode.name)
+
+object FinancialBlockReasonDtos:FinancialBlockReasonDto[*]
+
+object FinancialBlockReasonDto
+    id:FinancialBlockId
+    description:String
+
+formula ToCrmDto(FinancialBlockReason):FinancialBlockReasonDto = new FinancialBlockReasonDto(
+    id = FinancialBlockReason.id,
+    description = FinancialBlockReason.reasonDescription)
+
+object ServiceCategoryFulfillmentPartListDtos:ServiceCategoryFulfillmentPartDto[*]
+
+object ServiceCategoryFulfillmentPartDto
+    id:ServiceCategoryId
+    name:String
+
+formula ToCrmDto(ServiceCategoryFulfillmentPart):ServiceCategoryFulfillmentPartDto = new ServiceCategoryFulfillmentPartDto(
+    id = ServiceCategoryFulfillmentPart.id,
+    name = ServiceCategoryFulfillmentPart.name)
+
+object TypeOfServiceListDtos:TypeOfServiceDto[*]
+
+object TypeOfServiceDto
+    id:TypeOfServiceId
+    name:TypeOfServiceName
+    serviceCategoryId:ServiceCategoryId
+
+formula ToCrmDto(TypeOfService):TypeOfServiceDto = new TypeOfServiceDto(
+    id = TypeOfService.id,
+    name = TypeOfService.name,
+    serviceCategoryId = TypeOfService.serviceCategoryId)
+
+
+object CrmPortalTaskFilterDto
+    taskId:TaskId
+    assignedTaskType:TaskRuleTaskType
+    status:TaskStatus
+    assigneeId:EmployeeId
+    createdFrom:CreatedOn
+    createdTo:CreatedOn
+    customerId:CustomerId
+    importance:TaskImportanceLabel
+    urgency:TaskUrgencyLabel
+    requiredSkill:TaskSkill
+    description:Description
+    closedFrom:ClosedOn
+    closedTo:ClosedOn
+    component:TaskComponent
+    subcomponent:TaskSubcomponent
+    relatedService:TaskRelatedService
+
+object CrmPortalPropositionFilterSortDto
+    filters:CrmPortalPropositionFilterDtoCollection
+    sorting:Sorting
+object CrmPortalPropositionFilterDtoCollection: CrmPortalPropositionFilterDto[*]
+object CrmPortalPropositionFilterDto
+    id:PropositionId
+    name:PropositionName
+    serviceCategoryId:ServiceCategoryId
+    orderType:OrderType
+    targetDate:DateTime
+    propositionDateField:PropositionDateField
+    isGreaterThanTargetDate:Boolean
+    isEqualToTargetDate:Boolean
+
+object CrmPortalOrderFilterDto
+    orderId:OrderId
+    customerName:AccountName
+    customerId:AccountId
+    zipcode:Zip
+    salespartnerName:AccountName
+    createdOnDateConfiguration:DateConfiguration
+    wishDateFromDateConfiguration:DateConfiguration
+    wishDateToDateConfiguration:DateConfiguration
+    status:OrderStatus
+    orderType:OrderType
+
+object CrmPortalAdjustingProcessListFilterDto
+    processId:ProcessId
+    typeList:ProcessTypeList
+    statusList:ProcessStatusList
+    startOnFrom:StartOn
+    startOnTo:StartOn
+    wishDateFrom:DateTime
+    wishDateTo:DateTime
+    endOnFrom:EndOn
+    endOnTo:EndOn
+    accountId:AccountId
+    serviceAccountId:ServiceAccountId
+    createdBy:CreatedBy
+
+object DuplicateOrderInfoDto
+    orderId:OrderId
+    orderDate:CreatedOn
+
+enum OrderCheckStatus
+    Pending
+    Successfull
+    Failed
+
+object ActiveSupplyCheckInfo
+    serviceAccountId:ServiceAccountId
+    orderId:AccountId
+    isAddressDelivered:Boolean
+    status:OrderCheckStatus
+
+object RateClassDto
+    id:RateClassId
+    name:String
+
+object RateClassDtos:RateClassDto[*]
+
+formula ToCrmDto(RateClass):RateClassDto = new RateClassDto(
+    id = RateClass.id,
+    name = RateClass.name)
+
+object PhoneCodeDto
+    regionCode:RegionCode
+    startOn:StartOn
+    endOn:EndOn
+    description:Description
+    rateClassId:RateClassId
+
+object PhoneCodeDtos:PhoneCodeDto[*]
+
+formula ToCrmDto(PhoneCode):PhoneCodeDto = new PhoneCodeDto(
+    regionCode = PhoneCode.code,
+    startOn = PhoneCode.actualState.startOn,
+    endOn = PhoneCode.actualState.endOn,
+    description = PhoneCode.actualState.description,
+    rateClassId = PhoneCode.actualState.rateClassId)
+
+object Pong:String
+object Ping:String
+
+service MyNleService
+    MyNleGetCustomerAccountById(accountId:AccountId):MyNleCustomerAccountEntryDto
+    MyNleGetCustomerAccountDetailsById(accountId:AccountId):MyNleCustomerAccountDetailsEntryDto
+    MyNleGetServiceAccountsByCustomerAccountId(accountId:AccountId):MyNleServiceAccountEntryDtos
+    MyNleGetSubscriptionsByCustomerAccountId(accountId:AccountId):MyNleSubscriptionEntryDtos
+    MyNleGetInvoicesByServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):MyNleInvoiceDtos
+    MyNleGetInvoicesByAccountId(AccountId):MyNleInvoiceDtos
+    MyNleSendResetPasswordEmailForLogin(Login)
+    MyNleResetPasswordForUniqueKey(UniqueKey, Password, ConfirmPassword)
+    MyNleGetCustomerEmailAndLoginByCustomerInfo(zip:Zip, houseNumber:HouseNumber, iban:Iban):CustomerLoginAndEmailDto
+    MyNleSendResetUsernameEmail(email:Email, oldEmail:OldEmail, login:Login)
+    MyNleSetUsernameAndPasswordByUniqueKey(uniqueKey:UniqueKey, password:Password)
+    MyNleRestoreUsernameByUniqueKey(uniqueKey:UniqueKey, password:Password)
+    MyNleRemoveUniqueKeys(uniqueKey:UniqueKey)
+    MyNleGetOrderDetailsById(accountId:AccountId, orderId:OrderId):DashboardOrderDto
+    MyNleGetOrderIdByServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId):OrderId
+    MyNleGetInitialInvoiceByServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):CrmPortalInvoiceDto
+    MyNleDashboardGetOrderOpenProcessCheckInfo(AccountId, OrderId):DashboardOpenProcessCheckDto
+    MyNleGetDuplicateOrdersForOrder(accountId:AccountId, orderId:OrderId):DuplicateCheckInfoForOrder
+    MyNleGetBlackListDetailsForOrder(accountId:AccountId, orderId:OrderId):BlackListCheckInfo
+    MyNleSkipOrderCooldownPeriod(OrderId):OrderStatus
+    MyNleSendPaymentRequestToMailToPay(accountId:AccountId, invoiceId:InvoiceId)
+
+    MyNleGetEmailByUniqueKey(uniqueKey:UniqueKey): Email
+    MyNleGetActiveSupplyAddressesByCustomerId(customerId:CustomerId):SupplyAddressWithServiceAccountIdList
+    MyNleGetTvPackages(accountId:AccountId, serviceAccountId:ServiceAccountId):PackageAccountInfo
+    MyNleGetVoipBundles(AccountId, ServiceAccountId):PackageAccountInfo
+    MyNleGetActiveServiceAccounts(accountId:AccountId): MyNleServiceAccountDtos
+    MyNlePortalSwitchTvPackages(packageChangeRequest:SwitchPackageRequest)
+    MyNleGetVoipSettingsId(accountId:AccountId, serviceAccountId:ServiceAccountId):VoipSettingsId
+    MyNleGetVoipSettings(accountId:AccountId, serviceAccountId:ServiceAccountId, voipSettingsId:VoipSettingsId):GetSubscriberSettingsResponse
+    MyNleSetVoipSettings(SubscriberSettingsDto, AccountId, ServiceAccountId)
+    MyNleGetPhonebookEntry(AccountId, ServiceAccountId):GetPhonebookEntryResponse
+    MyNleSetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
+    MyNleGetVoipAccountStatus(AccountId, ServiceAccountId):GetVoipAccountStatusResponse
+    MyNleSetVoipAccountStatus(AccountId, ServiceAccountId, VoipStateStatus, Voip_refLockedBy)
+    MyNlePortalSwitchVoipPackages(switchPackageRequest:SwitchPackageRequest)
+    MyNleValidateAdjustingOrderDate(AccountId, ServiceAccountId):AdjustingOrderDateValidationResponse
+    MyNleCreateAdjustingOrder(createAdjustingOrderRequest:MyNleCreateAdjustingOrderRequest):OrderId
+    MyNleGetCustomerContractAccessLink(myNleGetCustomerContractAccessLinkRequest:MyNleGetCustomerContractAccessLinkRequest):AwsStorageFileLink
+    MyNleGetInvoicePdfAccessLink(accountId:AccountId, invoiceId:InvoiceId):AwsStorageFileLink
+    MyNleGetTvSubscriptionInfo(AccountId, ServiceAccountId):SubscriptionInfo
+    MyNleGetStartSupplyInfo(OrderId):StartSupplyInfoDto
+    MyNleGetSubscribedAvailableBundlesPerProductForStartTvOrder(OrderId):SubscribedBundlesPerProduct
+    MyNleGetVoipSubscriptionInfo(accountId:AccountId, servcieAccountId:ServiceAccountId):SubscriptionInfo
+    MyNleGetDslConnectionInfo(accountId:AccountId, serviceAccountId:ServiceAccountId):DslConnectionInfo
+    MyNleSetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
+    MyNleSetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
+    MyNleGetAvailableInstallationList(zip:Zip, startOn:StartOnDateConfiguration, daysQuantity:DaysQuantity, takeOnly:TakeOnly, configurationJobType:ConfigurationJobType):AvailableInstallations
+    //Planningstool
+    MyNleSubscribeServiceAccountForInstallation(installationBookItemDate:InstallationBookItemDate, dayPart:DayPart, accountId:AccountId, servcieAccountId:ServiceAccountId, orderId:OrderId, configurationJobType:ConfigurationJobType)
+    MyNleUnsubscribeServiceAccountForInstallation(installationBookItemDate:InstallationBookItemDate, accountId:AccountId, servcieAccountId:ServiceAccountId, configurationJobType:ConfigurationJobType)
+    MyNleGetAvailableInstallations(accountId:AccountId, servcieAccountId:ServiceAccountId, orderId:OrderId):AvailableInstallationInfo
+
+    MyNleGetInvoicePartialCollection(GetInvoicePartialCollectionRequest):GetInvoicePartialCollectionForMyNleResponse
+
+    MyNleGetInstallationOrderByEntityId(entityId:EntityId):InstallationOrderDto
+
+    MyNleGetPaymentsViewEntries(AccountId, serviceAccountId:ServiceAccountId, perPage:PerPage, pageNumber:PageNumber):GetPaymentsViewEntriesResponse
+    MyNleGetPaymentsViewEntriesByInvoiceId(MyNleGetPaymentsViewEntriesByInvoiceIdRequest):PaymentsViewEntries
+    MyNleChangeIban(ChangeIbanRequest):ChangedIbanResponse
+    MyNleValidateIban(MemberIban):ValidationResult
+    MyNleGetServiceAccountPaymentMethod(AccountId, ServiceAccountId):PaymentMethod
+    MyNleGetServiceAccountMandate(AccountId, ServiceAccountId):Mandate
+    MyNleGetExpenditureDetails(AccountId, ServiceAccountId):ExpenditureDetailsDtos
+    MyNleGetFilteredUsagesCallDataRecords(accountId:AccountId, serviceAccountId:ServiceAccountId, MyNleVirtualBalanceRecordFilterDto, perPage:PerPage, pageNumber:PageNumber):MyNleGetFilteredUsagesCallDataRecordsResponse
+    MyNleGetUsagesVideoOnDemands(accountId:AccountId, serviceAccountId:ServiceAccountId, perPage:PerPage, pageNumber:PageNumber):MyNleGetUsagesVideoOnDemandsResponse
+    MyNleGetProcessesByAccountId(accountId:AccountId):Processes
+    MyNleGetProcessesForServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId):Processes
+    MyNleGetOverstappenDossierByOrderId(accountId:AccountId, orderId:OrderId):OverstappenDossierDto
+    MyNleGetOverstappenDonorProcessByOrderId(accountId:AccountId, orderId:OrderId):OverstappenDossierDto
+    MyNleSendOverstappenRetryRequest(accountId:AccountId, request:OverstappenRetryRequest)
+    MyNleSendContractTerminationCancelRequest(accountId:AccountId, orderId:OrderId, note:Note)
+    MyNleIsSwitchServiceNeeded(accountId:AccountId, orderId:OrderId):Boolean
+
+    MyNleGetCustomerAccountDetails(AccountId):MyNleCustomerAccountDetails
+    MyNleCheckDslProductForTriplePlayMovingProcess(AccountId, CheckDslProductForTriplePlayMovingProcessRequest):CheckDslProductForTriplePlayMovingProcessResponse
+    MyNleGetServiceAccountById(AccountId, ServiceAccountId):ServiceAccountDashboardPakkettenDto
+
+    MyNleUpdateCustomerAccountEmail(UpdateCustomerAccountEmailRequest)
+
+    //Service Account Contract Mutations
+    MyNleGetPagedServiceAccountContractMutations(AccountId, ServiceAccountId, PageNumber, PerPage):PagedServiceAccountContractMutationsResponse
+    MyNleGetOutgoingEmailById(EmailId):MailStorageEmailDto
+    MyNleGetEmailAttachmentAccessLink(MyNleGetEmailAttachmentLinkRequest):AwsStorageFileLink
+
+    // ServiceCategory
+    MyNleGetServiceCategoryBankPartByServiceCategoryId(ServiceCategoryId):ServiceCategoryBankPart
+
+    MyNleGetAccountIdByToken(accessToken:AccessToken):AccountId
+    MyNleGetServiceAccountSubscriptionsInfo(AccountId, ServiceAccountId):ServiceAccountSubscriptionsInfo
+    MyNlePortalGetProlongationOfferTokenByServiceAccountId(serviceAccountId:ServiceAccountId):TokenId
+    MyNleGetAvailablePropositionsByZipCode(zip:Zip, houseNumber:HouseNumber, extension:Extension): GetAvailablePropositionsResponse
+    MyNleCreateOrder(CrmPortalCreateTriplePlayOrderRequest):OrderId
+
+
+    MyNleGetAvailablePropositionsByZipCodeWithoutBundles(Zip, HouseNumber, Extension): MyNleAvailablePropositionsResponse
+    MyNleGetAvailablePropositionsByZipCodeAndSalesOfficeIdWithoutBundles(Zip, HouseNumber, Extension, SalesOfficeId):MyNleAvailablePropositionsResponse
+    MyNleGetDiscountsByPropositionId(propositionId:PropositionId):MyNleDiscountDtos
+    MyNleGetPossibleWishdate(IsOverstapservice, IsUrgency):Date
+
+service PartnerPortalService
+    DoNothing(PartnerPortalCreateOrderRequest)
+    PartnerPortalGetTriplePlayOrderCreationInfo():TriplePlayOrderCreationInfoDto
+    PartnerPortalGetAvailablePropositionsByZipCode(zip:Zip, houseNumber:HouseNumber, extension:Extension): GetAvailablePropositionsResponse
+    PartnerPortalGetAvailablePropositionsByZipCodeAndSalesOffice(zip:Zip, houseNumber:HouseNumber, extension:Extension, salesOfficeId:SalesOfficeId): GetAvailablePropositionsResponse
+    PartnerPortalGetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(getAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest:GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest): GetAvailablePropositionsResponse
+    PartnerPortalCreateOrdersFromGui(createdBy:CreatedBy, crmPortalCreateOrderRequestsList:CrmPortalCreateOrderRequestsList):CreateOrderResponsesList
+    PartnerPortalGetDiscountsByPropositionId(propositionId:PropositionId):PartnerPortalDiscountDtos
+    PartnerPortalGetCustomerAccountById(accountId:AccountId):CustomerAccountDto
+    PartnerPortalGetPossibleWishdate(IsOverstapservice, IsUrgency):Date
+
+service CrmService
+    CrmPortalGetCustomerAccountById(accountId:AccountId):CustomerAccountDto
+    CrmPortalGetEmployeeAccountById(accountId:AccountId):EmployeeAccountDto
+    CrmPortalGetPartnerAccountById(accountId:AccountId):PartnerAccountDto
+    CrmPortalCreateCustomerAccount(CreateCustomerAccountRequest):AccountId
+    CrmPortalCreateEmployeeAccount(createEmployeeAccountRequest:CreateEmployeeAccountRequest):AccountId
+    CrmPortalCreatePartnerAccount(createPartnerAccountRequest:CreatePartnerAccountRequest):AccountId
+    CrmPortalGetEmployeeAccounts():EmployeeAccountDtos
+    CrmPortalGetPartnerAccounts():PartnerAccountDtos
+    CrmPortalUpdateEmployeeAccount(updateEmployeeAccountRequest:UpdateEmployeeAccountRequest)
+    CrmPortalUpdatePartnerAccount(updatePartnerAccountRequest:UpdatePartnerAccountRequest)
+    CrmPortalGetFilteredCustomerAccounts(input:String, pageNumber:Integer, perPage:Integer):CrmPagedCustomerAccountsDto
+    CrmPortalGetFilteredPagedEmployeeAccounts(employeeFilter:CrmEmployeeFilterDto, pageNumber:PageNumber, perPage:PerPage):PagedEmployeeAccountsDto
+    CrmPortalGetPagedPartnerAccounts(pageNumber:PageNumber, perPage:PerPage):PagedPartnerAccountsDto
+    CrmPortalGetRoleByName(roleName:RoleName):UserRoleDto
+    CrmPortalGetAllRoles():UserRolesDto
+    CrmPortalGetAccountRoles(accountId:AccountId):UserRolesDto
+    CrmPortalGetPagedRoles(pageNumber:PageNumber, perPage:PerPage):PagedUserRolesDto
+    CrmPortalCreateRole(CreateRoleRequestDto)
+    CrmPortalUpdateRole(UpdateRoleRequestDto)
+    CrmPortalAssignRoles(AssignRolesRequestDto)
+    CrmPortalRevokeRole(accountId:AccountId, roleName:RoleName)
+    CrmPortalDeleteRole(roleName:RoleName)
+    CrmPortalGetLoginInfo(email:Email):LoginInfoDto
+    AddWarning(warningMessage:WarningMessage, accountId:AccountId, createdBy:CreatedBy)
+    RemoveWarning(accountId:AccountId, createdBy:CreatedBy)
+    CrmPortalTryGetLoginInfoByAccountId(accountId:AccountId):LoginInfoDto
+    CrmPortalGetServiceAccounts(accountId:AccountId):CrmServiceAccountDtos
+    CrmPortalGetActiveServiceAccounts(accountId:AccountId):CrmServiceAccountDtos
+    CrmPortalGetDeliveryAddressForPendingMovingProcess(ServiceAccountId):Address
+    CrmPortalGetInfoAboutPendingAdjustingOrdersForServiceAccount(ServiceAccountId): ServiceAccountPendingAdjustingOrdersInfo
+    CrmPortalGetSubscriptions(accountId:AccountId, serviceAccountId:ServiceAccountId):CrmSubscriptionListDtos
+    CrmPortalGetSubscriptionDetailsById(AccountId, ServiceAccountId, SubscriptionId):SubscriptionDetailsDto
+    CrmPortalGetSapCustomerFinancialDetails(SapAccountId):CrmCustomerFinancialDetailsDto
+    CrmPortalCreateOrderOnHoldSetting(orderOnHoldSetting:OrderOnHoldSettingRequest):SettingId
+    CrmPortalDeleteOrderOnHoldSetting(settingId:SettingId)
+    CrmPortalGetOrderById(orderid:OrderId):OrderDto
+    CrmPortalGetOrderDetailsById(orderId:OrderId):DashboardOrderDto
+    CheckAndSetCreditScore(OrderId):CheckAndSetCreditScoreResponse
+    CrmPortalPostponeOrderPropositionVendorCheck(orderId:OrderId, days:Integer)
+    CrmPortalCheckOrderProposition(orderId:OrderId): CheckOrderPropositionResponse
+    CrmPortalGetPropositionsByBundleId(bundleId:BundleId):PropositionDtoCollection
+    CrmPortalGetPropositionsByServiceCategoryId(serviceCategoryId:ServiceCategoryId):PropositionDtoCollection
+    CrmPortalGetBundlesByPropositionId(propositionId:PropositionId):BundleDtos
+    CrmPortalSwitchPropositionMonthlyTerminableState(SwitchPropositionMonthlyTerminableStateRequest)
+    CrmPortalSwitchPropositionOrderTypeProlongate(switchPropositionOrderTypeProlongateRequest:SwitchPropositionOrderTypeProlongateRequest)
+    CrmPortalSwitchPropositionOrderTypeNew(switchPropositionOrderTypeNewRequest:SwitchPropositionOrderTypeNewRequest)
+    GetBundleCoveragesByBundleId(BundleId):BundleCoverageDto
+    CrmPortalAddEventRateClassCoverage(AddEventRateClassCoverageRequest)
+    CrmPortalDeleteEventRateClassCoverage(DeleteEventRateClassCoverageRequest)
+    CrmPortalAddBundleCoverageItem(AddBundleCoverageItemRequest):EventRateClassCoverageId
+    CrmPortalDeleteBundleCoverageItem(DeleteBundleCoverageItemRequest)
+    CrmPortalGetDiscountsByPropositionId(propositionId:PropositionId):CrmDiscountDtos
+    CrmPortalGetPagedOrders(pageNumber:PageNumber, recordsPerPage:RecordsPerPage):CrmPortalGetPagedOrdersResponse
+    CrmPortalGetPagedAndFilteredOrders(crmPortalOrderFilterDto:CrmPortalOrderFilterDto, pageNumber:PageNumber, recordsPerPage:RecordsPerPage):CrmPortalGetFilteredAndPagedOrdersResponse
+    CrmPortalGetFilteredOrdersForCsv(crmPortalOrderFilterDto:CrmPortalOrderFilterDto):OrdersForCsv
+    CrmPortalGetServiceCategoriesByTypeOfServiceId(typeOfServiceId:TypeOfServiceId):ServiceCategoryFulfillmentPartListDtos
+    CrmPortalGetTypeOfServicesByServiceCategoryId(serviceCategoryId:ServiceCategoryId):TypeOfServiceListDtos
+    CrmPortalReturnOrderBackToProccessAfterOnHoldManually(OrderId)
+    CrmPortalPutOrderOnHoldManually(OrderId)
+    CrmPortalSkipOrderCooldownPeriod(OrderId):OrderStatus
+    CrmPortalSetOrderCustomerId(orderId:OrderId, accountId:AccountId)
+    CrmPortalSetOrderInstallationDate(setOrderInstallationDateRequest:SetOrderInstallationDateRequest)
+    CrmPortalResolveBlockedOrderAndMoveToCompletedState(orderId:OrderId)
+
+    CrmPortalCreateOrdersFromGui(createdBy:CreatedBy, crmPortalCreateOrderRequestsList:CrmPortalCreateOrderRequestsList):CreateOrderResponsesList
+    CrmPortalCreateOrdersFromCsv(createdBy:CreatedBy, crmPortalCsvCreateOrderRequestsList:CrmPortalCsvCreateOrderRequestsList):CreateOrderResponsesList
+    CrmPortalUpdateOrder(crmPortalUpdateOrderRequest:CrmPortalUpdateOrderRequest):BaseOrderResponse
+
+    CrmPortalGetOrderOnHoldSettings(pageNumber:PageNumber, perPage:PerPage):PagedOrderOnHoldSettings
+    CrmPortalGetAllTypesOfService():TypeOfServiceListDtos
+    CrmPortalGetRangeOfTypesOfService(TypeOfServiceIdCollection):TypeOfServiceListDtos
+    CrmPortalGetTypeOfServiceById(typeOfServiceId:TypeOfServiceId):TypeOfServiceDto
+    CrmPortalDeleteTypeOfService(typeOfServiceId:TypeOfServiceId)
+    CrmPortalCreateTypeOfService(createTypeOfServiceRequest:TypeOfServiceCreationRequest):TypeOfServiceId
+    CrmPortalUpdateTypeOfService(updateTypeOfServiceRequest:TypeOfServiceUpdateRequest)
+    CrmPortalGetAllBundles():BundleDtos
+    CrmPortalGetBundlesByTypeOfServiceId(typeOfServiceId:TypeOfServiceId):BundleDtos
+    CrmPortalGetPartialBundles(GetPartialBundleRequest):GetPartialBundlesResponse
+    CrmPortalGetBundlesByProductTemplateId(productTemplateId:ProductTemplateId):BundleDtos
+    CrmPortalGetBundleById(BundleId):BundleDto
+    CrmPortalDeleteBundle(bunldeId:BundleId)
+    CrmPortalUpdateBundle(bundleUpdateRequest:BundleUpdateRequest)
+    CrmPortalCreateBundle(bundleCreationRequest:BundleCreationRequest):BundleId
+    CrmPortalUpdateBundleCoverage(UpdateBundleCoverageRequest)
+    CrmPortalCreateProposition(propositionCreationRequest:PropositionCreationRequest):PropositionId
+    CrmPortalGetPropositionById(propositionId:PropositionId):PropositionDto
+    CrmPortalGetAllPropositions():PropositionDtoCollection
+    CrmPortalGetAllPagedPropositions(PageNumber, PerPage):PagedPropositionsResponceDto
+    CrmPortalGetAllPagedAndFilteredPropositions(PageNumber, PerPage, CrmPortalPropositionFilterSortDto):PagedPropositionsResponceDto
+    CrmPortalGetFilteredPropositions(filter:SalesOfferPropositionsFilter):PropositionDtoCollection
+    CrmPortalUpdatePropositions(propositionsUpdateRequest:PropositionsUpdateRequest)
+    CrmPortalUpdateProposition(propositionUpdateRequest:PropositionUpdateRequest)
+    CrmPortalDeleteProposition(propositionId:PropositionId)
+    CrmPortalCreateProductTemplate(productTemplateCreationRequest:ProductTemplateCreationRequest):ProductTemplateId
+    CrmPortalGetProductTemplateById(productTemplateId:ProductTemplateId):CrmProductTemplateDto
+    CrmPortalGetAllProductTemplates():CrmProductTemplateDtoCollection
+    CrmPortalGetPagedProductTemplates(PageNumber,PerPage):PagedProductTemplateDtos
+    CrmPortalUpdateProductTemplate(productTemplateUpdateRequest:ProductTemplateUpdateRequest)
+    CrmPortalDeleteProductTemplate(productTemplateId:ProductTemplateId)
+    CrmPortalGetAnnaOrdersForPlugwise(PageNumber, PerPage):AnnaOrdersForPlugwiseResponse
+
+    CrmPortalGetSalesOfficeById(SalesOfficeId):SalesOfficeDto
+    CrmPortalGetAllSalesOffices():SalesOfficeDtoCollection
+    CrmPortalCreateSalesOffice(SalesOfficeCreationRequest):SalesOfficeId
+    CrmPortalUpdateSalesOffice(SalesOfficeUpdateRequest)
+    CrmPortalDeactivateSalesOffice(SalesOfficeId)
+    CrmPortalActivateSalesOffice(SalesOfficeId)
+    CrmPortalDeleteSalesOffice(SalesOfficeId)
+    CrmPortalGetPagedOffersByOfficeId(GetSalesOfferBySalesOfficeIdRequest):PagedSalesOfferList
+    CrmPortalGetPagedSalesOffices(GetPageSalesOfficesRequest):PagedSalesOfficeDto
+    CrmPortalAddSalesOfferToSalesOffice(AddOfferToOfficeRequest)
+    CrmPortalRemoveSalesOfferFromSalesOffice(RemoveSalesOfferFromOfficeRequest)
+
+    CrmPortalCreateSalesOffer(CreateSalesOfferRequest)
+    CrmPortalUpdateSalesOffer(SalesOfferUpdateRequest)
+    CrmPortalDeleteSalesOffer(SalesOfferId)
+    CrmPortalGetAllSalesOffers():SalesOfferDtos
+    CrmPortalGetSalesOffersAvailableForSalesOffices():SalesOfferDtos
+    CrmPortalGetSalesOfferById(SalesOfferId):SalesOfferDto
+    CrmPortalGetPagedPropositionsBySalesOfferId(GetPagedPropositionsBySalesOfferIdRequest):PagedPropositionDto
+    CrmPortalGetPagedOffers(GetPagedSalesOfferRequest):PagedSalesOfferList
+    CrmPortalUpdateSalesOfferStatus(SalesOfferUpdateStatusRequest)
+    CrmPortalIsDefaultSalesOfferOverridePossible(startOn:StartOn, endOn:EndOn, serviceCategoryId:ServiceCategoryId):IsPossible
+
+    CrmPortalGetPagedAndFilteredTaskList(taskFilter:CrmPortalTaskFilterDto, tasksPerPage:TasksPerPage, pageNumber:PageNumber):CrmPortalGetFilteredAndPagedTasksResponse
+    CrmPortalGetFilteredTaskList(taskFilter:CrmPortalTaskFilterDto):TaskDtoList
+
+    CrmPortalGetAllPricePlans():CrmPricePlanDtos
+    CrmPortalGetPricePlanById(pricePlanId:PricePlanId):CrmPricePlanDto
+    CrmPortalCreatePricePlan(pricePlanCreationRequest:PricePlanCreationRequest):PricePlanId
+    CrmPortalCreatePricePlanForProductTemplate(pricePlanForProductTemplateCreationRequest:PricePlanForProductTemplateCreationRequest):PricePlanId
+    CrmPortalUpdatePricePlan(pricePlanUpdateRequest:PricePlanUpdateRequest)
+    CrmPortalDeletePricePlan(pricePlanId:PricePlanId)
+
+    CrmPortalGetAllPriceItems(pricePlanId:PricePlanId):CrmPriceItemDtos
+    CrmPortalGetLastPriceItems(pricePlanId:PricePlanId):CrmPriceItemDtos
+    CrmPortalGetPriceItemsById(pricePlanId:PricePlanId, bundleId:BundleId):CrmPriceItemDtos
+    CrmPortalCreatePriceItem(priceItemCreationRequest:PriceItemCreationRequest):PriceItemId
+    CrmPortalDeletePriceItems(priceItemDeletionRequest:PriceItemDeletionRequest)
+    CrmPortalUpdatePriceItem(priceItemUpdateRequest:PriceItemUpdateRequest)
+
+    CrmPortalGetAllDiscounts(pricePlanId:PricePlanId):CrmDiscountDtos
+    CrmPortalGetDiscountById(pricePlanId:PricePlanId, bundleId:BundleId):CrmDiscountDto
+    CrmPortalCreateDiscount(discountCreationRequest:DiscountCreationRequest):DiscountId
+    CrmPortalUpdateDiscount(discountUpdateRequest:DiscountUpdateRequest)
+    CrmPortalDeleteDiscount(discountDeletionRequest:DiscountDeletionRequest)
+
+    CrmPortalGetProductById(productId:ProductId):CrmProductDto
+    CrmPortalGetAllProducts():CrmProductDtos
+    CrmPortalGetAllExtendedProducts():CrmExtendedProductDtos
+    CrmPortalGetPartialProducts(partialDataRequest:PartialDataRequest):CrmPartialProductsDto
+    CrmPortalCreateProduct(productCreationRequest:ProductCreationRequest):ProductId
+    CrmPortalUpdateProduct(productUpdateRequest:ProductUpdateRequest)
+    CrmPortalDeleteProduct(productId:ProductId)
+
+    CrmPortalCreateTaskRule(taskRuleCreationRequest:CrmPortalTaskRuleCreationRequest):TaskRuleId
+    CrmPortalDeleteTaskRuleById(taskRuleId:TaskRuleId)
+    CrmPortalGetPagedTaskRuleList(pageNumber:PageNumber, taskRulesPerPage:TaskRulesPerPage):CrmPortalPagedTaskRulesResponse
+
+    CrmPortalGetTaskSkillList():TaskSkillList
+    CrmPortalGetTaskSkillListByAccountId(accountId:AccountId):TaskSkillList
+    CrmPortalGetTaskUrgencyList():TaskUrgencyLabelList
+    CrmPortalGetTaskImportanceList():TaskImportanceLabelList
+    CrmPortalGetTaskComponentList():TaskComponentList
+    CrmPortalGetTaskSubcomponentList():TaskSubcomponentList
+    CrmPortalGetTaskRelatedServiceList():TaskRelatedServiceList
+    CrmPortalGetTaskTypeList():TaskTypeList
+    CrmPortalGetCategoriesList():CategoriesList
+    CrmPortalCreateManulaTask(BaseTaskCreationRequestDto):TaskId
+    CrmPortalAddCommentToTask(AddCommentToTaskRequest)
+
+    CrmPortalGetLastOpenTaskWithoutRulesList(tasksPerPage:TasksPerPage, pageNumber:PageNumber):CrmPortalGetLastOpenTaskWithoutRulesListResponse
+    CrmPortalGetGroupedTaskWithoutRulesCountList(recordsPerPage:RecordsPerPage, pageNumber:PageNumber):CrmPortalGetGroupedTaskWithoutRulesCountListReponse
+
+    CrmPortalGetProductsByPropositionId(propositionId:PropositionId):CrmProductDtos
+
+    CrmPortalSetProcessBlockingTaskList(blockingTaskTypesList:BlockingTaskTypesList)
+    CrmPortalGetProcessBlockingTaskList():BlockingTaskTypesList
+
+    CrmPortalGetAvailablePropositionsByZipCode(zip:Zip, houseNumber:HouseNumber, extension:Extension): GetAvailablePropositionsResponse
+    CrmPortalGetAvailablePropositionsByZipCodeAndSalesOffice(getAvailablePropositionsRequest:GetAvailablePropositionsRequest): GetAvailablePropositionsResponse
+    CrmPortalGetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(getAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest:GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest): GetAvailablePropositionsResponse
+    CrmPortalGetAllCashbacksForPricePlan(pricePlanId:PricePlanId):CrmCashbackDtoList
+    CrmPortalGetCashbackById(pricePlanId:PricePlanId, cashbackId:CashbackId):CrmCashbackDto
+    CrmPortalGetTaskDetailsByEmployeeIdResponse(accountId:AccountId):CrmPortalGetTaskDetailsByEmployeeIdResponse
+    CrmPortalAssignTaskToEmployee(taskId:TaskId, accountId:AccountId):CrmPortalGetTaskDetailsByEmployeeIdResponse
+    CrmPortalIsEmployeeHaveTask(accountId:AccountId):Boolean
+    CrmPortalIsTaskAssignedToEmployee(taskId:TaskId):Boolean
+    CrmPortalCloseTaskById(CloseTaskRequest)
+    CrmPortalPostponeTaskById(PostponeTaskRequest)
+    CrmPortalPostponeTaskPerUser(accountId:AccountId, taskId:TaskId)
+    CrmPortalReassignTaskById(ReassignTaskRequest)
+    CrmPortalCreateCashback(cashbackCreationRequest:CashbackCreationRequest):CashbackId
+    CrmPortalUpdateCashback(cashbackUpdateRequest:CashbackUpdateRequest)
+    CrmPortalDeleteCashback(cashbackDeletionRequest:CashbackDeletionRequest)
+
+    CrmPortalSendResetPasswordEmailForLogin(login:Login)
+    CrmPortalStartOrderFromSpecificOrderStateByOrderIdAndOrderStateId(accountId:AccountId, orderId:OrderId, orderStateId:OrderStateId)
+
+    CrmPortalGetInitialInvoiceByServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):CrmPortalInvoiceDto
+    CrmPortalDashboardGetOrderOpenProcessCheckInfo(OrderId):DashboardOpenProcessCheckDto
+    CrmPortalResolveOrderBlock(orderId:OrderId)
+    CrmPortalCancelOrder(orderId:OrderId, accountId:AccountId)
+    CrmPortalGetDuplicateOrdersForOrder(orderId:OrderId):DuplicateCheckInfoForOrder
+    CrmPortalGetDuplicateOrderRelatedTaskId(orderId:OrderId):TaskId
+    CrmPortalGetBlackListDetailsForOrder(orderId:OrderId):BlackListCheckInfo
+    CrmPortalGetActiveSupplyCheckInfoForOrder(orderId:OrderId):ActiveSupplyCheckInfo
+    CrmPortalLinkOrderToNewCustomer(OrderId, CreateCustomerAccountRequest)
+    CrmPortalSetOrderRiskLevel(setCreditRiskLevelRequest:SetCreditRiskLevelRequest)
+    CrmPortalInitiateOrderCancellation(OrderId, AccountId, CancellationReason, CancellationFeeType)
+
+    CrmPortalCreateEventRateClass(EventRateClassCreationRequest):RateClassId
+    CrmPortalUpdateEventRateClass(EventRateClassUpdateRequest)
+    CrmPortalDeleteEventRateClass(RateClassId)
+    CrmPortalGetAllEventRateClasses():RateClassDtos
+
+    CrmPortalCreatePhoneCode(CreatePhoneCodeRequest)
+    CrmPortalUpdatePhoneCode(UpdatePhoneCodeRequest)
+    CrmPortalDeletePhoneCode(RegionCode)
+    CrmPortalGetPartialPhoneCodeData(GetPartialPhoneCodeRequest):GetPartialPhoneCodesResponse
+    CrmPortalGetPhoneCodeByRegionCode(RegionCode):PhoneCodeDto
+
+    CrmPortalGetFilteredAndPagedServiceInformation(input:Input, fullyMatchedPaginationInfo:FullyMatchedPaginationInfo, partiallyMatchedPaginationInfo:PartiallyMatchedPaginationInfo):CrmPortalGetFilteredAndPagedServiceDeliveryInformationResponse
+    CrmPortalGetActiveSupplyAddressesByCustomerId(customerId:CustomerId, selectedAddress:FullAddress):SupplyAddressWithServiceAccountIdList
+
+    CrmPortalGetCobsDslOrderById(orderId:OrderId):CobsCrmPortalDslOrderDto
+    CrmPortalGetCobsTvOrderById(orderId:OrderId):CobsCrmPortalTvOrderDto
+    CrmPortalGetCobsVoipOrderById(orderId:OrderId):CobsCrmPortalVoipOrderDto
+
+    CrmPortalRunDeepCheckForFailedRequestManuallyByOrderId(orderId:OrderId)
+
+    CrmPortalCobsSendDslProvideWithoutDeepCheck(cobsDslUpdateProvideRequest:CobsDslUpdateProvideRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsSendDslTakeOverWithoutDeepCheck(cobsDslUpdateTakeOverRequest:CobsDslUpdateTakeOverRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsResendDslProvide(cobsDslUpdateProvideRequest:CobsDslUpdateProvideRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsResendDslTakeOver(cobsDslUpdateTakeOverRequest:CobsDslUpdateTakeOverRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsResendDslChange(cobsDslUpdateChangeRequest:CobsDslUpdateChangeRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsResendDslCease(cobsDslUpdateCeaseRequest:CobsDslUpdateCeaseRequest):CobsCrmPortalDslOrderDto
+    CrmPortalCobsResendTvProvide(cobsTvUpdateProvideRequest:CobsTvUpdateProvideRequest):CobsCrmPortalTvOrderDto
+    CrmPortalCobsResendTvChange(cobsTvUpdateChangeRequest:CobsTvUpdateChangeRequest):CobsCrmPortalTvOrderDto
+    CrmPortalCobsResendTvCease(cobsTvUpdateCeaseRequest:CobsTvUpdateCeaseRequest):CobsCrmPortalTvOrderDto
+    CrmPortalCobsResendVoipProvide(cobsVoipUpdateProvideRequest:CobsVoipUpdateProvideRequest):CobsCrmPortalVoipOrderDto
+    CrmPortalCobsResendVoipChange(cobsVoipUpdateChangeRequest:CobsVoipUpdateChangeRequest):CobsCrmPortalVoipOrderDto
+    CrmPortalCobsResendVoipCease(cobsVoipUpdateCeaseRequest:CobsVoipUpdateCeaseRequest):CobsCrmPortalVoipOrderDto
+    CrmPortalCobsResendMoveDslOrder(cobsUpdateMoveDslRequest:CobsUpdateMoveDslRequest)
+
+    CrmPortalGetTriplePlayOrderToCobsOrdersMapByOrderId(orderId:OrderId):TriplePlayCobsIdsMapDto
+    CrmPortalGetPackagesByOrderId(orderId:OrderId):PackageAccountInfo
+    CrmPortalGetTvPackages(accountId:AccountId, serviceAccountId:ServiceAccountId):PackageAccountInfo
+    CrmPortalGetVoipBundles(AccountId, ServiceAccountId):PackageAccountInfo
+    CrmPortalGetVoipSettingsId(accountId:AccountId, serviceAccountId:ServiceAccountId):VoipSettingsId
+    CrmPortalGetVoipSettings(accountId:AccountId, serviceAccountId:ServiceAccountId, voipSettingsId:String):GetSubscriberSettingsResponse
+    CrmPortalSetVoipSettings(subscriberSettingsDto:SubscriberSettingsDto, accountId:AccountId, serviceAccountId:ServiceAccountId)
+    CrmPortalGetVoipAccountStatus(AccountId, ServiceAccountId):GetVoipAccountStatusResponse
+    CrmPortalSetVoipAccountStatus(accountId:AccountId, serviceAccountId:ServiceAccountId, stateStatus:VoipStateStatus, refLockedBy:Voip_refLockedBy)
+    CrmPortalGetPhonebookEntry(AccountId, ServiceAccountId):GetPhonebookEntryResponse
+    CrmPortalSetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
+    CrmPortalSwitchVoipPackages(createdBy:CreatedBy, packageChangeRequest:PackageChangeRequest, dateConfiguration:DateConfiguration)
+
+    CrmPortalSetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
+    CrmPortalSetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
+
+    CrmPortalSwitchTvPackages(createdBy:CreatedBy, packageChangeRequest:PackageChangeRequest, dateConfiguration:DateConfiguration)
+
+    CrmPortalCreateAdjustingOrder(employeeId:EmployeeId, createAdjustingOrderRequest:CrmPortalCreateAdjustingOrderRequest):OrderId
+    CrmPortalGetLastTvAdjustingOrder(accountId:AccountId, serviceAccountId:ServiceAccountId):OrderId
+    CrmPortalGetLastVoipAdjustingOrder(accountId:AccountId, serviceAccountId:ServiceAccountId):OrderId
+    CrmPortalGetLastUpgradeDslAdjustingOrderId(accountId:AccountId, serviceAccountId:ServiceAccountId):OrderId
+    StopAnnaServiceAccount(stopAnnaServiceAccountRequest:StopAnnaServiceAccountRequest)
+
+    CrmPortalSendEmailWithContractToCustomer(crmPortalSendEmailWithContractToCustomerRequest:CrmPortalSendEmailWithContractToCustomerRequest)
+    CrmPortalGetCustomerContractAccessLink(crmPortalGetCustomerContractAccessLinkRequest:CrmPortalGetCustomerContractAccessLinkRequest):AwsStorageFileLink
+    CrmPortalGetInvoicePdfAccessLink(invoiceId:InvoiceId):AwsStorageFileLink
+    CrmPortalGetEmailAttachmentAccessLink(CrmPortalGetEmailAttachmentLinkRequest):AwsStorageFileLink
+    CrmPortalUpdateCustomerAccount(updateCustomerAccountRequest:UpdateCustomerAccountRequest)
+    CrmPortalGetTvSubscriptionInfo(accountId:AccountId, serviceAccountId:ServiceAccountId):SubscriptionInfo
+    CrmPortalGetStartSupplyInfo(orderId:OrderId):StartSupplyInfoDto
+    CrmPortalGetStartSupplyTypeByOrderId(orderId:OrderId):StartSupplyType
+
+    CrmPortalGetAllStartSupplyInfos(accountId:AccountId, serviceAccountId:ServiceAccountId):StartSupplyInfosDto
+    CrmPortalGetSubscribedAvailableBundlesPerProductForStartTvOrder(orderId:OrderId):SubscribedBundlesPerProduct
+    CrmPortalGetVoipSubscriptionInfo(accountId:AccountId, servcieAccountId:ServiceAccountId):SubscriptionInfo
+
+    CrmPortalGetAdjustingOrderProcessByOrderId(orderId:OrderId):Process
+    CrmPortalGetTvAdjustingOrderEventType(accountId:AccountId, servcieAccountId:ServiceAccountId):OrderEventType
+    CrmPortalGetVoipAdjustingOrderEventType(accountId:AccountId, servcieAccountId:ServiceAccountId):OrderEventTypeString
+    CrmPortalGetUpgradeDslpAdjustingOrderEventType(accountId:AccountId, serviceAccountId:ServiceAccountId):OrderEventTypeString
+    CrmPortalGetAdjustingOrderById(OrderId):AdjustingOrder
+
+    CrmPortalGetFirstTypeOfServiceIdByAdjustingOrderId(adjustingOrderId:AdjustingOrderId):TypeOfServiceId
+    CrmPortalGetPropositionInfoByAdjustingOrderId(adjustingOrderId:AdjustingOrderId):PropositionInfo
+    CrmPortalGetTvPropositionInfo(accountId:AccountId, servcieAccountId:ServiceAccountId):PropositionInfo
+    CrmPortalGetVoipPropositionInfo(accountId:AccountId, servcieAccountId:ServiceAccountId):PropositionInfo
+    CrmPortalGetDslPropositionInfo(accountId:AccountId, serviceAccountId:ServiceAccountId):PropositionInfo
+
+    CrmPortalGetOverstappenDossierByOrderId(orderId:OrderId):OverstappenDossierDto
+    CrmPortalGetOverstappenDonorProcessByOrderId(orderId:OrderId):OverstappenDossierDto
+    CrmPortalSendOverstappenRetryRequest(request:OverstappenRetryRequest)
+    CrmPortalGetCustomerAccountDetails(accountId:AccountId):CrmCustomerAccountDetails
+    CrmPortalGetCustomerAccountDetailsByOrderId(orderId:OrderId):CrmCustomerAccountDetails
+    CrmPortalGetDslConnectionInfo(accountId:AccountId, serviceAccountId:ServiceAccountId):DslConnectionInfo
+    CrmPortalGetDslConnectionInfoByProcessId(orderId:OrderId):DslConnectionInfo
+    CrmPortalSendTokenDetails(details:TokenDetails)
+    CrmPortalIsSwitchServiceNeeded(orderId:OrderId):Boolean
+
+    CrmPortalGetInstallationOrderByEntityId(entityId:EntityId):InstallationOrderDto
+
+    CrmPortalChangeIban(changeIbanRequest:ChangeIbanRequest)
+    CrmPortalValidateIban(memberIban:MemberIban):ValidationResult
+    CrmPortalGetServiceAccountPaymentMethod(accountId:AccountId, serviceAccountId:ServiceAccountId):PaymentMethod
+    CrmPortalGetServiceAccountMandate(serviceAccountId:ServiceAccountId):Mandate
+
+    CrmPortalGetInvoicePartialCollection(GetInvoicePartialCollectionRequest):GetInvoicePartialCollectionForCrmPortalResponse
+    CrmPortalGetInvoiceById(InvoiceId):CrmPortalInvoiceDto
+    CrmPortalSendContractTerminationCancelRequest(orderId:OrderId, note:Note)
+    CrmPortalGetPaymentsViewEntries(serviceAccountId:ServiceAccountId, perPage:PerPage, pageNumber:PageNumber):GetPaymentsViewEntriesResponse
+    CrmPortalGetPaymentsViewEntriesByInvoiceId(GetPaymentsViewEntriesByInvoiceIdRequest):PaymentsViewEntries
+    CrmPortalUnmatchTransaction(bankTransactionId:BankTransactionId, changedBy:ChangedBy)
+    CrmPortalCancelAdjustingOrder(AdjustingOrderId, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+    GetInProgressAdjustingOrdersByServiceAccountId(serviceAccountId:ServiceAccountId):AdjustingOrderInfoCollection
+    CrmPortalGetAdjustingOrderInfoByOrderId(orderId:OrderId):AdjustingOrderInfo
+    CrmPortalCancelAdjustingOrderByDslOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+    CrmPortalCancelAdjustingOrderByTvOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+    CrmPortalCancelAdjustingOrderByVoipOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+    CrmPortalMakeInvoiceUncollectable(uncollectableInvoiceClearanceCreationRequest:UncollectableInvoiceClearanceCreationRequest):FinancialActionRequestId
+    CrmPortalMakeInvoiceCollectable(uncollectableInvoiceClearanceCounterRequest:UncollectableInvoiceClearanceCounterRequest):FinancialActionRequestId
+    CrmPortalCreatePaymentArragement(InitPaymentArrangementRequest):PaymentArrangementId
+    CrmPortalGetMinimumCollectionDateForPaymentArragement(MinimumCollectionDateRequest):MinimumCollectionDate
+    CrmPortalGetDunningBlockReasons():FinancialBlockReasonDtos
+    CrmPortalGetInstallationProcess(AccountId, ProcessId):InstallationProcess
+    CrmPortalAddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
+    CrmPortalGetServiceCategoryBankPartByServiceCategoryId(serviceCategoryId:ServiceCategoryId):ServiceCategoryBankPart
+    CrmPortalCreateExcassoForServiceAccount(createExcassoRequest:CreateExcassoRequest):FinancialActionRequestId
+    CrmPortalAddDunningBlockToServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId, dunningBlockCreationRequest:DunningBlockCreationRequest)
+    CrmPortalGetPqccCheckResultInfoErrorForOrder(orderId:OrderId, pqccCheckType:PqccCheckType):String
+    CrmPortalGetDeepCheckErrorForOrder(orderId:OrderId):String
+    CrmPortalGetAvailableInstallationList(zip:Zip, startOn:StartOnDateConfiguration, daysQuantity:DaysQuantity, takeOnly:TakeOnly, installationJobType:ConfigurationJobType):AvailableInstallations
+    CrmPortalSendInstallationHelpInfo(InstallationHelpRequest)
+
+    CrmPortalGetPagedAndFilteredAdjustingProcesses(filter:CrmPortalAdjustingProcessListFilterDto, pageNumber:PageNumber, perPage:PerPage):CrmPortalGetPagedAndFilteredAdjustingProcessesResponse
+    CrmPortalGetFilteredAdjustingProcesses(filter:CrmPortalAdjustingProcessListFilterDto):FlowProcesses
+
+    //Plannins Tool Settings start
+    CrmPortalCreateRegion(RegionName, CodesRanges)
+    CrmPortalGetRegions():RegionsDto
+    CrmPortalGetRegion(RegionName):RegionDto
+    CrmPortalUpdateRegion(RegionName, CodesRanges)
+    CrmPortalDeleteRegion(RegionName)
+    CrmPortalUpdateCodeRange(RegionName, CodesRange)
+    CrmPortalDeleteCodesRange(RegionName, CodesRangeId)
+    CrmPortalGetPlanningsToolConfigurationById(PlanningsToolConfigurationId):PlanningsToolConfiguration
+    CrmPortalCreatePlanningsToolConfiguration(PlanningsToolConfiguration)
+    CrmPortalGetAllPlanningsToolConfigurationsByType(ConfigurationJobType):PlanningsToolConfigurations
+    CrmPortalUpdatePlanningsToolConfiguration(PlanningsToolConfiguration)
+    CrmPortalDeletePlanningsToolConfigurationById(PlanningsToolConfigurationId)
+    CrmPortalGetCrossedInstallationBookItems(PlanningsToolConfiguration):InstallationBookItemsDto
+    CrmPortalGetDefaultPlanningsToolConfigurationByType(ConfigurationJobType):PlanningsToolConfiguration
+    CrmPortalGetPagedPlanningsToolConfigurationsByType(PageNumber, ConfigurationsPerPage, PlanningsToolConfigurationState, ConfigurationJobType):PagedPlanningsToolConfigurationsDto
+    CrmPortalGetCurrentPlanningsToolConfigurationByType(ConfigurationJobType):PlanningsToolConfiguration
+
+    //Plannins Tool Settings end
+
+    CrmPortalGetExpenditureDetails(ServiceAccountId):ExpenditureDetailsDtos
+    CrmPortalGetFilteredUsagesCallDataRecords(serviceAccountId:ServiceAccountId, CrmPortalVirtualBalanceRecordFilterDto, perPage:PerPage, pageNumber:PageNumber):CrmPortalGetFilteredUsagesCallDataRecordsResponse
+    CrmPortalGetUsagesVideoOnDemands(serviceAccountId:ServiceAccountId, perPage:PerPage, pageNumber:PageNumber):CrmPortalGetUsagesVideoOnDemandsResponse
+    CrmPortalGetUsagesVideoOnDemandsByVirtualBalanceRecordId(virtualBalanceRecordId:VirtualBalanceRecordId, perPage:PerPage, pageNumber:PageNumber):CrmPortalGetUsagesVideoOnDemandsResponse
+    CrmPortalRecreateInvoice(InvoiceRecreationRequest)
+    CrmPortalReverseInvoiceItems(ReverseInvoiceItemsRequest)
+    CrmPortalGetPagedSearchForCustomerAccounts(PageNumber, PerPage, CustomerAccountSearchRequest):PagedSearchResultResponse
+    CrmPortalGetCustomerDashboardAccountDetails(accountId:AccountId):CustomerDashboardAccountDetailsDto
+    CrmPortalAddClearanceBlockToMultipleInvoices(InvoiceClearanceBlockCreationRequestCollection, createdBy:CreatedBy)
+    CrmPortalGetClearanceBlockReasons():FinancialBlockReasonDtos
+    CrmPortalGetProcessesByAccountId(accountId:AccountId):Processes
+    CrmPortalGetPagedClosedProcessesByServiceAccountId(AccountId, ServiceAccountId, PageNumber, PerPage):PagedClosedProcessesDto
+    CrmPortalGetPagedPendingProcessesByServiceAccountId(AccountId, ServiceAccountId, PageNumber, PerPage):PagedPendingProcessesDto
+    CrmPortalGetEndOfDeliveryProcessDetailsByProcessId(ProcessId):EndOfDeliveryProcessDetailsDto
+    CrmPortalGetEndOfDeliveryProcessReasonCodeList():ReasonCodeDtoList
+    CrmPortalGetManualExcassoReasonCodeList():ReasonCodeDtoList
+    CrmPortalGetUncollectableReasonCodeList():ReasonCodeDtoList
+    CrmPortalGetBalanceAdjustmentReasons():ReasonDtos
+    CrmPortalBalansAdjustment(manualBalanceCorrectionCreationRequest:ManualBalanceCorrectionCreationRequest):FinancialActionRequestId
+    CrmPortalAddCustomerCall(createCustomerCallrequest:CreateCustomerCallRequest)
+    CrmPortalGetPagedCustomerContacts(accountId:AccountId, pageNumber:PageNumber, perPage:PerPage, disableOutgoingEmailRetrieval:DisableOutgoingEmailRetrieval):PagedCustomerContactsDto
+    CrmPortalGetPagedPendingProcessesByCustomerAccount(AccountId, PerPage, PageNumber):PagedPendingProcessesDto
+    CrmPortalGetPagedClosedProcessesByCustomerAccount(AccountId, PerPage, PageNumber):PagedClosedProcessesDto
+    CrmPortalGetServiceAccountDetails(accountId:AccountId, serviceAccountId:ServiceAccountId):ServiceAccountDetailsDto
+    CrmPortalGetPagedServiceAccountSubscriptions(accountId:AccountId, serviceAccountId:ServiceAccountId, pageNumber:PageNumber, perPage:PerPage):PagedServiceAccountSubscriptionsDto
+    CrmPortalGetServiceAccountById(AccountId, ServiceAccountId):ServiceAccountDashboardPakkettenDto
+    CrmPortalGetPartialPricePlans(pageNumber:PageNumber, perPage:PerPage):PartialPricePlanResponse
+    CrmPortalGetPricePlanForEditById(pricePlanId:PricePlanId):PricePlanForEditDto
+
+    //VirtualBalanceRecords
+    CrmPortalGetFilteredAndPagedVirtualBalanceRecordDtos(ServiceAccountId, CrmPortalVirtualBalanceRecordFilterDto, VirtualBalanceRecordsPerPage, PageNumber):GetFilteredAndPagedVirtualBalanceRecordsResponse
+    CrmPortalGetVirtualBalanceRecordDto(ServiceAccountId, VirtualBalanceRecordId):VirtualBalanceRecordDto
+
+    //BankTransactions
+    CrmPortalGetFilteredAndPagedBankTransactionDtos(ServiceAccountId, CrmPortalBankTransactionFilterDto, BankTransactionsPerPage, PageNumber, IsHistoryRequired):GetFilteredAndPagedBankTransactionsResponse
+    CrmPortalGetBankTransactionDtoById(BankTransactionId):BankTransactionDto
+    CrmPortalGetPagedBankTransactionDetails(BankTransactionId, BankTransactionDetailsPerPage, PageNumber):GetPagedBankTransactionDetailsResponse
+    CrmPortalMatchTransactionToInvoice(BankTransactionId, TransactionInvoiceMatchInformations, ChangedBy)
+    CrmPortalMatchTransactionToServiceAccount(BankTransactionId, ServiceAccountId, ChangedBy)
+
+    CrmPortalMacthMailToCustomerAccount(AccountId, MailId, CreatedBy)
+    CrmPortalGetUnmatchMailById(MailId): CustomerEmailDto
+    CrmPortalUpdateCustomerAccountEmail(updateCustomerAccountEmailRequest:UpdateCustomerAccountEmailRequest)
+
+    CrmPortalGetSalesOffers(GetPartialDataRequest):GetSalesOffersResponse
+    CrmPortalGetAllBundleTypes():BundleTypeCollection
+
+    CrmPortalGetTriplePlayOrderCreationInfo():TriplePlayOrderCreationInfoDto
+
+    CrmPortalGetServiceCategories():ServiceCategoryIds
+    CrmPortalUpdateCdrThresholds(updateCdrThresholdsRequest:UpdateCdrThresholdsRequest)
+    CrmPortalGetServiceAccountCdrThresholds(accountId:AccountId, serviceAccountId:ServiceAccountId):CdrPriceThresholdsDto
+
+    CrmPortalGetFilteredAndPagedUnmatchedBankTransactions(pageNumber:PageNumber, perPage:PerPage, CrmPortalBankTransactionFilterDto):PagedBankTransactionsInfoManualTransactionsPageDto
+    CrmPortalGetFilteredAndPagedMatchedBankTransactions(pageNumber:PageNumber, perPage:PerPage, CrmPortalBankTransactionFilterDto):PagedBankTransactionsInfoManualTransactionsPageDto
+    CrmPortalGetFilteredAndPagedReturnedBankTransactions(pageNumber:PageNumber, perPage:PerPage, CrmPortalBankTransactionFilterDto):PagedBankTransactionsInfoManualTransactionsPageDto
+    CrmPortalGetPagedMatchedBankTransactionsByBankTransactionId(PageNumber, PerPage, BankTransactionId):PagedBankTransactionsInfoManualTransactionsPageDto
+    CrmPortalGetPagedUnmatchedBankTransactionsByBankTransactionId(PageNumber, PerPage, BankTransactionId):PagedBankTransactionsInfoManualTransactionsPageDto
+    CrmPortalGetPagedReturnedBankTransactionsByBankTransactionId(PageNumber, PerPage, BankTransactionId):PagedBankTransactionsInfoManualTransactionsPageDto
+
+    CrmPortalGetMatchedBankTransactionById(BankTransactionId):BankTransactionDto
+    CrmPortalGetUnmatchedBankTransactionById(BankTransactionId):BankTransactionDto
+    CrmPortalGetReturnedBankTransactionById(BankTransactionId):BankTransactionDto
+    CrmPortalUnmatchBankTransaction(BankTransactionId,ChangedBy)
+    CrmPortalGetUnmatchedBankTransactionByIdWithExistingFinancialRequestsInfo(BankTransactionId):BankTransactionWithExistingFinancialRequestInfo
+    CrmPortalCreateBankTransactionManualExcasso(BankTransactionManualExcassoCreationRequest)
+    CrmPortalGetCreditTransfersByBankTransactionId(BankTransactionId):CreditTransferManualTransactionsDtos
+
+    CrmPortalGetPagedFinancialRequests(pagedFinancialActionRequests:PagedFinancialActionRequestsRequest):PagedFinancialActionRequestsResponse
+    CrmPortalRejectFinancialActionRequest(financialActionRejectionRequest:FinancialActionRejectionRequest)
+    CrmPortalConfirmFinancialActionRequest(financialActionConfirmationRequest:FinancialActionConfirmationRequest)
+    CrmPortalMakeCounterAdjustment(CounterAdjustmentCreationRequest)
+    CrmPortalGetManualCorrectionVirtualBalanceRecordById(GetManualCorrectionVirtualBalanceRecordRequest):GetManualCorrectionVirtualBalanceRecordResponse
+
+    CrmPortalGetProlongationOfferTokenByServiceAccountId(serviceAccountId:ServiceAccountId):TokenId
+    CrmPortalGetFilteredServiceAccountsWithInvoices(CrmPortalServiceAccountFilteringDto):ServiceAccountsWithInvoicesDto
+    CrmPortalCheckDslProductForTriplePlayMovingProcess(CheckDslProductForTriplePlayMovingProcessRequest):CheckDslProductForTriplePlayMovingProcessResponse
+
+    CrmPortalSetEmployeeNewPassword(SetEmployeeNewPasswordRequest)
+
+    CrmPortalIsInstallationOrderExist(orderId:OrderId):Boolean
+    CrmPortalGetTaskDetailsById(taskId:TaskId):CrmPortalGetTaskDetailsByEmployeeIdResponse
+    CrmPortalGetOutgoingEmailById(EmailId):MailStorageEmailDto
+    CrmPortalGetEmailAttachmentById(AttachmentId, EmailId):MailStorageEmailAttachmentDto
+    CrmPortalCobsGetDslOrderByTriplePlayOrderId(OrderId):CobsDslOrder
+    CrmPortalGetMoveCeaseOrderByAdjustingOrderId(AdjustingOrderId):CobsDslOrder
+    CrmPortalSendToCobsMoveDslOrder(OrderId)
+
+    CrmPortalGetAllPropositionWithDefault():PropositionDtoCollection
+    CrmPortalGetActiveDefaultPropositionForServiceCategory(ServiceCategoryId):PropositionDto
+
+    //Service Account Contract Mutations
+    CrmPortalGetPagedServiceAccountContractMutations(AccountId, ServiceAccountId, PageNumber, PerPage):PagedServiceAccountContractMutationsResponse
+    CrmPortalGetPendingTasksBelongsToCustomer(customerId:CustomerId, perPage:PerPage, pageNumber:PageNumber):PagedTasksForCustomer
+
+    CrmPortalGetClosedTasksBelongsToCustomer(customerId:CustomerId, perPage:PerPage, pageNumber:PageNumber):PagedTasksForCustomer
+    CrmPortalSendEmailFromCrm(AccountId, EmailBody, EmailSubject, EmployeeId, SendToEmail, CcEmails, CrmEmailAttachments)
+
+    CrmPortalTryCancelInstallationOrder(entity:EntityId)
+    CrmPortalGetVendors():VendorDtos
+    FixProductionSapMigration()
+
+    CrmPortalForceCompleteCeaseDslOrder(orderId:OrderId)
+    CrmPortalGetServiceAccountSubscriptionsInfo(AccountId, ServiceAccountId):ServiceAccountSubscriptionsInfo
+    CrmPortalSendMtpReminderByServiceAccountId(serviceAccountId:ServiceAccountId)
+    CrmPortalForceMoveAdjustingOrderToCancelledOrderState(adjustingOrderId:AdjustingOrderId, accountId:AccountId)
+    CrmPortalUnsubscribeBundleManually(crmPortalUnsubscribeBundleManuallyRequest:CrmPortalUnsubscribeBundleManuallyRequest)
+
+    CrmPortalGetServiceAccountAddressHistory(serviceAccountId:ServiceAccountId):AddressHistoryItemCollectionDto
+
+    CrmPortalGetGlEvent(Date, GlEventType, SourceId):GlEvent
+    CrmPortalGetAvailableMainDslBundlesForServiceAccount(AccountId, ServiceAccountId):AvailableMainBundleByPropositionIdAndAddressList
+    CrmPortalReplaceMainInternetBundleInTheSubscriptionWithRecalculation(AccountId, ServiceAccountId, BundleId, StartOn)
+
+    CrmPortalCreateProductDiscount(productDiscountCreationRequest:ProductDiscountCreationRequest)
+    CrmPortalUpdateProductDiscount(productDiscountUpdateRequest:ProductDiscountUpdateRequest)
+    CrmPortalGetPagedProductDiscounts(pageNumber:PageNumber, perPage:PerPage):PagedProductDiscounts
+    CrmPortalGetProductDiscountById(discountId:DiscountId):ProductDiscountDto
+    CrmPortalCreateProductDiscountForServiceCategory(productDiscountForServiceCategoryCreationRequest:ProductDiscountForServiceCategoryCreationRequest)
+    CrmPortalGetPagedProductDiscountsForServiceCategory(pageNumber:PageNumber, perPage:PerPage, serviceCategoryId:ServiceCategoryId):PagedProductDiscountsForServiceCategory
+    CrmPortalActivateProductDiscountForServiceCategory(productDiscountForServiceCategoryActivationRequest:ProductDiscountForServiceCategoryActivationRequest)
+    CrmPortalGetProductDiscountByIdForServiceCategory(discountId:DiscountId):ProductDiscountForServiceCategoryDto
+    CrmPortalDeactivateProductDiscountForServiceCategory(productDiscountForServiceCategoryDeactivationRequest:ProductDiscountForServiceCategoryDeactivationRequest)
+    CrmPortalUpdateProductDiscountForServiceCategory(productDiscountForServiceCategoryUpdateRequest:ProductDiscountForServiceCategoryUpdateRequest)
+    CrmPortalGetPossibleWishdate(IsOverstapservice, IsUrgency):Date
+
+    CrmPortalCreateWarrantyDepositBundle(warrantyDepositBundleCreationRequest:WarrantyDepositBundleCreationRequest)
+    CrmPortalUpdateWarrantyDepositBundle(warrantyDepositBundleUpdateRequest:WarrantyDepositBundleUpdateRequest)
+    CrmPortalGetPagedWarrantyDepositBundles(pageNumber:PageNumber, perPage:PerPage):PagedWarrantyDepositBundles
+    CrmPortalActivateWarrantyDepositBundle(warrantyDepositBundleActivationRequest:WarrantyDepositBundleActivationRequest)
+    CrmPortalDeactivateWarrantyDepositBundle(warrantyDepositBundleDeactivationRequest:WarrantyDepositBundleDeactivationRequest)
+    CrmPortalGetWarrantyDepositBundleById(bundleId:BundleId):WarrantyDepositBundle
+
+    CrmPortalUpdateIncomingEmailCategorySubcategory(updateMailsCategorySubcategoryRequest:UpdateMailsCategorySubcategoryRequest)
+
+    CrmPortalIsAnyInstallationProcessExistByAccountIdServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):IsExist
+
+service ApiGatewayMigrationApiAsync
+    MigrateAnnaCustomerAndServiceAccountFromSap(migrateAnnaCustomerAndServiceAccountFromSapRequest:MigrateAnnaCustomerAndServiceAccountFromSapRequest)
+    MigrateSapCustomerAccountResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+    MigrateSapServiceAccountResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+    MigrateSapSubscriptionResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+    MigrateSapMandateResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+    MigrateSapServiceContractResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+    ActivateSapServiceAccountResponseHandler(accountId:AccountId, serviceAccountId:ServiceAccountId)
+
+service ResellerApiService
+    Ping(ping:Ping):Pong
+    TestError()
+
+    ResellerApiGetPossibleWishdate(IsOverstapservice, IsUrgency):Date
+    ResellerApiCreateOrder(CrmPortalCreateTriplePlayOrderRequest):OrderId
+    ResellerApiGetAvailablePropositionsByZipCode(zip:Zip, houseNumber:HouseNumber, extension:Extension): GetAvailablePropositionsResponse
+    ResellerApiGetDiscountsByPropositionId(propositionId:PropositionId):MyNleDiscountDtos
+    ResellerApiGetAvailablePropositionsByZipCodeAndSalesOfficeId(Zip, HouseNumber, Extension, SalesOfficeId):ExtendedAvailablePropositionsResponse
+

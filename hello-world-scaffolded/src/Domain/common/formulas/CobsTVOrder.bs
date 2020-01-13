@@ -253,6 +253,7 @@ object CobsRequestValidationFailedReasons
     emptyMandatoryFields: String[*]
     otherReasons: String[*]
 
+
 object LastPolledId:String
 
 object CobsGetNextTvOrderStatusResponse

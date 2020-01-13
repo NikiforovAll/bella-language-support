@@ -12,9 +12,9 @@ type Declarations = { [name: string]: LSP.SymbolInformation[] };
 type Texts = { [uri: string]: string }
 
 export default class BellaAnalyzer {
-    private uriToDeclarations: FileDeclarations = {}
-    private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
-    private uriToFileContent: Texts = {}
+    // private uriToDeclarations: FileDeclarations = {}
+    // private uriToTextDocument: { [uri: string]: LSP.TextDocument } = {}
+    // private uriToFileContent: Texts = {}
     public declarationCache: LSPDeclarationRegistry;
     public referencesCache: LSPReferenceRegistry;
     private connection: LSP.Connection;
@@ -43,30 +43,70 @@ export default class BellaAnalyzer {
                 if (err != null) {
                     reject(err)
                 } else {
-                    const analyzer = new BellaAnalyzer(parser, connection)
-                    paths.forEach(p => {
+                    const analyzer = new BellaAnalyzer(parser, connection);
+                    let promises = paths.map(p => {
                         let absolute = path.join(rootPath, p);
-                        // only analyze files, glob pattern may match directories
-                        if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
-                            let uri = absolute;
-                            uri = uri.replace(":", "%3A");
-                            uri = uri.replace(/\\/g, "/");
-                            uri = "file:///" + uri;
-                            analyzer.analyze(
-                                LSP.TextDocument.create(
-                                    uri,
-                                    'bella',
-                                    1,
-                                    fs.readFileSync(absolute, 'utf8'),
-                                ),
-                            )
-                        }
-                    })
-                    resolve(analyzer)
+                        return new Promise((res, rej) => {
+                            if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
+                                fs.readFile(absolute, 'utf8', function (err, data) {
+                                    if (err) {
+                                        console.log(err);
+                                        rej(err);
+                                    } else {
+                                        let uri = absolute;
+                                        uri = uri.replace(":", "%3A");
+                                        uri = uri.replace(/\\/g, "/");
+                                        uri = "file:///" + uri;
+                                        analyzer.analyze(
+                                            LSP.TextDocument.create(
+                                                uri,
+                                                'bella',
+                                                1,
+                                                data,
+                                            ),
+                                        )
+                                        res()
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    //TODO: MAJOR this this one blocks symbol loading but is correct from design standpoint
+                    // consider to add server workers
+                    // return Promise.all(promises).then(()=>{
+                    //     resolve(analyzer);
+                    // })
+                    //server initialized after all callbacks are fired but not re solved
+                    resolve(analyzer);
                 }
-            })
-        })
+            });
+        });
     }
+    // return analyzer;
+    // return Promise.all(
+    //     promises
+    // ).then(()=> analyzer as BellaAnalyzer)
+    // sync
+    // paths.forEach(p => {
+    //     let absolute = path.join(rootPath, p);
+    //     // only analyze files, glob pattern may match directories
+    //     if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
+    //         let uri = absolute;
+    //         uri = uri.replace(":", "%3A");
+    //         uri = uri.replace(/\\/g, "/");
+    //         uri = "file:///" + uri;
+    //         analyzer.analyze(
+    //             LSP.TextDocument.create(
+    //                 uri,
+    //                 'bella',
+    //                 1,
+    //                 fs.readFileSync(absolute, 'utf8'),
+    //             ),
+    //         )
+    //     }
+    // })
+    // return analyzer;
+
 
     private parser: LSPParserProxy
 
