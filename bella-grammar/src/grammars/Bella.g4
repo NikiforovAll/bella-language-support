@@ -55,12 +55,13 @@ objectBody
     :   (objectFieldDeclaration)+
     ;
 objectFieldDeclaration
-    :   (Identifier|PrimitiveType) (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
+    // TODO: BUG, keywords are excluded from declarations because of this need better approach on identifier definition
+    :   (Identifier|PrimitiveType|Error) (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions
 objectFieldDeclarationRest
-    : .*?
+    : ASSIGN? statement*?
     ;
 
 settingsDeclaration: SETTING objectFieldDeclaration;
@@ -83,7 +84,7 @@ serviceBody
 
 // paramList is not needed atm
 serviceDeclarationEntry
-    : Identifier LPAREN .*? RPAREN (ONEWAY? | COLON .*?)
+    : Identifier LPAREN procedureParamList? RPAREN (ONEWAY | COLON type)?
     ;
 
 procedureDeclaration
@@ -96,9 +97,7 @@ procedureSignature
 procedureParamList
     : procedureParam (COMMA procedureParam)*
     ;
-procedureChron
-    : 'at' .*? 'every' ('Minutes' | 'Day' | 'Week' |'Month')
-    ;
+
 procedureParam
     : 'out'? (Identifier COLON)? type
     ;
@@ -107,7 +106,7 @@ procedureBody: statement*?;
 
 // TODO: more robust approach for formula parsing
 formulaDeclaration
-    :  ProcedureModifier? FORMULA formulaSignature ASSIGN? .*?
+    :  ProcedureModifier? FORMULA formulaSignature ASSIGN? statement*?
     ;
 formulaSignature
     : procedureSignature COLON type
@@ -226,10 +225,6 @@ newStatement
     : New expression
     ;
 
-chronStatement
-    : 'at' .*?
-    ;
-
 localVariableDeclarationStatement
     :    Let? localVariableDeclaration
     ;
@@ -241,6 +236,11 @@ localVariableDeclaration
 
 statementExpression
     :   expression
+    ;
+
+procedureChron
+    // TODO: bug this lookup is no good, but declaration of keyword excludes this word from identifier
+    : 'at' .*? 'every' .*? //('Minutes' | 'Day' | 'Week' |'Month')
     ;
 
 // blockStatement

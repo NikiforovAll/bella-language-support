@@ -3,7 +3,9 @@ import { BellaErrorStrategy, BellaLanguageSupport } from "../src/lib/index";
 describe("expression-simple-lambda", () => {
     it("should return parsed expression", () => {
         let input = `
-TestCollection.Where(i => i.Data.Date() == now)`;
+TestCollection.Where(i => i.Data.Date() == now)
+
+(EndOn.Year() - StartOn.Year()) * 12 + EndOn.Month() - StartOn.Month()`;
 
         let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
         let visitor = BellaLanguageSupport.generateVisitor();
@@ -28,3 +30,419 @@ PropositionFilteredCollection = PropositionCollection.Where(p => p.endOn.Date() 
 });
 
 
+describe("expression-mad", () => {
+    it("should return parsed expression", () => {
+        let input = `
+        object CobsTvOrderId:String
+        object TvProductInstanceNumber:String
+        object TvProductInstanceNumberIsp:String
+        object CobsDslProductInstanceNumber:String
+        object PageText:String
+
+        object TvVasPacketType:String
+            //TvPlus = 1
+            //FoxSportsEredivisie = 2
+            //FoxSportsInternational = 20
+            //Kidspakket = 7
+            //ZiggoSportTotaal = 6
+            //OnbezorgdOpnemen = 9
+            //Turkspakket = 12
+            //Hindipakket = 13
+            //Erotiekpakket = 17
+            //HBO = 18
+            //Film1 = 19
+            //Videolandunlimited = 22
+            //Duitspakket = 24
+
+        object PinCode:String
+        object SubscriptionNumber:String
+
+        enum TvVasPacketAction
+            Add
+            Drop
+
+        enum TvOrderType
+            TvProvide
+            TvCease
+            TvChange
+
+        enum RunningEnvironment
+            Production
+            Development
+            Buildserver
+            Training
+
+        enum TvVasPacketStatus
+            ToAdd
+            Adding
+            Added
+            ToDrop
+            Dropping
+            Dropped
+
+        enum TvOrderStatus
+            Received
+            Accepted
+            Denied
+            InstallPlanned
+            Completed
+            Cancelled
+            AccOnHold
+            PSTNPlanned
+            XTLPlanned
+            ToBeCancelled
+            DeniedRollingBack
+            ToBeDenied
+            Sleeping
+            Activated
+            CancelledRollingBack
+            PreOrder
+            TechDelivered
+            Unknown
+
+        object TvVasPackageOrderState
+            tvVasPacketType: TvVasPacketType
+            description: String
+            action: TvVasPacketStatus
+
+        object TvVasPackageOrderStateDto
+            tvVasPacketType: TvVasPacketType
+            description: String
+            action: TvVasPacketStatus
+
+        object TvOrderStatusChange
+            date: DateTime
+            status: String
+            user: String
+
+        object TvOrderStatusChangeDto
+            date: DateTime
+            status: String
+            user: String
+
+        formula ToDto(TvOrderStatusChange): TvOrderStatusChangeDto = new TvOrderStatusChangeDto(
+            date = TvOrderStatusChange.date,
+            status = TvOrderStatusChange.status,
+            user = TvOrderStatusChange.user)
+
+        object OrderEntryTvVasPackage
+            tvVasPacketType: TvVasPacketType
+            action: TvVasPacketAction
+
+        object OrderEntryTvVasPackageDto
+            tvVasPacketType:TvVasPacketType
+            action:TvVasPacketAction
+
+        object OrderNumberIsp:String
+
+        object CobsCeaseTvOrder
+            orderType:TvOrderType // TvCease
+            tvProductInstanceNumber:String // M
+            ispName:String
+            customerCodeIsp:String
+            billingIdIsp:String
+            productTypeCode:Integer
+
+
+        object CobsTvOrder
+            orderType:TvOrderType
+            ispName:String
+            productTypeCode:Integer
+            customerCodeIsp:String
+            billingIdIsp:String
+            orderWishDt: DateTime
+            orderNumber: String
+            orderNumberIsp: String
+            deliverDt: DateTime
+            tvProductInstanceNumberIsp:String
+            tvProductInstanceNumber:String
+            relatedDslProductInstanceNumber:String
+            tvVasPackageUpdates: OrderEntryTvVasPackage[*]
+            orderStatus: TvOrderStatus
+            orderStatusChanges: TvOrderStatusChange[*]
+            tvVasPackageOrderStates: TvVasPackageOrderState[*]
+            pinCode: PinCode
+            tvAccountNumber:String
+            planDt: DateTime
+            isFailed: Boolean = orderStatus == TvOrderStatus.Cancelled || orderStatus == TvOrderStatus.CancelledRollingBack || orderStatus == TvOrderStatus.Denied || orderStatus == TvOrderStatus.DeniedRollingBack
+            error: String
+
+        object CobsTvOrderDto
+            orderType:TvOrderType
+            ispName:String
+            productTypeCode:Integer
+            customerCodeIsp:String
+            billingIdIsp:String
+            orderWishDt: DateTime
+            orderNumberIsp: String
+            tvProductInstanceNumberIsp:String
+            tvProductInstanceNumber:String
+            relatedDslProductInstanceNumber:String
+            tvVasPackageUpdates: OrderEntryTvVasPackageDto[*]
+
+        object CobsSubmitTvOrderRequest
+            runningEnvironment: RunningEnvironment
+            tvOrder: CobsTvOrderDto
+
+        object CobsSubmitTvOrderRequestHeader
+            timeStamp: DateTime
+            cobsUsername: String
+            cobsPassword: String
+            runningEnvironment: RunningEnvironment
+
+        object CobsSubmitTvOrderRequestHeaderDto
+            timeStamp: DateTime
+            cobsUsername: String
+            cobsPassword: String
+            runningEnvironment: RunningEnvironment
+
+        object CobsSubmitTvOrderResponse
+            submitOrderErrors: SubmitCobsTvOrderErrorDto[*]
+            orderNumber: String
+            tvProductInstanceNumber: String
+            orderNumberIsp:String
+
+        object SubmitCobsTvOrderError
+            type: String
+            description: String
+
+
+        object SubmitCobsTvOrderErrorDto
+            type: String
+            description: String
+
+        object CobsRetrieveTvOrderRequestHeader
+            timeStamp: DateTime
+            cobsUsername: String
+            cobsPassword: String
+            runningEnvironment: RunningEnvironment
+
+        object CobsRetrieveTvOrderRequestHeaderDto
+            timeStamp: DateTime
+            cobsUsername: String
+            cobsPassword: String
+            runningEnvironment: RunningEnvironment
+
+        object CobsRetrieveTvOrderStatusRequest
+            runningEnvironment: RunningEnvironment
+            tvOrderId: String
+
+        object CobsUpdateTvOrderStatusRequest
+            runningEnvironment: RunningEnvironment
+            tvOrderId: String
+
+        object CobsUpdateTvOrderStatusResponse
+            response: String
+
+        object CobsRetrieveTvOrderStatusResponse
+            order: CobsTvOrderInfoDto
+            orderStatusChanges: TvOrderStatusChangeDto[*]
+            error: String
+            errorType: String
+            tvVasPackages: TvVasPackageOrderStateDto[*]
+
+        object CobsTvOrderStatusInfo
+            order: CobsTvOrderInfoDto
+            orderStatusChanges: TvOrderStatusChangeDto[*]
+            tvVasPackages: TvVasPackageOrderStateDto[*]
+
+        object CobsTvOrderInfo
+            orderType:TvOrderType
+            ispName:String
+            productTypeCode:Integer
+            customerCodeIsp:String
+            billingIdIsp:String
+            orderWishDt: DateTime
+            planDt: DateTime
+            deliverDt: DateTime
+            orderNumber: String
+            orderNumberIsp: String
+            tvProductInstanceNumberIsp:String
+            tvProductInstanceNumber:String
+            relatedDslProductInstanceNumber:String
+            technicalAccountNumber: String
+            pinCode: PinCode
+            status: TvOrderStatus
+            statusDt: DateTime
+
+        object CobsTvOrderInfoDto
+            orderType:TvOrderType
+            ispName:String
+            productTypeCode:Integer
+            customerCodeIsp:String
+            billingIdIsp:String
+            orderWishDt: DateTime
+            planDt: DateTime
+            deliverDt: DateTime
+            orderNumber: String
+            orderNumberIsp: String
+            tvProductInstanceNumberIsp:String
+            tvProductInstanceNumber:String
+            relatedDslProductInstanceNumber:String
+            technicalAccountNumber: String
+            pinCode: PinCode
+            status: TvOrderStatus
+            statusDt: DateTime
+
+        object CobsRequestValidationFailedReasons
+            emptyMandatoryFields: String[*]
+            otherReasons: String[*]
+
+
+        object LastPolledId:String
+
+        object CobsGetNextTvOrderStatusResponse
+            tvOrderInfo: CobsTvOrderInfoDto
+            orderStatusChanges: TvOrderStatusChangeDto[*]
+            tvVasPackages: TvVasPackageOrderStateDto[*]
+            signalUtcDate: DateTime
+            nextSignalId: String
+            error: String
+            errorType: String
+
+        object CobsGetNextTvOrderStatusRequest
+            lastPolledId: String
+            runningEnvironment: RunningEnvironment
+
+        object CobsUpdateTvOrderStatusesRequest
+            lastPolledId: String
+            tvOrderInfos: CobsTvOrderStatusInfo[*]
+
+        object CobsTvOrderStatusInfos: CobsTvOrderStatusInfo[*]
+        object CobsGetNextTvOrderStatusResponses: CobsGetNextTvOrderStatusResponse[*]
+        enum CobsOrderType
+            Dsl = 0
+            Tv
+            Voip
+
+
+        formula ToCobsTvOrderStatusInfo(CobsGetNextTvOrderStatusResponse): CobsTvOrderStatusInfo =
+            new CobsTvOrderStatusInfo
+            (
+                order = CobsGetNextTvOrderStatusResponse.tvOrderInfo,
+                tvVasPackages = CobsGetNextTvOrderStatusResponse.tvVasPackages,
+                orderStatusChanges = CobsGetNextTvOrderStatusResponse.orderStatusChanges
+            )
+
+        formula ToDto(TvVasPackageOrderState): TvVasPackageOrderStateDto =
+            new TvVasPackageOrderStateDto
+            (
+                tvVasPacketType = TvVasPackageOrderState.tvVasPacketType,
+                description = TvVasPackageOrderState.description,
+                action = TvVasPackageOrderState.action
+            )
+        formula ToDto(CobsTvOrderInfo): CobsTvOrderInfoDto =
+            new CobsTvOrderInfoDto
+            (
+                orderType = CobsTvOrderInfo.orderType,
+                ispName = CobsTvOrderInfo.ispName,
+                productTypeCode = CobsTvOrderInfo.productTypeCode,
+                customerCodeIsp = CobsTvOrderInfo.customerCodeIsp,
+                billingIdIsp = CobsTvOrderInfo.billingIdIsp,
+                orderWishDt = CobsTvOrderInfo.orderWishDt,
+                planDt = CobsTvOrderInfo.planDt,
+                deliverDt = CobsTvOrderInfo.deliverDt,
+                orderNumber = CobsTvOrderInfo.orderNumber,
+                orderNumberIsp = CobsTvOrderInfo.orderNumberIsp,
+                tvProductInstanceNumberIsp = CobsTvOrderInfo.tvProductInstanceNumberIsp,
+                tvProductInstanceNumber = CobsTvOrderInfo.tvProductInstanceNumber,
+                relatedDslProductInstanceNumber = CobsTvOrderInfo.relatedDslProductInstanceNumber,
+                technicalAccountNumber = CobsTvOrderInfo.technicalAccountNumber,
+                pinCode = CobsTvOrderInfo.pinCode,
+                status = CobsTvOrderInfo.status,
+                statusDt = CobsTvOrderInfo.statusDt
+            )
+        formula ToDto(OrderEntryTvVasPackage): OrderEntryTvVasPackageDto =
+            new OrderEntryTvVasPackageDto
+            (
+                tvVasPacketType = OrderEntryTvVasPackage.tvVasPacketType,
+                action = OrderEntryTvVasPackage.action
+            )
+
+        formula ToDto(CobsTvOrder):CobsTvOrderDto =
+            new CobsTvOrderDto
+            (
+                orderType = CobsTvOrder.orderType,
+                ispName = CobsTvOrder.ispName,
+                productTypeCode = CobsTvOrder.productTypeCode,
+                customerCodeIsp = CobsTvOrder.customerCodeIsp,
+                billingIdIsp = CobsTvOrder.billingIdIsp,
+                orderWishDt = CobsTvOrder.orderWishDt,
+                orderNumberIsp = CobsTvOrder.orderNumberIsp,
+                tvProductInstanceNumberIsp = CobsTvOrder.tvProductInstanceNumberIsp,
+                tvProductInstanceNumber = CobsTvOrder.tvProductInstanceNumber,
+                relatedDslProductInstanceNumber = CobsTvOrder.relatedDslProductInstanceNumber,
+                tvVasPackageUpdates = CobsTvOrder.tvVasPackageUpdates.Select(x => x.ToDto())
+            )
+
+        formula ToDto(CobsSubmitTvOrderRequestHeader): CobsSubmitTvOrderRequestHeaderDto =
+            new CobsSubmitTvOrderRequestHeaderDto
+            (
+                timeStamp = CobsSubmitTvOrderRequestHeader.timeStamp,
+                cobsUsername = CobsSubmitTvOrderRequestHeader.cobsUsername,
+                cobsPassword = CobsSubmitTvOrderRequestHeader.cobsPassword,
+                runningEnvironment = CobsSubmitTvOrderRequestHeader.runningEnvironment
+            )
+
+        formula ToDto(CobsRetrieveTvOrderRequestHeader): CobsRetrieveTvOrderRequestHeaderDto =
+            new CobsRetrieveTvOrderRequestHeaderDto
+            (
+                timeStamp = CobsRetrieveTvOrderRequestHeader.timeStamp,
+                cobsUsername = CobsRetrieveTvOrderRequestHeader.cobsUsername,
+                cobsPassword = CobsRetrieveTvOrderRequestHeader.cobsPassword,
+                runningEnvironment = CobsRetrieveTvOrderRequestHeader.runningEnvironment
+            )
+
+        formula ToDto(SubmitCobsTvOrderError): SubmitCobsTvOrderErrorDto =
+            new SubmitCobsTvOrderErrorDto
+            (
+                type = SubmitCobsTvOrderError.type,
+                description = SubmitCobsTvOrderError.description
+            )
+
+        formula FromDto(CobsTvOrderDto):CobsTvOrder =
+            new CobsTvOrder
+            (
+                orderType = CobsTvOrderDto.orderType,
+                ispName = CobsTvOrderDto.ispName,
+                productTypeCode = CobsTvOrderDto.productTypeCode,
+                customerCodeIsp = CobsTvOrderDto.customerCodeIsp,
+                billingIdIsp = CobsTvOrderDto.billingIdIsp,
+                orderWishDt = CobsTvOrderDto.orderWishDt,
+                orderNumberIsp = CobsTvOrderDto.orderNumberIsp,
+                tvProductInstanceNumberIsp = CobsTvOrderDto.tvProductInstanceNumberIsp,
+                tvProductInstanceNumber = CobsTvOrderDto.tvProductInstanceNumber,
+                relatedDslProductInstanceNumber = CobsTvOrderDto.relatedDslProductInstanceNumber,
+                tvVasPackageUpdates = CobsTvOrderDto.tvVasPackageUpdates.Select(x => x.FromDto())
+            )
+
+        formula FromDto(OrderEntryTvVasPackageDto):OrderEntryTvVasPackage =
+            new OrderEntryTvVasPackage
+            (
+                tvVasPacketType = OrderEntryTvVasPackageDto.tvVasPacketType,
+                action = OrderEntryTvVasPackageDto.action
+            )
+
+        formula FromDto(TvOrderStatusChangeDto): TvOrderStatusChange =
+            new TvOrderStatusChange
+            (
+                date = TvOrderStatusChangeDto.date,
+                status = TvOrderStatusChangeDto.status,
+                user = TvOrderStatusChangeDto.user
+            )
+
+        formula FromDto(TvVasPackageOrderStateDto): TvVasPackageOrderState =
+            new TvVasPackageOrderState
+            (
+                tvVasPacketType = TvVasPackageOrderStateDto.tvVasPacketType,
+                description = TvVasPackageOrderStateDto.description,
+                action = TvVasPackageOrderStateDto.action
+            )
+`;
+
+        // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor();
+        visitor.visit(tree);
+    });
+});

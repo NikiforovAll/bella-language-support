@@ -74,6 +74,7 @@ export default class BellaAnalyzer {
                     //TODO: MAJOR this this one blocks symbol loading but is correct from design standpoint
                     // consider to add server workers
                     // return Promise.all(promises).then(()=>{
+                    //     connection.console.log('[Parsing is finished]');
                     //     resolve(analyzer);
                     // })
                     //server initialized after all callbacks are fired but not re solved
