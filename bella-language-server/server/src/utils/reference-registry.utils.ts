@@ -22,7 +22,7 @@ export namespace ReferenceRegistryUtils {
         }
         if(r1.startPosition.col > r2.startPosition.col) {
             return 1;
-        } else if(r1.startPosition.col > r2.startPosition.col) {
+        } else if(r1.startPosition.col < r2.startPosition.col) {
             return -1;
         }
         return 0;

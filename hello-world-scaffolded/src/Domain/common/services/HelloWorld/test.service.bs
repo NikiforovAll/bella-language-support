@@ -3,3 +3,5 @@ object Test:CustomType
 object Test:CustomType2
 
 object taskCreationRequest: String
+
+object TaskId: String

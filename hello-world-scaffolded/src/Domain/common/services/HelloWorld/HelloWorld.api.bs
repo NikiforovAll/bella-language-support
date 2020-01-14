@@ -107,6 +107,8 @@ procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionReq
             else
                 MethodInfo("Test")
 
+object UpdateCustomerAccountRequest: String
+
 procedure UpdateCustomerAccount(UpdateCustomerAccountRequest)
     if IsEmpty(UpdateCustomerAccountRequest.accountId)
         error[InvalidAccountId] "Customer account id cannot be empty"

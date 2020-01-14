@@ -21,12 +21,16 @@ export default class BellaServer {
 		{ rootPath }: LSP.InitializeParams,
 	): Promise<BellaServer> {
 		const parser = BellaServer.initializeParser()
-
-		return Promise.all([BellaAnalyzer.fromRoot({ connection, rootPath, parser }),
+		let serverInitialization = Promise.all([BellaAnalyzer.fromRoot({ connection, rootPath, parser }),
 		]).then(xs => {
 			const analyzer = xs[0]
 			return new BellaServer(connection, analyzer);
-		})
+		});
+		serverInitialization.catch((onrejection) => {
+			connection.console.log('Error during component initialization' + onrejection);
+		});
+		return serverInitialization;
+
 	}
 
 	private analyzer: BellaAnalyzer

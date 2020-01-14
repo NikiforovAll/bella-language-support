@@ -19,13 +19,23 @@ export default class BellaAnalyzer {
     public referencesCache: LSPReferenceRegistry;
     private connection: LSP.Connection;
 
+
+    private parser: LSPParserProxy
+
+    public constructor(parser: LSPParserProxy, connection: LSP.Connection) {
+        this.parser = parser
+        this.connection = connection;
+        this.declarationCache = new LSPDeclarationRegistry();
+        this.referencesCache = new LSPReferenceRegistry();
+    }
+
     /**
-   * Initialize the Analyzer based on a connection to the client and an optional
-   * root path.
-   *
-   * If the rootPath is provided it will initialize all *.sh files it can find
-   * anywhere on that path.
-   */
+* Initialize the Analyzer based on a connection to the client and an optional
+* root path.
+*
+* If the rootPath is provided it will initialize all *.sh files it can find
+* anywhere on that path.
+*/
     public static fromRoot({
         connection,
         rootPath,
@@ -38,6 +48,7 @@ export default class BellaAnalyzer {
         if (!rootPath) {
             return Promise.resolve(new BellaAnalyzer(parser, connection))
         }
+
         return new Promise((resolve, reject) => {
             glob('**/*.bs', { cwd: rootPath }, (err: any, paths: string[]) => {
                 if (err != null) {
@@ -50,7 +61,7 @@ export default class BellaAnalyzer {
                             if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
                                 fs.readFile(absolute, 'utf8', function (err, data) {
                                     if (err) {
-                                        console.log(err);
+                                        console.warn(err);
                                         rej(err);
                                     } else {
                                         let uri = absolute;
@@ -65,70 +76,38 @@ export default class BellaAnalyzer {
                                                 data,
                                             ),
                                         )
-                                        res()
+                                        let pr: FileProcessingResult = { status: FileProcessingStatus.OK, uri };
+                                        res(pr);
                                     }
                                 });
+                            } else {
+                                let pr_error: FileProcessingResult = {
+                                    status: FileProcessingStatus.Error,
+                                    uri: absolute,
+                                    message: "Couldn't find file"
+                                };
+                                res(pr_error);
                             }
                         });
                     });
                     //TODO: MAJOR this this one blocks symbol loading but is correct from design standpoint
                     // consider to add server workers
-                    // return Promise.all(promises).then(()=>{
-                    //     connection.console.log('[Parsing is finished]');
-                    //     resolve(analyzer);
-                    // })
+                    Promise.all(promises)
+                        .then((results) => {
+                            connection.console.log(
+                                `[Parsing is finished successfully], number of parsed files: ${results.length}`);
+                            resolve(analyzer);
+                        }).catch((onrejected) => {
+                            console.warn('onrejected: ', onrejected);
+                            reject(onrejected)
+                            connection.console.log('[Parsing is failed]');
+                        })
                     //server initialized after all callbacks are fired but not re solved
-                    resolve(analyzer);
+                    // resolve(analyzer);
                 }
             });
         });
     }
-    // return analyzer;
-    // return Promise.all(
-    //     promises
-    // ).then(()=> analyzer as BellaAnalyzer)
-    // sync
-    // paths.forEach(p => {
-    //     let absolute = path.join(rootPath, p);
-    //     // only analyze files, glob pattern may match directories
-    //     if (fs.existsSync(absolute) && fs.lstatSync(absolute).isFile()) {
-    //         let uri = absolute;
-    //         uri = uri.replace(":", "%3A");
-    //         uri = uri.replace(/\\/g, "/");
-    //         uri = "file:///" + uri;
-    //         analyzer.analyze(
-    //             LSP.TextDocument.create(
-    //                 uri,
-    //                 'bella',
-    //                 1,
-    //                 fs.readFileSync(absolute, 'utf8'),
-    //             ),
-    //         )
-    //     }
-    // })
-    // return analyzer;
-
-
-    private parser: LSPParserProxy
-
-    public constructor(parser: LSPParserProxy, connection: LSP.Connection) {
-        this.parser = parser
-        this.connection = connection;
-        this.declarationCache = new LSPDeclarationRegistry();
-        this.referencesCache = new LSPReferenceRegistry();
-    }
-
-    /**
-     * Find all the locations where something named name has been defined.
-     */
-    // public findDefinition(name: string): LSP.Location[] {
-    //     const symbols: LSP.SymbolInformation[] = [];
-    //     Object.keys(this.uriToDeclarations).forEach(uri => {
-    //         const declarationNames = this.uriToDeclarations[uri][name] || [];
-    //         declarationNames.forEach(d => symbols.push(d));
-    //     });
-    //     return symbols.map(s => s.location);
-    // }
 
     /**
      * Analyze the given document, cache the tree-sitter AST, and iterate over the
@@ -152,63 +131,13 @@ export default class BellaAnalyzer {
     }
 }
 
+interface FileProcessingResult {
+    status: FileProcessingStatus
+    uri: string
+    message?: string
+}
 
-// this.uriToTextDocument[uri] = document
-        // this.uriToTreeSitterTrees[uri] = tree
-        // this.uriToDeclarations[uri] = {}
-        // this.uriToFileContent[uri] = contents
-        // const problems: LSP.Diagnostic[] = []
-
-        // TreeSitterUtil.forEach(tree.rootNode, (n: Parser.SyntaxNode) => {
-        // if (n.type === 'ERROR') {
-        //     problems.push(
-        //     LSP.Diagnostic.create(
-        //         TreeSitterUtil.range(n),
-        //         'Failed to parse expression',
-        //         LSP.DiagnosticSeverity.Error,
-        //     ),
-        //     )
-        //     return
-        // } else if (TreeSitterUtil.isDefinition(n)) {
-        //     const named = n.firstNamedChild
-        //     const name = contents.slice(named.startIndex, named.endIndex)
-        //     const namedDeclarations = this.uriToDeclarations[uri][name] || []
-
-        //     const parent = TreeSitterUtil.findParent(n, p => p.type === 'function_definition')
-        //     const parentName = parent
-        //     ? contents.slice(
-        //         parent.firstNamedChild.startIndex,
-        //         parent.firstNamedChild.endIndex,
-        //         )
-        //     : null
-
-        //     namedDeclarations.push(
-        //     LSP.SymbolInformation.create(
-        //         name,
-        //         this.treeSitterTypeToLSPKind[n.type],
-        //         TreeSitterUtil.range(n),
-        //         uri,
-        //         parentName,
-        //     ),
-        //     )
-        //     this.uriToDeclarations[uri][name] = namedDeclarations
-        // }
-        // })
-
-        // function findMissingNodes(node: Parser.SyntaxNode) {
-        // if (node.isMissing()) {
-        //     problems.push(
-        //     LSP.Diagnostic.create(
-        //         TreeSitterUtil.range(node),
-        //         `Syntax error: expected "${node.type}" somewhere in the file`,
-        //         LSP.DiagnosticSeverity.Warning,
-        //     ),
-        //     )
-        // } else if (node.hasError()) {
-        //     node.children.forEach(findMissingNodes)
-        // }
-        // }
-
-        // findMissingNodes(tree.rootNode)
-
-        // return problems;
+enum FileProcessingStatus {
+    OK,
+    Error
+}
