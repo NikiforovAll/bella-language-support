@@ -520,7 +520,7 @@ repository:
     name: meta.common.expression.invocation
     begin: |-
       (?x)
-      (@?\b\s*[_[:alpha:]][_[:alnum:]]+\.|\s*)
+      (@?\s*\b[[:upper:]][_[:alnum:]]+\.|\s*)
       (@?[_[:alpha:]][_[:alnum:]]+)\s*                 # method name
       (?=\()                                           # open paren of argument list
     beginCaptures:
