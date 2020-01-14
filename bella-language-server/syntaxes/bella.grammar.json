@@ -139,7 +139,7 @@
     },
     "enum-declaration": {
       "name": "meta.enum.declaration.bella",
-      "begin": "\\b(enum)\\b\\s+",
+      "begin": "\\b(enum)\\b\\s+\\b(@?[_[:alpha:]][_[:alnum:]]*)\\s+",
       "beginCaptures": {
         "1": {
           "name": "keyword.other.enum.declaration.bella"
@@ -147,7 +147,8 @@
         "2": {
           "patterns": [
             {
-              "include": "#identifier"
+              "match": "@?[_[:alpha:]][_[:alnum:]]*",
+              "name": "entity.name.type.enum.bella"
             }
           ]
         }

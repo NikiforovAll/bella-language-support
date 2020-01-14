@@ -2,7 +2,7 @@
     "Class": {
         "prefix": "hosted-service",
         "body": [
-            "${1|hosted,external|} service ${2:MyClass} on ${2:MyClass}"
+            "${1|hosted,external|} service ${2:Class} on ${2:Class}"
         ],
         "description": "Service declaration"
     },
@@ -23,10 +23,34 @@
     "Procedure": {
         "prefix": "procedure",
         "body": [
-            "procedure ${1:MyProcedure}(${2:MyParams})",
+            "procedure ${1:Procedure}(${2:Params})",
             "\t$0"
         ],
         "description": "Procedure definition"
+    },
+    "Alias": {
+        "prefix": "alias",
+        "body": [
+            "object ${1:ObjectName}:${2:ObjectType}"
+        ],
+        "description": "alias definition"
+    },
+    "Composite-Object": {
+        "prefix": "object",
+        "body": [
+            "object ${1:ObjectName}",
+            "\t${2:fieldName}:${3:FieldType}"
+            "\t$0"
+        ],
+        "description": "poco-object definition"
+    },
+    "Enum": {
+        "prefix": "enum",
+        "body": [
+            "enum ${1:EnumName}",
+            "\t$0"
+        ],
+        "description": "enum definition"
     },
     "ForEach": {
         "prefix": "foreach",
@@ -39,14 +63,14 @@
     "Formula": {
         "prefix": "formula",
         "body": [
-            "formula To${1:MyValue}(${2:MyParams}):${1:MyValue} = $0"
+            "formula To${1:Value}(${2:Params}):${1:Value} = $0"
         ],
         "description": "Formula definition"
     },
     "If": {
         "prefix": "if",
         "body": [
-            "if ${1:MyExpression}",
+            "if ${1:Expression}",
             "\t$0"
         ],
         "description": "If definition"

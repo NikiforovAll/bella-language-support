@@ -7,6 +7,7 @@ import * as LSP from 'vscode-languageserver';
 import { DeclarationFactoryMethods } from './factories/declaration.factory';
 import { CommonUtils } from './utils/common.utils';
 import { DeclarationRegistryUtils } from './utils/declaration-registry.utils';
+import { NodeRegistrySearchQuery } from './declaration-registry-query';
 
 export class LSPDeclarationRegistry {
 
@@ -64,6 +65,12 @@ export class LSPDeclarationRegistry {
             nameFilter: {
                 active: true,
                 name
+            },
+            fallbackRules: {
+                fallbackTypeProbe: {
+                    type: DeclarationType.Object,
+                    fallbackTypes: [DeclarationType.Enum]
+                }
             }
         });
     }
@@ -124,13 +131,30 @@ export class DeclarationRegistryNode {
         if (!isNil(query)) {
             let { typeFilter, nameFilter } = query;
             if(typeFilter?.active && nameFilter?.active) {
-                let accessDeclarationKey = new DeclarationKey(
-                    nameFilter.name, typeFilter.type);
+                let declarationName = nameFilter.name;
+                let accessDeclarationKey =
+                    new DeclarationKey(declarationName, typeFilter.type);
                 if(this.nodes.containsKey(accessDeclarationKey)){
                     let foundDeclaration = this.nodes.getValue(accessDeclarationKey)
                     return !!foundDeclaration ? [foundDeclaration]: [];
                 }else {
-                    return [];
+                    if(!query.fallbackRules ||
+                        query.fallbackRules.fallbackTypeProbe.type != typeFilter.type) {
+                        return [];
+                    }
+                    let rule = query.fallbackRules.fallbackTypeProbe;
+                    let fallbackDeclarationKey = rule
+                        .fallbackTypes
+                        .map((t: DeclarationType) => new DeclarationKey(declarationName, t))
+                        .find((k: DeclarationKey) => {
+                            return this.nodes.containsKey(k);
+                        });
+                    if(!fallbackDeclarationKey) {
+                        return [];
+                    }
+                    let foundFallbackDeclaration = this.nodes.getValue(fallbackDeclarationKey)
+                    return !!foundFallbackDeclaration ? [foundFallbackDeclaration]: [];
+                    // start to probe fallback rules
                 }
             } else {
                 return this.nodes.values().filter(d => {
@@ -148,6 +172,7 @@ export class DeclarationRegistryNode {
         console.warn('getDeclarations - all values are returned - query is empty');
         return this.nodes.values();
     }
+
 }
 
 export class DeclarationKey {
@@ -162,32 +187,4 @@ export class DeclarationKey {
         return `${truncatedName} - ${this.type}`;
         // return `${this.name} - ${this.type}`;
     }
-}
-
-interface NodeRegistrySearchQuery {
-    // NOTE: this filter disables global search and point directly to node for uri
-    uriFilter: {
-        uri?: string
-    } & Activatable
-
-    typeFilter?: {
-        type: DeclarationType
-    } & Activatable
-
-    descendantsFilter?: {
-        // hasParent?: boolean
-        // parentName?: string
-    } & Activatable
-
-    namespaceFilter?: {
-        namespace: string;
-    } & Activatable
-
-    nameFilter?: {
-        name: string;
-    } & Activatable
-}
-
-interface Activatable {
-    active: boolean
 }

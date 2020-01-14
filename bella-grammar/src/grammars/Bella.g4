@@ -144,6 +144,11 @@ statement
     | Return
     ;
 
+// prasedIdentifier
+//     : Identifier
+//     | PrimitiveType
+//     | Error
+//     ;
 
 expression
     :   literal
@@ -157,6 +162,7 @@ expression
     |   New expression
     |   expression As type
     |   expression Is Not? (type | literal)
+    |   expression RANGE expression
     |   expression ('++' | '--')
     |   ('+'|'-'|'++'|'--') expression
     |   ('~'|'!') expression
@@ -306,6 +312,7 @@ BITOR           : '|';
 CARET           : '^';
 MOD             : '%';
 LAMBDA_LIKE     : '=>';
+RANGE           : '..';
 
 SERVICE:   'service';
 PROCEDURE: 'procedure';

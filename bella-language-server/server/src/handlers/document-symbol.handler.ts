@@ -5,6 +5,7 @@ export class DocumentSymbolHandler {
     constructor(private cache: LSPDeclarationRegistry) {
         this.cache = cache;
     }
+
     public findSymbols(params: DocumentSymbolParams): SymbolInformation[] {
         let docUri = params.textDocument.uri;
         return this.cache.getLSPDeclarations(docUri);

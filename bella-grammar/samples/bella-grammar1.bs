@@ -18,11 +18,5 @@
 // TestCollection.Where(i => i.Data.Date()) // bugged
 // C:\Nikiforov\dev\nuts-bella\src\Domain\components\ApiGateway\ApiGatewaySrc\CrmPortalApi.bs
 
- object CobsGetNextTvOrderStatusResponse
-     tvOrderInfo: CobsTvOrderInfoDto
-     orderStatusChanges: TvOrderStatusChangeDto[*]
-     tvVasPackages: TvVasPackageOrderStateDto[*]
-     signalUtcDate: DateTime
-     nextSignalId: String
-     error: String
-     errorType: String
+formula To(Date, AnotherDate):Integer = if(Date > AnotherDate, 0, (Date..AnotherDate).Count())
+

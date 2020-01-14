@@ -1,7 +1,15 @@
 
 object Test:CustomType
-object Test:CustomType2
+object Test2:CustomType2
+
+object Test3
+    enumTest: TestEnum
 
 object taskCreationRequest: String
 
 object TaskId: String
+
+enum TestEnum
+    Value1
+    Value2
+
