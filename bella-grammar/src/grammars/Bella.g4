@@ -56,7 +56,7 @@ objectBody
     ;
 objectFieldDeclaration
     // TODO: BUG, keywords are excluded from declarations because of this need better approach on identifier definition
-    :   (Identifier|PrimitiveType|Error) (LPAREN .*? RPAREN)? COLON type ( objectFieldDeclarationRest)
+    :   (Identifier|PrimitiveType|Error) (arguments)? COLON type ( objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions
@@ -88,11 +88,11 @@ serviceDeclarationEntry
     ;
 
 procedureDeclaration
-    :  (HOSTED | ProcedureModifier)? PROCEDURE procedureSignature procedureBody
+    :  (HOSTED | ProcedureModifier)? PROCEDURE procedureSignature procedureChron? procedureBody
     ;
 
 procedureSignature
-    :   Identifier LPAREN procedureParamList? RPAREN procedureChron?
+    :   Identifier LPAREN procedureParamList? RPAREN
     ;
 procedureParamList
     : procedureParam (COMMA procedureParam)*
@@ -173,8 +173,8 @@ expression
     |   expression '&' expression
     |   expression '^' expression
     |   expression '|' expression
-    |   expression '&&' expression
-    |   expression '||' expression
+    |   expression ( '&&' | 'and' ) expression
+    |   expression ( '||'| 'or' ) expression
     |   If LPAREN expression COMMA expression COMMA expression RPAREN
     |   <assoc=right> expression
         (   '='
@@ -246,7 +246,7 @@ statementExpression
 
 procedureChron
     // TODO: bug this lookup is no good, but declaration of keyword excludes this word from identifier
-    : 'at' .*? 'every' .*? //('Minutes' | 'Day' | 'Week' |'Month')
+    : 'at' (literal COLON? literal?)? 'every' Identifier //('Minutes' | 'Day' | 'Week' |'Month')
     ;
 
 // blockStatement

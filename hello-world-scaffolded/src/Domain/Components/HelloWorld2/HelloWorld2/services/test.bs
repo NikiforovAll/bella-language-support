@@ -1,65 +1,402 @@
+procedure ProcessInvoice(InvoiceProcessingRequest, CurrentDateTime)
 
-// object Test:CustomType
-
-// object Test2: CustomType2
-
-// //CobsDslOrder
-// //ApiGateway
-
-// //ApiGatewayDtos
-
-// //Fulfillment
-
-object SubscribedBundlesPerProduct
-    internetBundles:AvailableBundles
-    tvBundles:AvailableBundles
-    voipBundles:AvailableBundles
-
-procedure CrmPortalGetSubscribedAvailableBundlesPerProductForStartTvOrder(OrderId, out SubscribedBundlesPerProduct)
-    SubscribedBundlesPerProduct = new
-    AdjustingOrder = Fulfillment.GetAdjustingOrderById(OrderId)
-
-    if !(AdjustingOrder is StartTvOrder)
-        error[OrderNotFound] "Start Tv Order with ID " + OrderId + " not found"
-
-    StartTvOrder = AdjustingOrder as StartTvOrder
-    CreateSubscriptionRequestCollection = StartTvOrder.productList
-
-    call GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
+    call TryUpdateExistingInvoiceOverview(InvoiceProcessingRequest, out IsUpdated)
+    if IsUpdated
+        call TryCloseDunning(InvoiceProcessingRequest, CurrentDateTime)
+    else
+        call TryStartDunning(InvoiceProcessingRequest, CurrentDateTime)
 
 
-procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
-    SubscribedBundlesPerProduct = new
-    AvailableProposition = Fulfillment.GetAvailablePropositonByOrderId(OrderId)
+procedure TryStartDunning(InvoiceProcessingRequest, CurrentDateTime)
 
-    if AvailableProposition is not empty
-        AvailableProducts = AvailableProposition.products
+    IncomingInvoiceOverview = InvoiceProcessingRequest.invoiceOverview
+    ServiceAccountId = InvoiceProcessingRequest.serviceAccountId
 
-        foreach CreateSubscriptionRequest in CreateSubscriptionRequestCollection
-            SubscribeBundleWithDiscountRequests = CreateSubscriptionRequest.subscribeBundleWithDiscountRequests
-            if AvailableProducts is empty
-                error[EmptyArgument] "No available products connected with available proposition"
-            AvailableProduct = AvailableProducts.First(x => x.id == CreateSubscriptionRequest.productId)
-            BundleIds = SubscribeBundleWithDiscountRequests.Select(x => x.bundleId)
-            let Bundles = AvailableProduct.bundles.Where(x => BundleIds.Contains(x.id))
-            ProductId = CreateSubscriptionRequest.productId
-            Product = ProductCatalog.GetProductById(ProductId)
-            PricePlanId = Product.pricePlan.id
+    if InvoiceProcessingRequest.IsFirstInvoiceRejectionForNotActivatedServiceAccount()
+        InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId(IncomingInvoiceOverview.id)
+        return
 
-            foreach AvailableBundle in Bundles
-                DiscountId = SubscribeBundleWithDiscountRequests.First(x => x.bundleId == AvailableBundle.id).discountId // unneeded ?
-                BundleId = AvailableBundle.id
-                if !IsEmpty(DiscountId)
-                    Discount = ProductCatalog.GetDiscountById(PricePlanId, BundleId)
+    let ExistingDunningProcess = InvoiceProcessingRequest.FindExistingDunningProcessThatHasntBeenMovedYet()
 
-                    Amount = Discount.GetDiscountedAmount(AvailableBundle.price)
+    if ExistingDunningProcess is not empty
 
-                    AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
-                    AvailableBundle.discountId = Discount.id
+        ExistingDunningProcess.invoiceIds ++= IncomingInvoiceOverview.id
+        RootPersistentObject.invoiceOverviewByInvoiceId[IncomingInvoiceOverview.id] = IncomingInvoiceOverview
+        InvoiceIds = List(IncomingInvoiceOverview.id)
+        InvoiceGeneratorAsync.StartDunning(InvoiceIds)
+        return
 
-            if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
-                SubscribedBundlesPerProduct.internetBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
-                SubscribedBundlesPerProduct.tvBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
-                SubscribedBundlesPerProduct.voipBundles = Bundles
+    ServiceCategoryId = InvoiceProcessingRequest.serviceCategoryId
+    DunningProcessTemplate = RootPersistentObject.serviceCategoryDunningPartMap[ServiceCategoryId].dunningProcessTemplates
+        .First(x => x.isTemplateActive(CurrentDateTime) && x.allowedInvoiceTypes.Contains(IncomingInvoiceOverview.type))
+
+    InvoiceIds = new
+
+    if InvoiceProcessingRequest.invoiceOverview.type != InvoiceType.EndNote && RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId.ContainsKey(ServiceAccountId)
+
+        let PotentialInvoiceOverviews = RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId].Select(x => x) //let's imagine it's same with ToArray() :)
+
+        if (PotentialInvoiceOverviews.Sum(leftToPay) + IncomingInvoiceOverview.leftToPay).Round1() >= DunningProcessTemplate.dunningStartThreshold
+            InvoiceIds = PotentialInvoiceOverviews.Select(id)
+            foreach PotentialInvoiceOverviews
+                RootPersistentObject.invoiceOverviewByInvoiceId[InvoiceOverview.id] = InvoiceOverview
+                RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId] --= InvoiceOverview.id
+
+    if IncomingInvoiceOverview.leftToPay < DunningProcessTemplate.dunningStartThreshold && !InvoiceIds.Any()
+        if IncomingInvoiceOverview.type != InvoiceType.EndNote
+            RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId][InvoiceProcessingRequest.invoiceOverview.id] = InvoiceProcessingRequest.invoiceOverview
+        return
+
+    RootPersistentObject.invoiceOverviewByInvoiceId[IncomingInvoiceOverview.id] = IncomingInvoiceOverview
+
+    InvoiceIds ++= IncomingInvoiceOverview.id
+
+    call StartDunningProcess(InvoiceProcessingRequest, DunningProcessTemplate, InvoiceIds)
+
+
+
+
+
+procedure StartDunningProcess(InvoiceProcessingRequest, DunningProcessTemplate, InvoiceIds)
+
+    DunningProcessesHistory = RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId[InvoiceProcessingRequest.accountId][InvoiceProcessingRequest.serviceAccountId]
+
+    DunningProcessId = IdGenerator.GetNextAvailableId(TypeOfId.DunningProcessId)
+
+    DunningProcess = new DunningProcess
+        (
+            id = DunningProcessId,
+            accountId = InvoiceProcessingRequest.accountId,
+            serviceCategoryId = InvoiceProcessingRequest.serviceCategoryId,
+            serviceAccountId = InvoiceProcessingRequest.serviceAccountId,
+            status = DunningStatus.Active,
+            invoiceIds = InvoiceIds,
+            dunningProcessTemplate = DunningProcessTemplate,
+            currentDunningLevel = DunningProcessTemplate.dunningLevelByOrder[DunningProcessTemplate.dunningLevelByOrder.Keys().Min(x => x)],
+            lastActionDateTime = now,
+            startOn = now
+        )
+
+    DunningProcessesHistory.activeDunningProcesses ++= DunningProcess
+
+    InvoiceGeneratorAsync.StartDunning(InvoiceIds)
+
+    InvoiceOverviews = DunningProcess.GetInvoiceOverviews()
+
+    DunningNotificationService.DunningStarted(DunningProcess.accountId, InvoiceOverviews)
+
+    if InvoiceProcessingRequest.invoiceOverview.type == InvoiceType.EndNote
+        call SendMtpReminder(DunningProcess)
+
+
+
+procedure TryUpdateExistingInvoiceOverview(InvoiceProcessingRequest, out IsUpdated)
+
+    IsUpdated = false
+
+    InvoiceId = InvoiceProcessingRequest.invoiceOverview.id
+
+    if RootPersistentObject.invoiceOverviewByInvoiceId.ContainsKey(InvoiceId)
+
+        RootPersistentObject.invoiceOverviewByInvoiceId[InvoiceId] = InvoiceProcessingRequest.invoiceOverview
+
+        IsUpdated = true
+
+        return
+
+    ServiceAccountId = InvoiceProcessingRequest.serviceAccountId
+
+    if RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId].ContainsKey(InvoiceId)
+
+        IsUpdated = true
+
+        if InvoiceProcessingRequest.invoiceOverview.isOpen()
+            RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId][InvoiceId] = InvoiceProcessingRequest.invoiceOverview
+        else
+            RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[ServiceAccountId] --= InvoiceProcessingRequest.invoiceOverview.id
+
+
+
+
+
+
+procedure RunDunning(CurrentDateTime) at 21:00 every Day
+
+    ClosedDunningProcesses = new
+    InvoiceIds = new
+
+    foreach RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId.SelectMany(x => x.SelectMany(y => y.activeDunningProcesses)).Where(dp => dp.serviceCategoryId != "Anna")
+
+        if DunningProcess.CanBeStopped()
+
+            call StopDunningProcess(DunningProcess, ClosedOn = CurrentDateTime, out RemovedInvoiceIds)
+            call PerformClosureActions(DunningProcess, CurrentDateTime)
+            call TryUnlockDunningProcess(DunningProcess)
+
+            ClosedDunningProcesses ++= DunningProcess
+            foreach RemovedInvoiceIds
+                InvoiceIds ++= InvoiceId
+
+        else if DunningProcess.IsLevelTransitionPossible(CurrentDateTime, RootPersistentObject.calendar) && !DunningProcess.isCurrentDunningLevelLast && !DunningProcess.IsBlocked()
+
+            call MoveToNextDunningLevel(DunningProcess, CurrentDateTime)
+
+    foreach ClosedDunningProcesses //migrating closed dunning processes from active
+
+        call MigrateDunningProcessToClosedState(DunningProcess)
+
+    call RemoveSentToDunningInvoices(RemovedInvoiceIds = InvoiceIds)
+
+
+
+formula IsLevelTransitionPossible(DunningProcess, DateTime, Calendar):Boolean =
+    !DunningProcess.IsLocked() &&
+        DateTime.Date() >= DunningProcess.lastActionDateTime.AddDelays
+            (
+                DunningProcess.currentDunningLevel.expirationDelays,
+                Calendar
+            ).Date()
+
+
+
+formula IsLocked(DunningProcess):Boolean =
+    RootPersistentObject.lockedDunningProcessMap.ContainsKey(DunningProcess.id)
+
+
+
+formula CanBeStopped(DunningProcess):Boolean =
+    With
+        (
+        DunningProcess.GetInvoiceOverviews(),
+        (InvoiceOverviews) =>
+            !InvoiceOverviews
+                .Any(x => x.isOpen())
+            ||
+            (
+                DunningProcess.dunningProcessTemplate.closeWithoutDunningPenalties
+                &&
+                !InvoiceOverviews
+                    .Any(x => x.type != InvoiceType.Dunning && x.isOpen())
+            )
+            ||
+            DunningProcess.GetLeftToPay() <= DunningProcess.dunningProcessTemplate.dunningStartThreshold.Round1()
+        )
+
+
+
+formula FindExistingDunningProcessThatHasntBeenMovedYet(InvoiceProcessingRequest):DunningProcess =
+    RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId[InvoiceProcessingRequest.accountId][InvoiceProcessingRequest.serviceAccountId]
+        .activeDunningProcesses
+        .FirstOrDefault(x => x.isInvoiceOverviewsAddingPossible(InvoiceProcessingRequest.invoiceOverview), empty)
+
+
+
+procedure StopDunningProcess(DunningProcess, ClosedOn, out RemovedInvoiceIds)
+
+    DunningProcess.closedOn = ClosedOn
+    DunningProcess.status = DunningStatus.Closed
+
+    let InvoiceOverviewsThatHasntBeenPaidFully = DunningProcess.GetInvoiceOverviews()
+        .Where(x => x.isOpen())
+
+    foreach InvoiceOverviewsThatHasntBeenPaidFully
+        RootPersistentObject.potentialInvoiceOverviewByInvoiceIdByServiceAccountId[DunningProcess.serviceAccountId][InvoiceOverview.id] = InvoiceOverview
+
+    RootPersistentObject.invoiceOverviewByInvoiceId --= DunningProcess.invoiceIds
+
+    RemovedInvoiceIds = DunningProcess.invoiceIds.Where(x => !InvoiceOverviewsThatHasntBeenPaidFully.Any(id == x))
+
+
+
+procedure MoveToNextDunningLevel(DunningProcess, CurrentDateTime)
+
+    LevelTransitionActions = DunningProcess.currentDunningLevel.levelTransitionActions
+
+    DunningProcess.currentDunningLevel = DunningProcess.getNextDunningLevel()
+    DunningProcess.lastActionDateTime = CurrentDateTime
+
+    foreach LevelTransitionActions
+
+        call PerformLevelTransitionAction(DunningProcess, LevelTransitionAction, CurrentDateTime)
+
+
+procedure IdentifyEntities(ClearanceEntityIdentificationRequests)
+
+    ClearanceEntityIdentificationResults = new
+
+
+    foreach RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId.SelectMany(x => x.SelectMany(y => y.activeDunningProcesses)).TakeWhile(ClearanceEntityIdentificationRequests.Any())
+
+        ClearanceEntityIdentificationRequest = ClearanceEntityIdentificationRequests.FirstOrDefault(r => DunningProcess.IsMatch(r), empty)
+
+        if ClearanceEntityIdentificationRequest is not empty
+
+            ClearanceEntityIdentificationResults ++= DunningProcess.ToClearanceEntityIdentificationResult(ClearanceEntityIdentificationRequest.bankTransactionId)
+
+            ClearanceEntityIdentificationRequests --= ClearanceEntityIdentificationRequest
+
+
+    ClearanceEntityIdentificationResults ++= ClearanceEntityIdentificationRequests.Select
+        (
+        new ClearanceEntityIdentificationResult
+            (
+            bankTransactionId = bankTransactionId,
+            clearanceEntityIdentification = new ClearanceEntityIdentification
+                (
+                isSuccessful = false,
+                entityId = entityId
+                )
+            )
+        )
+
+
+    BankComponentAsync.ProcessClearanceEntityIdentificationResults(ClearanceEntityIdentificationResults)
+
+
+
+formula IsFirstInvoiceRejectionForNotActivatedServiceAccount(InvoiceProcessingRequest):Boolean =
+    InvoiceProcessingRequest.invoiceOverview.type == InvoiceType.First
+    &&
+    RootPersistentObject.serviceAccountDunningPartByServiceAccountId[InvoiceProcessingRequest.serviceAccountId].getStatus(now) != ServiceAccountStatus.Active
+
+
+
+procedure UpdateServiceAccount(ServiceAccountDunningPart)
+
+    RootPersistentObject.serviceAccountDunningPartByServiceAccountId[ServiceAccountDunningPart.serviceAccountId] = ServiceAccountDunningPart
+
+procedure UpdateServiceAccounts(ServiceAccountDunningPartCollection)
+
+    foreach ServiceAccountDunningPartCollection
+
+        call UpdateServiceAccount(ServiceAccountDunningPart)
+
+
+procedure ProcessDunningInvoiceGenerationResult(DunningInvoiceGenerationResult)
+
+    DunningProcessesHistory = RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId[DunningInvoiceGenerationResult.accountId][DunningInvoiceGenerationResult.serviceAccountId]
+
+    DunningProcess = DunningProcessesHistory.activeDunningProcesses.First(id == DunningInvoiceGenerationResult.dunningProcessId)
+
+    DunningProcess.invoiceIds ++= DunningInvoiceGenerationResult.invoiceOverview.id
+
+    RootPersistentObject.invoiceOverviewByInvoiceId[DunningInvoiceGenerationResult.invoiceOverview.id] = DunningInvoiceGenerationResult.invoiceOverview
+
+    call TryUnlockDunningProcess(DunningProcess)
+
+    call SendMtpReminder(DunningProcess)
+
+
+procedure TryUnlockDunningProcess(DunningProcess)
+
+    if !RootPersistentObject.lockedDunningProcessMap.ContainsKey(DunningProcess.id)
+        return
+
+    RootPersistentObject.lockedDunningProcessMap --= DunningProcess.id
+
+
+formula ToClearanceEntityIdentificationResult(DunningProcess, BankTransactionId):ClearanceEntityIdentificationResult = new ClearanceEntityIdentificationResult
+    (
+        bankTransactionId = BankTransactionId,
+        clearanceEntityIdentification = new ClearanceEntityIdentification
+            (
+                isSuccessful = true,
+                entityId = DunningProcess.id,
+                serviceAccountId = DunningProcess.serviceAccountId,
+                transactionInvoiceMatchInformations = DunningProcess.GetInvoiceOverviews()
+                    .Where(leftToPay > 0)
+                    .Select(i => i.ToTransactionInvoiceMatchInformation())
+            )
+    )
+
+
+formula ToTransactionInvoiceMatchInformation(InvoiceOverview):TransactionInvoiceMatchInformation = new TransactionInvoiceMatchInformation
+    (
+        invoiceId = InvoiceOverview.id,
+        paymentSize = InvoiceOverview.leftToPay
+    )
+
+
+formula IsMatch(DunningProcess, ClearanceEntityIdentificationRequest):Boolean =
+    DunningProcess.id == ClearanceEntityIdentificationRequest.entityId
+    &&
+    DunningProcess.GetLeftToPay() == ClearanceEntityIdentificationRequest.bankTransactionAmount.Round1()
+
+
+
+procedure ProcessDunningInvoiceRecreationRequest(DunningInvoiceRecreationRequest)
+
+    ServiceAccountId = DunningInvoiceRecreationRequest.serviceAccountId
+    AccountId = DunningInvoiceRecreationRequest.accountId
+
+    DunningProcessesHistory = RootPersistentObject.dunningProcessesHistoryByServiceAccountIdByAccountId[AccountId][ServiceAccountId]
+
+    DunningProcess = DunningProcessesHistory.activeDunningProcesses.First(invoiceIds.Contains(DunningInvoiceRecreationRequest.oldInvoiceId))
+
+    DunningProcess.invoiceIds ++= DunningInvoiceRecreationRequest.invoiceOverview.id
+
+    RootPersistentObject.invoiceOverviewByInvoiceId[DunningInvoiceRecreationRequest.invoiceOverview.id] = DunningInvoiceRecreationRequest.invoiceOverview
+
+
+procedure PerformClosureActions(DunningProcess, CurrentDateTime)
+
+    foreach DunningProcess.dunningProcessTemplate.closureActions
+
+        call PerformClosureAction(DunningProcess, ClosureAction, CurrentDateTime)
+
+
+procedure TryCloseDunning(InvoiceProcessingRequest, CurrentDateTime)
+
+    InvoiceOverview = InvoiceProcessingRequest.invoiceOverview
+
+    if InvoiceOverview.isOpen()
+        return
+
+    AccountId = InvoiceProcessingRequest.accountId
+    ServiceAccountId = InvoiceProcessingRequest.serviceAccountId
+
+    DunningProcessesHistory = RootPersistentObject
+        .dunningProcessesHistoryByServiceAccountIdByAccountId[AccountId][ServiceAccountId]
+
+    DunningProcess = DunningProcessesHistory.TryGetDunningProcessToClose(InvoiceOverview.id)
+
+    if DunningProcess is empty
+        return
+
+    call StopDunningProcess(DunningProcess, ClosedOn = CurrentDateTime, out RemovedInvoiceIds)
+    call PerformClosureActions(DunningProcess, CurrentDateTime = CurrentDateTime)
+    call TryUnlockDunningProcess(DunningProcess)
+
+    call MigrateDunningProcessToClosedState(DunningProcess)
+    call RemoveSentToDunningInvoices(RemovedInvoiceIds)
+
+
+formula TryGetDunningProcessToClose(DunningProcessesHistory, InvoiceId):DunningProcess =
+    test = test.Test(DunningProcessesHistory.activeDunningProcesses
+            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty),
+        (DunningProcess) => if
+            (
+            DunningProcess is not empty and DunningProcess.CanBeStopped(),
+            DunningProcess,
+            empty
+            )
+        )
+
+
+procedure RemoveSentToDunningInvoices(RemovedInvoiceIds)
+
+    if !RemovedInvoiceIds.Any()
+        return
+
+    InvoiceGeneratorAsync.RemoveSentToDunningInvoices(RemovedInvoiceIds)
+
+
+
+procedure MigrateDunningProcessToClosedState(DunningProcess)
+
+    DunningProcessesHistory = RootPersistentObject
+        .dunningProcessesHistoryByServiceAccountIdByAccountId[DunningProcess.accountId][DunningProcess.serviceAccountId]
+    DunningProcessesHistory.activeDunningProcesses --= DunningProcess
+    DunningProcessesHistory.closedDunningProcessesByClosedOn[DunningProcess.closedOn.DropTimePart()] ++= DunningProcess
+
+    DunningNotificationService.DuunnigStopped(DunningProcess.accountId, !DunningProcessesHistory.hasActiveDunningProcesses())
