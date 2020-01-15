@@ -1,7 +1,8 @@
-import { DeclarationRegistryNode, KeyedDeclaration, DeclarationKey } from "../lsp-declaration-registry";
+import { DeclarationRegistryNode, KeyedDeclaration, DeclarationKey, DeclarationOverload } from "../lsp-declaration-registry";
 import { BaseDeclaration, MemberComposite } from "bella-grammar";
 import { Dictionary } from "typescript-collections";
 import { CommonUtils } from "./common.utils";
+import { countBy, transform } from "lodash";
 
 export namespace DeclarationRegistryUtils {
     export function createRegistryNode(declarations: BaseDeclaration[], uri: string): DeclarationRegistryNode {
@@ -11,12 +12,42 @@ export namespace DeclarationRegistryUtils {
             if (!members) {
                 members = [];
             }
+            //TODO: this contains potential error, overloads are not supported by DeclarationKey
             dict.setValue(
                 new DeclarationKey(declaration.name, declaration.type),
-                { ...declaration, uri }
+                toKeyedDeclaration(declaration, uri)
             );
         }
+
+        let overloadKeys = getNonUniqueDeclarations(declarations);
+        let overloads: DeclarationOverload[] = overloadKeys.map((overloadKey) => {
+            let result = {
+                declarationKey: overloadKey,
+                overloads: declarations
+                    .filter(d => declarationKeyComparison(d) === overloadKey.toString())
+                    .map(d => toKeyedDeclaration(d, uri))
+            };
+            return result;
+        });
         let registry = new DeclarationRegistryNode(dict, CommonUtils.getNamespaceFromURI(uri));
+        registry.setOverloads(overloads);
         return registry;
+    }
+
+    function getNonUniqueDeclarations(declarations: BaseDeclaration[]): DeclarationKey[] {
+        return transform(countBy(declarations, declarationKeyComparison)
+            , function (result: DeclarationKey[], count: number, value: string) {
+                if (count > 1) {
+                    result.push(DeclarationKey.FromString(value));
+                }
+            }, []);
+    }
+
+    function declarationKeyComparison(d: BaseDeclaration) {
+        return `${new DeclarationKey(d.name, d.type).toString()}`;
+    }
+
+    function toKeyedDeclaration(declaration: BaseDeclaration, uri: string): KeyedDeclaration {
+        return { ...declaration, uri };
     }
 }

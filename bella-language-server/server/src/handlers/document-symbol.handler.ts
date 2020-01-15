@@ -18,6 +18,10 @@ export class DocumentSymbolHandler {
             },
             descendantsFilter: {
                 active: false
+            },
+            overloadsFilter: {
+                active: true,
+                includeOverloads: true
             }
         });
     }

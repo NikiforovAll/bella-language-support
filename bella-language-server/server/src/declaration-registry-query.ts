@@ -29,6 +29,10 @@ export interface NodeRegistrySearchQuery {
             fallbackTypes: DeclarationType[]
         }
     }
+    // NOTE: currently works only for bulk search in uriFilter
+    overloadsFilter?: {
+        includeOverloads: boolean
+    } & Activatable
 }
 
 interface Activatable {

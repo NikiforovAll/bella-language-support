@@ -26,7 +26,7 @@ export class LSPDeclarationRegistry {
     public setDeclarations(declarations: BaseDeclaration[], uri: string) {
         let nrURI = CommonUtils.normalizeURI(uri);
         this.cache.set(
-            nrURI,DeclarationRegistryUtils.createRegistryNode(declarations, nrURI));
+            nrURI, DeclarationRegistryUtils.createRegistryNode(declarations, nrURI));
     }
 
     public getRegistryNode(uri: string): DeclarationRegistryNode {
@@ -45,6 +45,10 @@ export class LSPDeclarationRegistry {
             },
             descendantsFilter: {
                 active: true
+            },
+            overloadsFilter: {
+                active: true,
+                includeOverloads: true
             }
         });
     }
@@ -80,9 +84,9 @@ export class LSPDeclarationRegistry {
         let result = DeclarationFactoryMethods.toLSPDeclarations(declarations);
 
         // do we need to fetch descendants?
-        if(query.descendantsFilter?.active) {
+        if (query.descendantsFilter?.active) {
             for (const declaration of declarations) {
-                let keyedDeclarations = declaration.members?.map( (d: BaseDeclaration): KeyedDeclaration => ({
+                let keyedDeclarations = declaration.members?.map((d: BaseDeclaration): KeyedDeclaration => ({
                     ...d, uri: declaration.uri, parentName: declaration.name
                 })) || [];
                 result.push(...DeclarationFactoryMethods.toLSPDeclarations(keyedDeclarations));
@@ -95,7 +99,7 @@ export class LSPDeclarationRegistry {
         let result: KeyedDeclaration[] = [];
         if (query.uriFilter.active) {
             result = this.getRegistryNode(query.uriFilter.uri || '').getDeclarations(query);
-        }else {
+        } else {
             // global search
             let selectedKeys = this.cache.keys();
             for (const registry_key of selectedKeys) {
@@ -103,11 +107,10 @@ export class LSPDeclarationRegistry {
                 if (isNil(registry)) {
                     continue;
                 }
-                if(registry?.namespace !== CommonUtils.SHARED_NAMESPACE_NAME && query.namespaceFilter?.active &&
+                if (registry?.namespace !== CommonUtils.SHARED_NAMESPACE_NAME && query.namespaceFilter?.active &&
                     registry?.namespace !== query.namespaceFilter.namespace) {
                     continue;
                 }
-                //TODO: include search in common
                 result.push(...registry.getDeclarations(query));
             }
         }
@@ -125,20 +128,25 @@ export interface KeyedDeclaration extends BaseDeclaration, MemberComposite {
 }
 
 export class DeclarationRegistryNode {
+
+    private overloads: Dictionary<DeclarationKey, DeclarationOverload>
+        = new Dictionary<DeclarationKey, DeclarationOverload>();
+
     constructor(private nodes: Dictionary<DeclarationKey, KeyedDeclaration>, public namespace: string) {
     }
+
     getDeclarations(query?: NodeRegistrySearchQuery): KeyedDeclaration[] {
         if (!isNil(query)) {
             let { typeFilter, nameFilter } = query;
-            if(typeFilter?.active && nameFilter?.active) {
+            if (typeFilter?.active && nameFilter?.active) {
                 let declarationName = nameFilter.name;
                 let accessDeclarationKey =
                     new DeclarationKey(declarationName, typeFilter.type);
-                if(this.nodes.containsKey(accessDeclarationKey)){
-                    let foundDeclaration = this.nodes.getValue(accessDeclarationKey)
-                    return !!foundDeclaration ? [foundDeclaration]: [];
-                }else {
-                    if(!query.fallbackRules ||
+                if (this.getNodes().containsKey(accessDeclarationKey)) {
+                    let foundDeclaration = this.getNodes().getValue(accessDeclarationKey)
+                    return !!foundDeclaration ? [foundDeclaration] : [];
+                } else {
+                    if (!query.fallbackRules ||
                         query.fallbackRules.fallbackTypeProbe.type != typeFilter.type) {
                         return [];
                     }
@@ -147,37 +155,76 @@ export class DeclarationRegistryNode {
                         .fallbackTypes
                         .map((t: DeclarationType) => new DeclarationKey(declarationName, t))
                         .find((k: DeclarationKey) => {
-                            return this.nodes.containsKey(k);
+                            return this.getNodes().containsKey(k);
                         });
-                    if(!fallbackDeclarationKey) {
+                    if (!fallbackDeclarationKey) {
                         return [];
                     }
-                    let foundFallbackDeclaration = this.nodes.getValue(fallbackDeclarationKey)
-                    return !!foundFallbackDeclaration ? [foundFallbackDeclaration]: [];
+                    let foundFallbackDeclaration = this.getNodes().getValue(fallbackDeclarationKey)
+                    return !!foundFallbackDeclaration ? [foundFallbackDeclaration] : [];
                     // start to probe fallback rules
                 }
             } else {
-                return this.nodes.values().filter(d => {
-                    let passed = true;
-                    if (!isNil(typeFilter) && typeFilter?.active) {
-                        passed = passed && (d.type === typeFilter.type);
-                    }
-                    if(!isNil(nameFilter) && nameFilter.active) {
-                        passed = passed && (d.name === nameFilter.name);
-                    }
-                    return passed;
-                });
+                return this.getValues(
+                    query.overloadsFilter?.active &&
+                    query.overloadsFilter?.includeOverloads||
+                    false).filter(d => {
+                        let passed = true;
+                        if (!isNil(typeFilter) && typeFilter?.active) {
+                            passed = passed && (d.type === typeFilter.type);
+                        }
+                        if (!isNil(nameFilter) && nameFilter.active) {
+                            passed = passed && (d.name === nameFilter.name);
+                        }
+                        return passed;
+                    });
             }
         }
         console.warn('getDeclarations - all values are returned - query is empty');
-        return this.nodes.values();
+        // return this.getNodes().values();
+        return this.getValues(true);
     }
 
+    setOverloads(overloads: DeclarationOverload[]) {
+        this.overloads = new Dictionary<DeclarationKey, DeclarationOverload>();
+        overloads.forEach(o=>{
+            this.overloads.setValue(o.declarationKey, o);
+        })
+    }
+
+    private getNodes(): Dictionary<DeclarationKey, KeyedDeclaration> {
+        return this.nodes;
+    }
+
+    private getValues(includeOverloads: boolean): KeyedDeclaration[]{
+        const uniqueDeclarations = this.getNodes().values();
+        if(includeOverloads) {
+            let mergedResult: KeyedDeclaration[] = [];
+            let declarationsWithoutOverloads = uniqueDeclarations
+                .filter(d => !this.overloads.containsKey(new DeclarationKey(d.name, d.type)));
+
+            mergedResult.push(...declarationsWithoutOverloads)
+            this.overloads.values().forEach(overload => {
+                mergedResult.push(...overload.overloads)
+            });
+            return mergedResult;
+        }
+        return uniqueDeclarations;
+    }
 }
 
-export class DeclarationKey {
-    constructor(public name: string, public type: DeclarationType) {
+export interface DeclarationOverload {
+    declarationKey: DeclarationKey
+    overloads: KeyedDeclaration[]
+}
 
+
+export class DeclarationKey {
+    //TODO: consider change this to Type:Object
+    // fullQualifier?: string
+    constructor(
+        public name: string,
+        public type: DeclarationType) {
     }
     toString() {
         const name = this.name;
@@ -186,5 +233,12 @@ export class DeclarationKey {
         let truncatedName = name.substr(0, takeNumChars);
         return `${truncatedName} - ${this.type}`;
         // return `${this.name} - ${this.type}`;
+    }
+
+    public static FromString(value: string): DeclarationKey {
+        let [name, typeStr] = value.split('-').map(t => t.trim());
+        let typeInt = Number.parseInt(typeStr);
+        let type: DeclarationType = <DeclarationType><any>typeInt;
+        return new DeclarationKey(name, type);
     }
 }

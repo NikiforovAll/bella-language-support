@@ -162,7 +162,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let fd: FormulaDeclaration = {
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
-            type: DeclarationType.Procedure
+            type: DeclarationType.Formula
         };
         this.declarations.push(fd);
         return fd;

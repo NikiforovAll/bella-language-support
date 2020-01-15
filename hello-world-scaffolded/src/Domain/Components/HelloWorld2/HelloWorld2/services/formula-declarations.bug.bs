@@ -1,0 +1,44 @@
+formula ToDto(BaseTask):TaskDto = new TaskDto(
+    id = BaseTask.id,
+    type = BaseTask.assignedType,
+    status = BaseTask.status,
+    requiredSkill = BaseTask.requiredSkill,
+    importance = BaseTask.importance.importanceLabel,
+    urgency = BaseTask.urgency.urgencyLabel,
+    component = BaseTask.component,
+    subcomponent = BaseTask.subcomponent,
+    relatedService = BaseTask.relatedService,
+    description = BaseTask.description,
+    createdOn = BaseTask.createdOn,
+    closedOn = BaseTask.closedOn,
+    assignedTo = BaseTask.assignedTo,
+    assigneeFullName = BaseTask.assigneeFullName,
+    closedBy = BaseTask.closedBy,
+    createdBy = BaseTask.createdBy,
+    postponedUntil = BaseTask.postponedUntil,
+    desiredDueDate = BaseTask.desiredDueDate,
+    customerId = BaseTask.customerId,
+    sourceComponent = BaseTask.createdByComponent,
+    sourceDescription = BaseTask.sourceDescription,
+    crmUrl = BaseTask.crmUrl,
+    orderId = BaseTask.orderId,
+    mailId = BaseTask.mailId
+    )
+
+formula ToDto(TaskWithoutRulesShortStatisticDto):CrmPortalTaskWithoutRulesShortStatisticDto = new CrmPortalTaskWithoutRulesShortStatisticDto(
+    sourceComponent = TaskWithoutRulesShortStatisticDto.sourceComponent,
+    sourceDescription = TaskWithoutRulesShortStatisticDto.sourceDescription,
+    tasksCount = TaskWithoutRulesShortStatisticDto.tasksCount
+    )
+
+formula ToShortTaskForTaskRuleDto(BaseTask):CrmPortalShortTaskForTaskRuleDto = new CrmPortalShortTaskForTaskRuleDto(
+    sourceComponent = BaseTask.createdByComponent,
+    sourceDescription = BaseTask.sourceDescription,
+    createdOn = BaseTask.createdOn
+    )
+
+procedure Test(Params1)
+    LogInfo()
+
+procedure Test(Params2)
+    LogError()
