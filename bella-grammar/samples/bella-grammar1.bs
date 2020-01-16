@@ -22,7 +22,4 @@
 //    With(DunningProcessesHistory.activeDunningProcesses
 //            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty))
 
-procedure RunDunning(CurrentDateTime) at 21:00 every Day
-
-    ClosedDunningProcesses = new
-    InvoiceIds = new
+if (PotentialInvoiceOverviews.Sum(leftToPay) + IncomingInvoiceOverview.leftToPay).Round1() >= DunningProcessTemplate.dunningStartThreshold

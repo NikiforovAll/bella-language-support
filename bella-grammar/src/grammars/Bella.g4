@@ -99,7 +99,7 @@ procedureParamList
     ;
 
 procedureParam
-    : 'out'? (Identifier COLON)? type
+    : 'out'? ((Identifier | PrimitiveType | Error) COLON)? type
     ;
 
 procedureBody: statement*?;

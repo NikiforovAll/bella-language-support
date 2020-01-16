@@ -125,7 +125,7 @@ export default class BellaAnalyzer {
             this.declarationCache.setDeclarations(res.declarations, uri);
             this.referencesCache.setReferences(res.references, uri);
         } catch (error) {
-            this.connection.console.warn(`Parsing Error: ${error}`);
+            this.connection.console.warn(`Parsing Error in ${uri}: ${error}`);
         }
         //text snippet below
     }

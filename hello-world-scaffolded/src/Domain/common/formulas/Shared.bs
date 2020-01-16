@@ -59,3 +59,4 @@ service TaskManagerAsync
     MakeTaskClosable(taskId:TaskId)
     CreateAutoProlongationFailedTaskForServiceAccountsAsync(AutoProlongationFailedTaskCreationDtoMap)
 
+object AccountId:String
