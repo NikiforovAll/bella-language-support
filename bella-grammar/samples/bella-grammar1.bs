@@ -22,7 +22,8 @@
 //    With(DunningProcessesHistory.activeDunningProcesses
 //            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty))
 
-procedure TestProcedure(Param1, Param2, out ParamOut1)
-    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
-    TaskId = BaseTask.id
-    TaskCatalog[TaskId] = BaseTask
+PropositionCashbackCreationRequest = new PropositionCashbackCreationRequest
+                (
+                name = Proposition.cashback.name,
+                amount = Proposition.cashback.amount,
+                )

@@ -56,7 +56,8 @@ objectBody
     ;
 objectFieldDeclaration
     // TODO: BUG, keywords are excluded from declarations because of this need better approach on identifier definition
-    :   (Identifier|PrimitiveType|Error) (arguments)? COLON type ( objectFieldDeclarationRest)
+    : (Identifier | PrimitiveType | Error) COLON type (objectFieldDeclarationRest)
+    | procedureSignature COLON type (objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions
@@ -71,7 +72,7 @@ enumDeclaration
     ;
 
 enumBody
-    :   (Identifier (ASSIGN literal)*)+
+    :   ((Identifier | PrimitiveType | Error) (ASSIGN literal)*)+
     ;
 
 serviceDeclaration
@@ -153,18 +154,19 @@ statement
 expression
     :   literal
     |   LPAREN expression RPAREN
-    |   expression DOT PrimitiveType
-    |   expression DOT Identifier
-    |   expression DOT explicitGenericInvocation// | Identifier | PrimitiveType)
+    |   expression DOT (Identifier | PrimitiveType | Error)
+    |   expression DOT explicitGenericInvocation
     |   expression LBRACK expression RBRACK
-    |   expression LPAREN expressionList? RPAREN
+    |   expression LPAREN expressionList? ','? RPAREN
     |   Not expression
     |   New expression
     |   expression As type
     |   expression Is Not? (type | literal)
     |   expression RANGE expression
     |   expression In expression
-    |   expression ('++' | '--')
+    //cover the case with collection modifier
+    |   expression ('++' | '--') expression?
+    |   ('+'|'-'|'++'|'--') expression
     |   ('+'|'-'|'++'|'--') expression
     |   ('~'|'!') expression
     |   expression ('*'|'/'|'%') expression
@@ -176,10 +178,10 @@ expression
     |   expression '|' expression
     |   expression ( '&&' | 'and' ) expression
     |   expression ( '||'| 'or' ) expression
+    |   (LPAREN expressionList? RPAREN | (Identifier | PrimitiveType | Error)) LAMBDA_LIKE expression
     |   If LPAREN expression COMMA expression COMMA expression RPAREN
     |   <assoc=right> expression
         (   '='
-        |   LAMBDA_LIKE
         |   '+='
         |   '++='
         |   '-='
@@ -195,19 +197,20 @@ expression
         |   '%='
         )
         expression
-    | (Identifier | PrimitiveType)
+    | (Identifier | PrimitiveType | Error)
     ;
 
 explicitGenericInvocation
-    : (Identifier | PrimitiveType) arguments
+    : (Identifier | PrimitiveType | Error) arguments
     ;
 
 arguments
-    :   LPAREN expressionList? RPAREN
+    :   LPAREN (expressionList)? RPAREN
     ;
 
+
 expressionList
-    :  'out'? expression (',' 'out'? expression)*
+    :  'out'? expression (',' 'out'? expression)* // with trailing comma
     ;
 
 callStatement
@@ -237,7 +240,7 @@ localVariableDeclarationStatement
     ;
 
 localVariableDeclaration
-    :   type ASSIGN New? expression
+    :   type ASSIGN New? expression?
     |   type ASSIGN (New | EmptyLiteral)
     ;
 
@@ -248,7 +251,7 @@ statementExpression
 procedureChron
     // TODO: bug this lookup is no good, but declaration of keyword excludes this word from identifier
     : 'at' literal (COLON literal)? 'every' Identifier //('Minutes' | 'Day' | 'Week' |'Month')
-    | 'every' literal Identifier
+    | 'every' literal? Identifier
     ;
 
 // blockStatement
@@ -267,11 +270,11 @@ collectionDeclaration
     ;
 
 arrayDeclaration
-    : (Identifier|PrimitiveType) LBRACK '*'? RBRACK
+    : (Identifier | PrimitiveType | Error) LBRACK '*'? RBRACK
     ;
 
 dictionaryDeclaration
-    : (Identifier|PrimitiveType) LBRACK type RBRACK
+    : (Identifier | PrimitiveType | Error) LBRACK type RBRACK
     ;
 
 /*
