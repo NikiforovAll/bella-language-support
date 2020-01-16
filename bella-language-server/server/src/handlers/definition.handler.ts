@@ -26,8 +26,7 @@ export class DefinitionHandler {
             params.textDocument.uri);
         let result: LocationLink[] = [];
         for (const symbol of symbols) {
-            let ll = ReferenceFactoryMethods
-                .createLSPLocationLink(symbol, referenceToken);
+            let ll = ReferenceFactoryMethods.createLSPLocationLink(symbol, referenceToken);
             result.push(ll);
         }
         return result;

@@ -1,10 +1,18 @@
-import { BellaReference } from "./models/bella-reference";
-import { AbstractParseTreeVisitor } from "antlr4ts/tree/AbstractParseTreeVisitor";
-import { BellaVisitor } from "../grammars/.antlr4/BellaVisitor";
-import { TypeContext, CollectionDeclarationContext, ObjectDeclarationContext, CompilationUnitContext, ArrayDeclarationContext, DictionaryDeclarationContext, CallStatementContext } from "../grammars/.antlr4/BellaParser";
-import { DeclarationType } from "./models/declaration-type.enum";
-import { TerminalNode } from "antlr4ts/tree/TerminalNode";
-import { BellaVisitorUtils } from "./visitor.utils";
+import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
+import { TerminalNode } from 'antlr4ts/tree/TerminalNode';
+
+import {
+    ArrayDeclarationContext,
+    CallStatementContext,
+    CollectionDeclarationContext,
+    DictionaryDeclarationContext,
+    ServiceDeclarationEntryContext,
+    TypeContext,
+} from '../grammars/.antlr4/BellaParser';
+import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
+import { BellaReference } from './models/bella-reference';
+import { DeclarationType } from './models/declaration-type.enum';
+import { BellaVisitorUtils } from './visitor.utils';
 
 
 
@@ -37,10 +45,10 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     private visitTypeLocal(context: TypeContext): BellaReference[] {
         let collectionCtx = context.collectionDeclaration();
         let identifier = context.Identifier();
-        if(collectionCtx) {
+        if (collectionCtx) {
             return this.visitCollectionDeclaration(collectionCtx);
         }
-        if(identifier) {
+        if (identifier) {
             let result: BellaReference[] = [{
                 nameTo: identifier.text,
                 referenceTo: DeclarationType.Object,
@@ -53,11 +61,11 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     visitCollectionDeclaration(context: CollectionDeclarationContext): BellaReference[] {
         let arrayDeclaration = context.arrayDeclaration()
-        if(!!arrayDeclaration) {
+        if (!!arrayDeclaration) {
             return this.visitArrayDeclaration(arrayDeclaration);
         }
         let dictionaryDeclaration = context.dictionaryDeclaration();
-        if(!!dictionaryDeclaration) {
+        if (!!dictionaryDeclaration) {
             return this.visitDictionaryDeclaration(dictionaryDeclaration);
         }
         return [];
@@ -82,8 +90,28 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         return result;
     }
 
+    visitServiceDeclarationEntry(context: ServiceDeclarationEntryContext) {
+        let procedureParamCtx = context.procedureParamList();
+        let returnTypeCtx = context.type();
+        let result = [
+            ...this.visitIdentifierLocal(
+                context.Identifier(), DeclarationType.Procedure),
+        ];
+        if (procedureParamCtx) {
+            //TODO: fix this, it might contain bug if param return more than one declarations
+            let params = procedureParamCtx.procedureParam()
+                .map(pp => this.visitTypeLocal(pp.type())[0]).filter(i => i !== undefined);
+            result.push(...params);
+        }
+        if (returnTypeCtx) {
+            result.push(...this.visitTypeLocal(returnTypeCtx));
+        }
+        return this.accumulateResult(result);
+        // return result;
+    }
+
     visitIdentifierLocal(node: TerminalNode | undefined, referenceTo: DeclarationType): BellaReference[] {
-        if(!node) {
+        if (!node) {
             return [];
         }
         let result: BellaReference[] = [{

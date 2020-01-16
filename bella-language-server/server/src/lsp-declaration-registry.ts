@@ -9,11 +9,14 @@ import { CommonUtils } from './utils/common.utils';
 import { DeclarationRegistryUtils } from './utils/declaration-registry.utils';
 import { NodeRegistrySearchQuery } from './declaration-registry-query';
 
+import { uniq } from "lodash";
+import { DeclarationRegistryNode } from './declaration-registry-node';
 export class LSPDeclarationRegistry {
 
 
     //TODO: consider to have an array of this for each component to support global level cache
     //TODO: need to be able to get all tokens for component
+    // string:DeclarationRegistryNode
     private cache: NodeCache;
 
     constructor() {
@@ -54,6 +57,10 @@ export class LSPDeclarationRegistry {
     }
 
     public getLSPDeclarationsForNameAndType(name: string, type: DeclarationType, sourceUri: string) {
+        let targetNamespace = CommonUtils.getNamespaceFromURI(sourceUri);
+        if(targetNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
+            targetNamespace = this.extractComponentNameFromUrl(sourceUri);
+        }
         return this.getLSPDeclarationsForQuery({
             uriFilter: {
                 active: false
@@ -64,7 +71,7 @@ export class LSPDeclarationRegistry {
             },
             namespaceFilter: {
                 active: true,
-                namespace: CommonUtils.getNamespaceFromURI(sourceUri)
+                namespace: targetNamespace
             },
             nameFilter: {
                 active: true,
@@ -120,97 +127,33 @@ export class LSPDeclarationRegistry {
         // }
         return result;
     }
+
+    private extractComponentNameFromUrl(sourceUri: string): string {
+        // we are in common file, need to look for namespace
+        let namespaces = uniq(
+            this.cache.keys()
+                .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace));
+        let getComponentName = (uri: string): string => {
+            const identificationToken = 'common/services';
+            let servicePart = uri.substring(
+                uri.lastIndexOf(identificationToken) + identificationToken.length + 1);
+            var lastIndex = servicePart.search(/[^0-9A-Za-z]+/);
+            let result = servicePart.substring(0, lastIndex);
+            return result;
+        };
+        let componentName = getComponentName(sourceUri);
+        let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))
+        if(!targetNamespace) {
+            return CommonUtils.SHARED_NAMESPACE_NAME;
+        }
+        return targetNamespace;
+        //TODO: this is convention to speed things up, consider fallback with global search
+    }
 }
 
 export interface KeyedDeclaration extends BaseDeclaration, MemberComposite {
     uri: string;
     parentName?: string
-}
-
-export class DeclarationRegistryNode {
-
-    private overloads: Dictionary<DeclarationKey, DeclarationOverload>
-        = new Dictionary<DeclarationKey, DeclarationOverload>();
-
-    constructor(private nodes: Dictionary<DeclarationKey, KeyedDeclaration>, public namespace: string) {
-    }
-
-    getDeclarations(query?: NodeRegistrySearchQuery): KeyedDeclaration[] {
-        if (!isNil(query)) {
-            let { typeFilter, nameFilter } = query;
-            if (typeFilter?.active && nameFilter?.active) {
-                let declarationName = nameFilter.name;
-                let accessDeclarationKey =
-                    new DeclarationKey(declarationName, typeFilter.type);
-                if (this.getNodes().containsKey(accessDeclarationKey)) {
-                    let foundDeclaration = this.getNodes().getValue(accessDeclarationKey)
-                    return !!foundDeclaration ? [foundDeclaration] : [];
-                } else {
-                    if (!query.fallbackRules ||
-                        query.fallbackRules.fallbackTypeProbe.type != typeFilter.type) {
-                        return [];
-                    }
-                    let rule = query.fallbackRules.fallbackTypeProbe;
-                    let fallbackDeclarationKey = rule
-                        .fallbackTypes
-                        .map((t: DeclarationType) => new DeclarationKey(declarationName, t))
-                        .find((k: DeclarationKey) => {
-                            return this.getNodes().containsKey(k);
-                        });
-                    if (!fallbackDeclarationKey) {
-                        return [];
-                    }
-                    let foundFallbackDeclaration = this.getNodes().getValue(fallbackDeclarationKey)
-                    return !!foundFallbackDeclaration ? [foundFallbackDeclaration] : [];
-                    // start to probe fallback rules
-                }
-            } else {
-                return this.getValues(
-                    query.overloadsFilter?.active &&
-                    query.overloadsFilter?.includeOverloads||
-                    false).filter(d => {
-                        let passed = true;
-                        if (!isNil(typeFilter) && typeFilter?.active) {
-                            passed = passed && (d.type === typeFilter.type);
-                        }
-                        if (!isNil(nameFilter) && nameFilter.active) {
-                            passed = passed && (d.name === nameFilter.name);
-                        }
-                        return passed;
-                    });
-            }
-        }
-        console.warn('getDeclarations - all values are returned - query is empty');
-        // return this.getNodes().values();
-        return this.getValues(true);
-    }
-
-    setOverloads(overloads: DeclarationOverload[]) {
-        this.overloads = new Dictionary<DeclarationKey, DeclarationOverload>();
-        overloads.forEach(o=>{
-            this.overloads.setValue(o.declarationKey, o);
-        })
-    }
-
-    private getNodes(): Dictionary<DeclarationKey, KeyedDeclaration> {
-        return this.nodes;
-    }
-
-    private getValues(includeOverloads: boolean): KeyedDeclaration[]{
-        const uniqueDeclarations = this.getNodes().values();
-        if(includeOverloads) {
-            let mergedResult: KeyedDeclaration[] = [];
-            let declarationsWithoutOverloads = uniqueDeclarations
-                .filter(d => !this.overloads.containsKey(new DeclarationKey(d.name, d.type)));
-
-            mergedResult.push(...declarationsWithoutOverloads)
-            this.overloads.values().forEach(overload => {
-                mergedResult.push(...overload.overloads)
-            });
-            return mergedResult;
-        }
-        return uniqueDeclarations;
-    }
 }
 
 export interface DeclarationOverload {

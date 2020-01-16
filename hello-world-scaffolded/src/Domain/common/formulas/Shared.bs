@@ -1,7 +1,10 @@
+procedure CreateTask(taskCreationRequest):TaskId
+    Test()
+
 service TaskManager
     CreateTask(taskCreationRequest):TaskId
     GetPagedAndFilteredTaskList(taskFilterList:TaskFilterList, tasksPerPage:TasksPerPage, pageNumber:PageNumber):GetFilteredAndPagedTasksResponse
-    GetFilteredTaskList(taskFilterList:TaskFilterList):TaskList
+    GetFilteredTaskList(taskFilterList:TaskFilterList):taskCreationRequest
     CreateTaskRule(taskRuleCreationRequest:TaskRuleCreationRequest):TaskRuleId
     CreateTaskSkill(taskSkill:TaskSkill)
     DeleteTaskRuleById(taskRuleId:TaskRuleId)

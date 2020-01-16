@@ -1,0 +1,2 @@
+procedure SaveGlEvent123(GlAccount)
+    LogInfo("Test")

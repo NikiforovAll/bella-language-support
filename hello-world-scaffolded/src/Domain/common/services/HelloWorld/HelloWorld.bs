@@ -2,6 +2,7 @@ service HelloWorld
     ExampleMethod()
 
 service GeneralLedger
+    SaveGlEvent123(GlEvent, SourceCreationDate) oneway
     SaveGlEvent(GlEvent, SourceCreationDate) oneway
     SaveGlAccount(GlAccount) oneway
     RevertGlEvent(Date, GlEventType, SourceId) oneway
