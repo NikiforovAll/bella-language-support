@@ -163,6 +163,7 @@ expression
     |   expression As type
     |   expression Is Not? (type | literal)
     |   expression RANGE expression
+    |   expression In expression
     |   expression ('++' | '--')
     |   ('+'|'-'|'++'|'--') expression
     |   ('~'|'!') expression
@@ -246,7 +247,8 @@ statementExpression
 
 procedureChron
     // TODO: bug this lookup is no good, but declaration of keyword excludes this word from identifier
-    : 'at' (literal COLON? literal?)? 'every' Identifier //('Minutes' | 'Day' | 'Week' |'Month')
+    : 'at' literal (COLON literal)? 'every' Identifier //('Minutes' | 'Day' | 'Week' |'Month')
+    | 'every' literal Identifier
     ;
 
 // blockStatement

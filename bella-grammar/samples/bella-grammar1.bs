@@ -22,4 +22,7 @@
 //    With(DunningProcessesHistory.activeDunningProcesses
 //            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty))
 
-if (PotentialInvoiceOverviews.Sum(leftToPay) + IncomingInvoiceOverview.leftToPay).Round1() >= DunningProcessTemplate.dunningStartThreshold
+procedure TestProcedure(Param1, Param2, out ParamOut1)
+    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
+    TaskId = BaseTask.id
+    TaskCatalog[TaskId] = BaseTask

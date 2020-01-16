@@ -57,4 +57,3 @@ procedure SendServiceCallIdentificationResponse(ServiceCallIdentificationRespons
 
    BillingEngineAsync.BillCallDataRecords(CallDataRecordBillingRequests)
 
-object

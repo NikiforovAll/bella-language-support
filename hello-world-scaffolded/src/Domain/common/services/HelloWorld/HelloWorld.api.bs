@@ -124,7 +124,7 @@ procedure CrmPortalGetFilteredAndPagedServiceInformation(Input, FullyMatchedPagi
     CrmPortalGetFilteredAndPagedServiceDeliveryInformationResponse = CrmBackend.GetFilteredAndPagedServiceInformation(Input, FullyMatchedPaginationInfo, PartiallyMatchedPaginationInfo).ToDto()
 
 generic procedure GetPropositionsFilteredBy(FilterQuery, PropositionCollection, out PropositionFilteredCollection)
-    error [GenericObjectPassed] "You've passed generic FilterQuery object. Try specific one (ProductCatalogNameFilter, ProductCatalogServiceFilter, etc.")
+    error [GenericObjectPassed] "You've passed generic FilterQuery object. Try specific one (ProductCatalogNameFilter, ProductCatalogServiceFilter, etc."
 
 specific procedure GetPropositionsFilteredBy(ProductCatalogIdFilter, PropositionCollection, out PropositionFilteredCollection)
     PropositionFilteredCollection = PropositionCollection.Where(p => p.id.ToLower() == ProductCatalogIdFilter.id.Trim().ToLower())
