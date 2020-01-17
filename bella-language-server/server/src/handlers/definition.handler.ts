@@ -1,6 +1,6 @@
 import { DocumentSymbolParams, LocationLink, Position } from 'vscode-languageserver'
-import { LSPDeclarationRegistry } from '../lsp-declaration-registry';
-import { LSPReferenceRegistry } from '../lsp-references-registry';
+import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
+import { LSPReferenceRegistry } from '../registry/references-registry/lsp-references-registry';
 import { ReferenceFactoryMethods } from '../factories/reference.factory';
 
 export class DefinitionHandler {

@@ -4,9 +4,9 @@ import * as NodeCache from 'node-cache';
 import { Dictionary } from 'typescript-collections';
 import * as LSP from 'vscode-languageserver';
 
-import { DeclarationFactoryMethods } from './factories/declaration.factory';
-import { CommonUtils } from './utils/common.utils';
-import { DeclarationRegistryUtils } from './utils/declaration-registry.utils';
+import { DeclarationFactoryMethods } from '../../factories/declaration.factory';
+import { CommonUtils } from '../../utils/common.utils';
+import { DeclarationRegistryUtils } from '../../utils/declaration-registry.utils';
 import { NodeRegistrySearchQuery } from './declaration-registry-query';
 
 import { uniq } from "lodash";

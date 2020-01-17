@@ -1,5 +1,8 @@
 import { BellaReference, Range } from 'bella-grammar';
 
+import { ReferencesRegistryNode } from '../registry/references-registry/references-registry-node';
+import { CommonUtils } from './common.utils';
+
 export interface PositionWrapper {
     range: Range;
 }
@@ -7,6 +10,11 @@ export namespace ReferenceRegistryUtils {
     export function compareReferences(ref1: PositionWrapper, ref2: PositionWrapper) {
         const r1 = ref1.range, r2 = ref2.range;
         return compareRanges(r1, r2);
+    }
+
+    export function createRegistryNode(refs: BellaReference[], uri: string) {
+        let node = new ReferencesRegistryNode(refs, CommonUtils.getNamespaceFromURI(uri));
+        return node;
     }
 
     function compareRanges(r1:Range , r2: Range) {
@@ -27,4 +35,12 @@ export namespace ReferenceRegistryUtils {
         }
         return 0;
     }
+}
+
+export interface LocatedBellaReference extends BellaReference, LocatedResource {
+
+}
+
+export interface LocatedResource {
+    uri: string
 }

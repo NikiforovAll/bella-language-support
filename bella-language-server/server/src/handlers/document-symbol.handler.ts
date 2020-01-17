@@ -1,5 +1,5 @@
 import {DocumentSymbolParams, WorkspaceSymbolParams, SymbolInformation} from 'vscode-languageserver'
-import { LSPDeclarationRegistry } from '../lsp-declaration-registry';
+import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 
 export class DocumentSymbolHandler {
     constructor(private cache: LSPDeclarationRegistry) {

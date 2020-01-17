@@ -4,8 +4,8 @@ import { LSPParserProxy } from "./lsp-parser-proxy";
 import * as glob from 'glob';
 import * as path from 'path'
 import * as fs from 'fs'
-import { LSPDeclarationRegistry } from "./lsp-declaration-registry";
-import { LSPReferenceRegistry } from "./lsp-references-registry";
+import { LSPDeclarationRegistry } from "./registry/declaration-registry/lsp-declaration-registry";
+import { LSPReferenceRegistry } from "./registry/references-registry/lsp-references-registry";
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };

@@ -1,9 +1,9 @@
-import { KeyedDeclaration, DeclarationKey, DeclarationOverload } from "../lsp-declaration-registry";
+import { KeyedDeclaration, DeclarationKey, DeclarationOverload } from "../registry/declaration-registry/lsp-declaration-registry";
 import { BaseDeclaration, MemberComposite } from "bella-grammar";
 import { Dictionary } from "typescript-collections";
 import { CommonUtils } from "./common.utils";
 import { countBy, transform } from "lodash";
-import { DeclarationRegistryNode } from "../declaration-registry-node";
+import { DeclarationRegistryNode } from "../registry/declaration-registry/declaration-registry-node";
 
 export namespace DeclarationRegistryUtils {
     export function createRegistryNode(declarations: BaseDeclaration[], uri: string): DeclarationRegistryNode {

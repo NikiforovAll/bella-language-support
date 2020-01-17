@@ -1,5 +1,5 @@
 import * as LSP from 'vscode-languageserver';
-import { KeyedDeclaration } from '../lsp-declaration-registry';
+import { KeyedDeclaration } from '../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../utils/common.utils';
 
 export namespace DeclarationFactoryMethods {
