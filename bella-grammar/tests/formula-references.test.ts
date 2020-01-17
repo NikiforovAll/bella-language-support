@@ -6,17 +6,16 @@ import { BellaReferenceVisitor } from '../src/lib/bella-reference.visitor';
 describe("procedure-references", () => {
     it("should return refs for procedure", () => {
         let input = `
-procedure TestProcedure(Param1, Param2, out ParamOut1)
-    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
-    TaskId = BaseTask.id
-    TaskCatalog[TaskId] = BaseTask
+formula ToTransactionInvoiceMatchInformation(InvoiceOverview):TransactionInvoiceMatchInformation = new TransactionInvoiceMatchInformation
+    (
+        invoiceId = InvoiceOverview.id,
+        paymentSize = InvoiceOverview.leftToPay
+    )
 `;
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
         visitor.visit(tree);
-        let refs = visitor.references.filter(r => r.referenceTo === DeclarationType.Procedure && !r.isDeclaration);
+        let refs = visitor.references.filter(r => r.referenceTo === DeclarationType.Formula && r.isDeclaration);
         expect(refs).to.have.lengthOf(1);
-        let refs2 = visitor.references.filter(r => r.referenceTo === DeclarationType.Procedure && r.isDeclaration);
-        expect(refs2).to.have.lengthOf(1);
     });
 });

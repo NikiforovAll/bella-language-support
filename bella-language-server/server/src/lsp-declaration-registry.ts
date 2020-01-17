@@ -80,7 +80,7 @@ export class LSPDeclarationRegistry {
             fallbackRules: {
                 fallbackTypeProbe: {
                     type: DeclarationType.Object,
-                    fallbackTypes: [DeclarationType.Enum]
+                    fallbackTypes: [ DeclarationType.Enum ]
                 }
             }
         });

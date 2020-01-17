@@ -17,7 +17,7 @@ export class DefinitionHandler {
                 params.position.line,
                 params.position.character,
                 params.textDocument.uri);
-        if (!referenceToken) {
+        if (!referenceToken || referenceToken.isDeclaration) {
             return [];
         }
         let symbols = this.cache.getLSPDeclarationsForNameAndType(

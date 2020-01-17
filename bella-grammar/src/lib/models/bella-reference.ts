@@ -5,4 +5,5 @@ export interface BellaReference {
     range: Range;
     nameTo: string;
     referenceTo: DeclarationType
+    isDeclaration: boolean
 }

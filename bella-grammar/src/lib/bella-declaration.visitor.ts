@@ -141,7 +141,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     }
 
     visitProcedureDeclaration(context: ProcedureDeclarationContext): BaseDeclaration {
-        let signature = context.procedureSignature().text.replace("out", "out ");
+        let signature = context.generalSignature().text.replace("out", "out ");
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || (startLine + 1)) - 1;
         // let calls = this.visitProcedureBodyLocal(context.procedureBody());
@@ -149,7 +149,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type: DeclarationType.Procedure,
-            members: this.visitProcedureParamListLocal(context.procedureSignature().procedureParamList())
+            members: this.visitProcedureParamListLocal(context.generalSignature().procedureParamList())
         };
         this.declarations.push(pd);
         return pd;
@@ -162,7 +162,11 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let fd: FormulaDeclaration = {
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
-            type: DeclarationType.Formula
+            type: DeclarationType.Formula,
+            members: this.visitProcedureParamListLocal(context
+                .formulaSignature()
+                .generalSignature()
+                .procedureParamList())
         };
         this.declarations.push(fd);
         return fd;

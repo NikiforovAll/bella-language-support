@@ -47,6 +47,12 @@ procedure CreatePartnerAccount(CreatePartnerAccountRequest, out AccountId)
     AccountIdsByEmail[Email] ++= AccountId
     Login = Email
 
+formula ToGlEvent(GlAccount):GlEvent = new GlEvent()
+
+enum GlEventType
+    T1
+    T2
+
 procedure CheckGlEventExisting(SourceCreationDate, GlEventType, SourceId)
     if not GlEventsByDate.ContainsKey(SourceCreationDate)
         error[GlEventNotFound] "General ledger events with for Date: "+SourceCreationDate+" were not found"

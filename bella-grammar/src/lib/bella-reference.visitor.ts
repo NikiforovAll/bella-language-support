@@ -8,6 +8,8 @@ import {
     DictionaryDeclarationContext,
     ServiceDeclarationEntryContext,
     TypeContext,
+    GeneralSignatureContext,
+    FormulaSignatureContext
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaReference } from './models/bella-reference';
@@ -32,6 +34,36 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     //     return [];
     // }
 
+    // currently, it is entry point for procedure signature parsing
+    visitGeneralSignature(context: GeneralSignatureContext): BellaReference[] {
+        let result = this.visitGeneralSignatureLocal(context, DeclarationType.Procedure);
+        return this.accumulateResult(result);
+    }
+
+    visitFormulaSignature(context: FormulaSignatureContext): BellaReference[] {
+        let returnTypeCtx = context.type();
+        let result = this.visitGeneralSignatureLocal(context.generalSignature(), DeclarationType.Formula);
+        if (returnTypeCtx) {
+            result.push(...this.visitTypeLocal(returnTypeCtx));
+        }
+        return this.accumulateResult(result);
+    }
+
+    visitGeneralSignatureLocal(context: GeneralSignatureContext, nameOf: DeclarationType): BellaReference[] {
+        let procedureParamCtx = context.procedureParamList();
+        let result = [
+            ...this.visitIdentifierLocal(context.Identifier(), nameOf, true)
+        ];
+        if (procedureParamCtx) {
+            //TODO: fix this, it might contain bug if param return more than one declarations
+            let params = procedureParamCtx.procedureParam()
+                .map(pp => this.visitTypeLocal(pp.type())[0]).filter(i => i !== undefined);
+            result.push(...params);
+        }
+
+        return result;
+    }
+
     visitType(context: TypeContext): BellaReference[] {
         let result = this.visitTypeLocal(context);
         return this.accumulateResult(result);
@@ -41,6 +73,9 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         let result = this.visitIdentifierLocal(context.explicitGenericInvocation().Identifier(), DeclarationType.Procedure);
         return this.accumulateResult(result);
     }
+
+
+
     //this doesn't mutate accumulated results
     private visitTypeLocal(context: TypeContext): BellaReference[] {
         let collectionCtx = context.collectionDeclaration();
@@ -52,7 +87,8 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
             let result: BellaReference[] = [{
                 nameTo: identifier.text,
                 referenceTo: DeclarationType.Object,
-                range: BellaVisitorUtils.getRangeForTerminalNode(identifier)
+                range: BellaVisitorUtils.getRangeForTerminalNode(identifier),
+                isDeclaration: false
             }];
             return result;
         }
@@ -110,14 +146,18 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         // return result;
     }
 
-    visitIdentifierLocal(node: TerminalNode | undefined, referenceTo: DeclarationType): BellaReference[] {
+    visitIdentifierLocal(
+        node: TerminalNode | undefined,
+        referenceTo: DeclarationType,
+        isDeclaration:boolean = false): BellaReference[] {
         if (!node) {
             return [];
         }
         let result: BellaReference[] = [{
             nameTo: node.text,
             referenceTo,
-            range: BellaVisitorUtils.getRangeForTerminalNode(node)
+            range: BellaVisitorUtils.getRangeForTerminalNode(node),
+            isDeclaration
         }]
         return result;
     }

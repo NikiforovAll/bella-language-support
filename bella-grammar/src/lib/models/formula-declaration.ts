@@ -1,4 +1,4 @@
-import { BaseDeclaration } from "./base-declaration";
+import { BaseDeclaration, MemberComposite } from "./base-declaration";
 
-export interface FormulaDeclaration extends BaseDeclaration{
+export interface FormulaDeclaration extends BaseDeclaration, MemberComposite{
 }

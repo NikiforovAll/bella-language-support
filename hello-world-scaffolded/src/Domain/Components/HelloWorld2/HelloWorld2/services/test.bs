@@ -309,6 +309,7 @@ formula ToClearanceEntityIdentificationResult(DunningProcess, BankTransactionId)
             )
     )
 
+formula ToGlEvent(GlAccount):GlEvent = new
 
 formula ToTransactionInvoiceMatchInformation(InvoiceOverview):TransactionInvoiceMatchInformation = new TransactionInvoiceMatchInformation
     (

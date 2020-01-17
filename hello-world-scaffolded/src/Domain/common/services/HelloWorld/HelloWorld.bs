@@ -15,6 +15,9 @@ service GeneralLedger
 procedure SaveGlAccount(GlAccount)
     if BankTransaction.currentMatchInfo.details.Where(d => d is ServiceAccountBankTransactionMatchDetail).Any(d => (d as ServiceAccountBankTransactionMatchDetail).invoiceId == MtpTransactionMatchDetail.invoiceId)
 
+procedure GetUserAccountById(Test)
+    LogInfo(123)
+
 procedure GetCustomerAccountListByIdList(AccountIds, out AccountList)
     AccountList = new
     foreach AccountId in AccountIds

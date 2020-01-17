@@ -1,6 +1,3 @@
-procedure CreateTask(taskCreationRequest):TaskId
-    Test()
-
 service TaskManager
     CreateTask(taskCreationRequest):TaskId
     GetPagedAndFilteredTaskList(taskFilterList:TaskFilterList, tasksPerPage:TasksPerPage, pageNumber:PageNumber):GetFilteredAndPagedTasksResponse

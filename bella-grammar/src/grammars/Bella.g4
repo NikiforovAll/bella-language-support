@@ -57,7 +57,7 @@ objectBody
 objectFieldDeclaration
     // TODO: BUG, keywords are excluded from declarations because of this need better approach on identifier definition
     : (Identifier | PrimitiveType | Error) COLON type (objectFieldDeclarationRest)
-    | procedureSignature COLON type (objectFieldDeclarationRest)
+    | generalSignature COLON type (objectFieldDeclarationRest)
     ;
 
 // TODO: replace it with approriate grammar parsing of expressions
@@ -89,10 +89,10 @@ serviceDeclarationEntry
     ;
 
 procedureDeclaration
-    :  (HOSTED | ProcedureModifier)? PROCEDURE procedureSignature procedureChron? procedureBody
+    :  (HOSTED | ProcedureModifier)? PROCEDURE generalSignature procedureChron? procedureBody
     ;
 
-procedureSignature
+generalSignature
     :   Identifier LPAREN procedureParamList? RPAREN
     ;
 procedureParamList
@@ -110,7 +110,7 @@ formulaDeclaration
     :  ProcedureModifier? FORMULA formulaSignature ASSIGN? statement*?
     ;
 formulaSignature
-    : procedureSignature COLON type
+    : generalSignature COLON type
     ;
 
 // STATEMENTS AND EXPRESSIONS

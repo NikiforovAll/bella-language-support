@@ -3,6 +3,7 @@ export enum DeclarationType {
     Service,
     ServiceEntry,
     Procedure,
+    // ProcedureInvocation,
     Param,
     Object,
     CompositeObject,

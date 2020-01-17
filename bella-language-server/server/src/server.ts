@@ -5,6 +5,7 @@ import BellaAnalyzer from './bella-analyzer';
 import { LSPParserProxy } from './lsp-parser-proxy';
 import { DiagnosticsHandler } from './handlers/diagnostics.handler';
 import { DefinitionHandler } from './handlers/definition.handler';
+import { ReferenceHandler } from './handlers/reference.handler';
 
 
 /**
@@ -65,7 +66,7 @@ export default class BellaServer {
 		connection.onDocumentSymbol(this.onDocumentSymbol.bind(this));
 		connection.onWorkspaceSymbol(this.onWorkspaceSymbol.bind(this));
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
-		// connection.onReferences(this.onReferences.bind(this))
+		connection.onReferences(this.onReferences.bind(this))
 		// connection.onCompletion(this.onCompletion.bind(this))
 		// connection.onCompletionResolve(this.onCompletionResolve.bind(this))
 	}
@@ -85,8 +86,8 @@ export default class BellaServer {
 			// documentHighlightProvider: true,
 			definitionProvider: true,
 			documentSymbolProvider: true,
-			workspaceSymbolProvider: true
-			// referencesProvider: true,
+			workspaceSymbolProvider: true,
+			referencesProvider: true
 		}
 	}
 
@@ -99,11 +100,18 @@ export default class BellaServer {
 		return handler.findSymbolsInWorkspace(params);
 	}
 
-	private onDefinition(params: LSP.TextDocumentPositionParams) {
+	private onDefinition(params: LSP.TextDocumentPositionParams) : LSP.LocationLink[] {
 		let handler = new DefinitionHandler(
 			this.analyzer.declarationCache,
 			this.analyzer.referencesCache);
 		return handler.findDefinitions(params);
+	}
+
+	private onReferences(params : LSP.ReferenceParams): LSP.Location[]{
+		let handler = new ReferenceHandler(
+			this.analyzer.declarationCache,
+			this.analyzer.referencesCache);
+		return handler.findReferences(params);
 	}
 
 	private static initializeParser() {
