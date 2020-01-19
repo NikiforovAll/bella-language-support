@@ -119,3 +119,13 @@ export default class BellaServer {
 	}
 }
 
+// export interface BellaLanguageServerParsingResult {
+// 	server: BellaServer;
+// 	initialParsingInfo: InitialParsingInfo
+
+// }
+
+// export interface InitialParsingInfo {
+// 	numberOfProcessedFiles: number;
+// 	numberOFErrors: number;
+// }

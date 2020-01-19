@@ -97,6 +97,9 @@
       "patterns": [
         {
           "include": "#procedure-signature-declaration"
+        },
+        {
+          "include": "#comment"
         }
       ],
       "end": "(?=^\\S)"

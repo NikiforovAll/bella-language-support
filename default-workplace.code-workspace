@@ -119,7 +119,10 @@
 	},
 	"settings": {
 		"files.exclude": {
-			"${workspaceFolder:bella-language-server}/client/out": true // set this to true to hide the "out" folder with the compiled JS files
+			"${workspaceFolder:bella-language-server}/client/dist": true,
+			"${workspaceFolder:bella-language-server}/client/out": true,
+			"${workspaceFolder:bella-language-server}/release": true,
+			"${workspaceFolder:bella-language-server}/server/out": true
 		},
 		"search.exclude": {
 			"out": true // set this to false to include "out" folder in search results

@@ -1,5 +1,12 @@
 # Bella Language Server Changelog
 
+## draft-version - v.0.3.0
+
+* Command: `Go To References`
+  * Keyboard shortcuts: `ctrl+F12`, `ctrl+shift+F12`
+  * Implemented:
+    * internal procedure invocation
+
 ## draft-version - v0.2.5
 
 ### Addded

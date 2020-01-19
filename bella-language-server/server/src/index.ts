@@ -18,6 +18,7 @@ function listen() {
                 })
                 .then(server => ({
                     capabilities: server.capabilities(),
+                    customPayload: "HelloFromServer"
                 }))
         },
     )
