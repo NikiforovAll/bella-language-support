@@ -11,6 +11,9 @@ export interface NodeRegistrySearchQuery {
     } & Activatable
 
     descendantsFilter?: {
+        query?: NodeRegistrySearchQuery
+        // if
+        discardParent?: boolean
         // hasParent?: boolean
         // parentName?: string
     } & Activatable

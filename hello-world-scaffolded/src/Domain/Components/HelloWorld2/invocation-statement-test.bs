@@ -2,5 +2,14 @@ procedure TestHW2Internal(Test1)
     LogInfo("Test")
     HelloWorld.ExampleMethod()
 
+object Test1:String
+
 // service HelloWorld
 //     ExampleMethod()
+
+procedure ExampleMethod(Test1)
+    LogInfo(123)
+    call Method2(Test1)
+
+procedure Method2(Test1)
+    LogInfo(1.3)

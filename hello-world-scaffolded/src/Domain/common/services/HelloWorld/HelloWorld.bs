@@ -1,5 +1,6 @@
 service HelloWorld
     ExampleMethod()
+    Method2()
 
 service GeneralLedger
     SaveGlEvent123(GlEvent, SourceCreationDate) oneway
@@ -17,6 +18,7 @@ procedure SaveGlAccount(GlAccount)
 
 procedure GetUserAccountById(Test)
     LogInfo(123)
+    call SaveGlAccount(GlAccount)
 
 procedure GetCustomerAccountListByIdList(AccountIds, out AccountList)
     AccountList = new

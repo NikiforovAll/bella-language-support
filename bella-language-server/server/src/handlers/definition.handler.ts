@@ -2,7 +2,8 @@ import { DocumentSymbolParams, LocationLink, Position } from 'vscode-languageser
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { LSPReferenceRegistry } from '../registry/references-registry/lsp-references-registry';
 import { ReferenceFactoryMethods } from '../factories/reference.factory';
-
+import { BellaReferenceType, DeclarationType, BellaNestedReference } from 'bella-grammar';
+import { NodeRegistrySearchQuery } from '../registry/declaration-registry/declaration-registry-query';
 export class DefinitionHandler {
     constructor(
         private cache: LSPDeclarationRegistry, private refCache: LSPReferenceRegistry) {
@@ -20,10 +21,32 @@ export class DefinitionHandler {
         if (!referenceToken || referenceToken.isDeclaration) {
             return [];
         }
+        let nameTo = referenceToken.nameTo;
+        let referenceTo = referenceToken.referenceTo;
+        let descendantsQuery: NodeRegistrySearchQuery | undefined;
+        if (referenceToken.referenceType && referenceToken.referenceType == BellaReferenceType.NestedReference) {
+            const childType = (referenceToken as BellaNestedReference).childType//DeclarationType.ServiceEntry
+            const childName = (referenceToken as BellaNestedReference).childTo
+            descendantsQuery = {
+                uriFilter: {
+                    active: false
+                },
+                typeFilter: {
+                    active: true,
+                    type: childType
+                },
+                nameFilter: {
+                    active: true,
+                    name: childName
+                }
+            };
+        }
         let symbols = this.cache.getLSPDeclarationsForNameAndType(
-            referenceToken.nameTo,
-            referenceToken.referenceTo,
-            params.textDocument.uri);
+            nameTo,
+            referenceTo,
+            params.textDocument.uri,
+            descendantsQuery
+        );
         let result: LocationLink[] = [];
         for (const symbol of symbols) {
             let ll = ReferenceFactoryMethods.createLSPLocationLink(symbol, referenceToken);

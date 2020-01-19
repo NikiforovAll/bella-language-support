@@ -17,8 +17,9 @@ import {
     ServicePrefixContext
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
-import { BellaReference } from './models/bella-reference';
+import { BellaReference, BellaReferenceType } from './models/bella-reference';
 import { BellaAmbiguousReference } from "./models/bella-ambiguous-reference";
+import { BellaNestedReference } from "./models/bella-nested-reference";
 import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
 
@@ -36,6 +37,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     // }
 
     visitServicePrefix(context: ServicePrefixContext): BellaReference[] {
+
         let result = this.visitIdentifierLocal(context.Identifier(), DeclarationType.Service, true);
         return this.accumulateResult(result);
     }
@@ -83,22 +85,38 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     // TODO: this implementation doesn't not include formulas calculated on expressions TBD
     visitInvocationStatement(context: InvocationStatementContext): BellaReference[] {
         const baseContainer = this.visitTypeLocal(context.type())[0];
-        // let's assume base as service
         baseContainer.referenceTo = DeclarationType.Service;
-        let container: BellaAmbiguousReference = {
+        let invocationExpression = this.visitGenericInvocationLocal(context.genericInvocation())[0];
+        let container: BellaAmbiguousReference & BellaNestedReference = {
             ...baseContainer,
-            possibleTypes: [DeclarationType.Service, DeclarationType.Object]
+            possibleTypes: [DeclarationType.Service, DeclarationType.Object],
+            childTo: invocationExpression.nameTo,
+            //TODO: this should be ambiguous
+            childType: DeclarationType.ServiceEntry,
+            referenceType: BellaReferenceType.NestedReference
         };
-
+        // TODO: add ambiguous context for mapping resolution inside registry
         let result = [
             container,
-            ...this.visitGenericInvocationLocal(context.genericInvocation())
+            // invocationExpression
         ];
+        //TODO: MAJOR - impl ambiguous search for formulas !!!
         return this.accumulateResult(result);
     }
 
     visitGenericInvocationLocal(context: GenericInvocationContext): BellaReference[] {
-        return [];
+        let genericInvocationContext = context.explicitGenericInvocation();
+        if (!genericInvocationContext) {
+            return [];
+        }
+        let identifier = genericInvocationContext.Identifier()
+            || genericInvocationContext.Error()
+            || genericInvocationContext.PrimitiveType();
+        let result: BellaAmbiguousReference[] = [{
+            ...(this.visitIdentifierLocal(identifier,DeclarationType.Procedure, false)[0]),
+            possibleTypes: [DeclarationType.Procedure, DeclarationType.Formula]
+        }];
+        return result;
     }
 
 
@@ -159,7 +177,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         let returnTypeCtx = context.type();
         let result = [
             ...this.visitIdentifierLocal(
-                context.Identifier(), DeclarationType.Procedure),
+                context.Identifier(), DeclarationType.Procedure, false),
         ];
         if (procedureParamCtx) {
             //TODO: fix this, it might contain bug if param return more than one declarations

@@ -17,7 +17,8 @@ import { BellaReferenceVisitor } from './bella-reference.visitor';
 export {
     BaseDeclaration,
     Position,
-    Range} from './models/base-declaration';
+    Range
+} from './models/base-declaration';
 
 export { MemberComposite } from './models/base-declaration';
 export { ObjectBase } from './models/object-base.enum';
@@ -25,7 +26,8 @@ export { DeclarationType } from './models/declaration-type.enum';
 
 export {
     SimpleObjectDeclaration,
-    CompositeObjectDeclaration} from './models/object-declaration';
+    CompositeObjectDeclaration
+} from './models/object-declaration';
 
 export { ServiceDeclaration } from './models/service-declaration';
 export { ProcedureDeclaration } from './models/procedure-declaration';
@@ -33,21 +35,22 @@ export { FormulaDeclaration } from './models/formula-declaration';
 export { ThrowingErrorListener } from './error-listener';
 export { BellaErrorStrategy } from './bella-error-strategy';
 
-export { BellaReference } from './models/bella-reference';
+export { BellaReference, BellaReferenceType } from './models/bella-reference';
+export { BellaNestedReference } from './models/bella-nested-reference';
 
 export class BellaLanguageSupport {
-    public static tokenize(expr: string): Token[]{
+    public static tokenize(expr: string): Token[] {
         return this.generateLexer(expr)
             .getAllTokens();
     }
 
-    public static generateLexer(expr: string): Lexer{
+    public static generateLexer(expr: string): Lexer {
         let inputStream = new ANTLRInputStream(expr);
-        let lexer = new bellaGeneratedLexer.BellaLexer (inputStream);
+        let lexer = new bellaGeneratedLexer.BellaLexer(inputStream);
         return lexer;
     }
 
-    public static parse(expr: string): ParserRuleContext  {
+    public static parse(expr: string): ParserRuleContext {
         let parser = BellaLanguageSupport.generateParser(expr);
         return parser.compilationUnit();
     }

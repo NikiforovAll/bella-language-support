@@ -6,5 +6,11 @@ export interface BellaReference {
     nameTo: string;
     referenceTo: DeclarationType
     isDeclaration: boolean
-    parentContainer?: string
+    referenceType?: BellaReferenceType
+}
+
+//TODO: consider get rid of this and move to class + instanceof for strategy pattern
+export enum BellaReferenceType {
+    AmbiguousReference,
+    NestedReference
 }

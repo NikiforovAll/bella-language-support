@@ -22,7 +22,8 @@ export class ReferenceHandler {
         }
         // if it is service reference, we need to search everywhere
         let namespaceFilter = {
-            active: referenceToken.referenceTo === DeclarationType.Service ? false : true,
+            active: referenceToken.referenceTo !== DeclarationType.Service,
+            // active: referenceToken.referenceTo !== DeclarationType.ServiceEntry,
             namespace: CommonUtils.getNamespaceFromURI(params.textDocument.uri)
         };
         let query: ReferencesRegistrySearchQuery = {

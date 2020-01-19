@@ -56,12 +56,16 @@ export class LSPDeclarationRegistry {
         });
     }
 
-    public getLSPDeclarationsForNameAndType(name: string, type: DeclarationType, sourceUri: string) {
+    public getLSPDeclarationsForNameAndType(
+        name: string, type: DeclarationType,
+        sourceUri: string,
+        descendantQuery?: NodeRegistrySearchQuery) {
         let targetNamespace = CommonUtils.getNamespaceFromURI(sourceUri);
-        if(targetNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
+        if (targetNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
             targetNamespace = this.extractComponentNameFromUrl(sourceUri);
         }
-        return this.getLSPDeclarationsForQuery({
+
+        let query: NodeRegistrySearchQuery = {
             uriFilter: {
                 active: false
             },
@@ -80,22 +84,42 @@ export class LSPDeclarationRegistry {
             fallbackRules: {
                 fallbackTypeProbe: {
                     type: DeclarationType.Object,
-                    fallbackTypes: [ DeclarationType.Enum ]
+                    fallbackTypes: [DeclarationType.Enum]
                 }
+            },
+            descendantsFilter: {
+                active: !!descendantQuery,
+                discardParent: true,
+                query: descendantQuery
             }
-        });
+        };
+        return this.getLSPDeclarationsForQuery(query);
     }
 
     public getLSPDeclarationsForQuery(query: NodeRegistrySearchQuery): LSP.SymbolInformation[] {
         let declarations: KeyedDeclaration[] = this.getDeclarationsForQuery(query);
-        let result = DeclarationFactoryMethods.toLSPDeclarations(declarations);
-
+        let result = query.descendantsFilter?.active && query.descendantsFilter?.discardParent
+            ? []
+            : DeclarationFactoryMethods.toLSPDeclarations(declarations);
         // do we need to fetch descendants?
         if (query.descendantsFilter?.active) {
             for (const declaration of declarations) {
                 let keyedDeclarations = declaration.members?.map((d: BaseDeclaration): KeyedDeclaration => ({
                     ...d, uri: declaration.uri, parentName: declaration.name
                 })) || [];
+                const descendantQuery = query.descendantsFilter.query;
+                if (!!descendantQuery) {
+                    keyedDeclarations = keyedDeclarations.filter(d => {
+                        let passed = true;
+                        if (!isNil(descendantQuery.typeFilter) && descendantQuery.typeFilter?.active) {
+                            passed = passed && (d.type === descendantQuery.typeFilter.type);
+                        }
+                        if (!isNil(descendantQuery.nameFilter) && descendantQuery.nameFilter.active) {
+                            passed = passed && (d.name === descendantQuery.nameFilter.name);
+                        }
+                        return passed;
+                    });
+                }
                 result.push(...DeclarationFactoryMethods.toLSPDeclarations(keyedDeclarations));
             }
         }
@@ -143,7 +167,7 @@ export class LSPDeclarationRegistry {
         };
         let componentName = getComponentName(sourceUri);
         let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))
-        if(!targetNamespace) {
+        if (!targetNamespace) {
             return CommonUtils.SHARED_NAMESPACE_NAME;
         }
         return targetNamespace;
