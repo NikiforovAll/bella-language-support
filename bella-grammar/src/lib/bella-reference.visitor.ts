@@ -14,14 +14,16 @@ import {
     InvocationStatementContext,
     GenericInvocationContext,
     ServiceDeclarationContext,
-    ServicePrefixContext
+    ServicePrefixContext,
+    ProcedureDeclarationContext
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
-import { BellaReference, BellaReferenceType } from './models/bella-reference';
+import { BellaReference, BellaReferenceType, ReferenceIdentifier } from './models/bella-reference';
 import { BellaAmbiguousReference } from "./models/bella-ambiguous-reference";
 import { BellaNestedReference } from "./models/bella-nested-reference";
 import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
+import { ParserRuleContext } from 'antlr4ts';
 
 
 
@@ -37,7 +39,6 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     // }
 
     visitServicePrefix(context: ServicePrefixContext): BellaReference[] {
-
         let result = this.visitIdentifierLocal(context.Identifier(), DeclarationType.Service, true);
         return this.accumulateResult(result);
     }
@@ -79,6 +80,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     visitCallStatement(context: CallStatementContext): BellaReference[] {
         let result = this.visitIdentifierLocal(context.explicitGenericInvocation().Identifier(), DeclarationType.Procedure);
+        result.forEach(r => { r.container = this.inferProcedureDeclaration(context); })
         return this.accumulateResult(result);
     }
 
@@ -93,8 +95,10 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
             childTo: invocationExpression.nameTo,
             //TODO: this should be ambiguous
             childType: DeclarationType.ServiceEntry,
-            referenceType: BellaReferenceType.NestedReference
+            referenceType: BellaReferenceType.NestedReference,
+            container: this.inferProcedureDeclaration(context)
         };
+
         // TODO: add ambiguous context for mapping resolution inside registry
         let result = [
             container,
@@ -102,6 +106,27 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         ];
         //TODO: MAJOR - impl ambiguous search for formulas !!!
         return this.accumulateResult(result);
+    }
+
+    private inferProcedureDeclaration(ruleContext: ParserRuleContext): ReferenceIdentifier | undefined {
+        // infer procedure name as container
+        let maxDepth = 5;
+        let currentDepthLevel = 0;
+        let containerContext = ruleContext.parent;
+        while (!!ruleContext.parent && !(containerContext instanceof ProcedureDeclarationContext) && currentDepthLevel < maxDepth) {
+            currentDepthLevel++;
+            containerContext = containerContext?.parent;
+        }
+        let result: ReferenceIdentifier | undefined;
+        let containerProcedureContext = containerContext as ProcedureDeclarationContext;
+        if (containerProcedureContext instanceof ProcedureDeclarationContext) {
+            result = {
+                //TODO: potential error in case when procedure name is "PrimitiveType"or "Error"
+                nameTo: containerProcedureContext.generalSignature().Identifier().text,
+                referenceTo: DeclarationType.Procedure
+            }
+        }
+        return result;
     }
 
     visitGenericInvocationLocal(context: GenericInvocationContext): BellaReference[] {
@@ -113,14 +138,11 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
             || genericInvocationContext.Error()
             || genericInvocationContext.PrimitiveType();
         let result: BellaAmbiguousReference[] = [{
-            ...(this.visitIdentifierLocal(identifier,DeclarationType.Procedure, false)[0]),
+            ...(this.visitIdentifierLocal(identifier, DeclarationType.Procedure, false)[0]),
             possibleTypes: [DeclarationType.Procedure, DeclarationType.Formula]
         }];
         return result;
     }
-
-
-
 
     //this doesn't mutate accumulated results
     private visitTypeLocal(context: TypeContext): BellaReference[] {
@@ -195,7 +217,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     visitIdentifierLocal(
         node: TerminalNode | undefined,
         referenceTo: DeclarationType,
-        isDeclaration:boolean = false): BellaReference[] {
+        isDeclaration: boolean = false): BellaReference[] {
         if (!node) {
             return [];
         }

@@ -43,7 +43,8 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
         // }
     };
     let isLSPStreamingMode = vscode.workspace
-    .getConfiguration().get('bellaLanguageServer.enableLSPInspectorForwarding', false);
+        .getConfiguration()
+        .get('bellaLanguageServer.enableLSPInspectorForwarding', false);
 
     if (isLSPStreamingMode) {
         // Hijacks all LSP logs and redirect them to a specific port through WebSocket connection
