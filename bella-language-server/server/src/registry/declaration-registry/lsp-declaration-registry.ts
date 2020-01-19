@@ -107,15 +107,15 @@ export class LSPDeclarationRegistry {
                 let keyedDeclarations = declaration.members?.map((d: BaseDeclaration): KeyedDeclaration => ({
                     ...d, uri: declaration.uri, parentName: declaration.name
                 })) || [];
-                const descendantQuery = query.descendantsFilter.query;
-                if (!!descendantQuery) {
+                const descendantsQuery = query.descendantsFilter.query;
+                if (!!descendantsQuery) {
                     keyedDeclarations = keyedDeclarations.filter(d => {
                         let passed = true;
-                        if (!isNil(descendantQuery.typeFilter) && descendantQuery.typeFilter?.active) {
-                            passed = passed && (d.type === descendantQuery.typeFilter.type);
+                        if (!isNil(descendantsQuery.typeFilter) && descendantsQuery.typeFilter?.active) {
+                            passed = passed && (d.type === descendantsQuery.typeFilter.type);
                         }
-                        if (!isNil(descendantQuery.nameFilter) && descendantQuery.nameFilter.active) {
-                            passed = passed && (d.name === descendantQuery.nameFilter.name);
+                        if (!isNil(descendantsQuery.nameFilter) && descendantsQuery.nameFilter.active) {
+                            passed = passed && (d.name === descendantsQuery.nameFilter.name);
                         }
                         return passed;
                     });

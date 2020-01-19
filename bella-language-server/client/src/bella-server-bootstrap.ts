@@ -87,7 +87,11 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
                 context.workspaceState.update('assetPromptDisabled', true);
             });
         }
-        vscode.window.showInformationMessage("Bella Language Server is loaded! 🚀")
+        vscode.window.showInformationMessage("Bella Language Server is loaded! 🚀");
+        let isMakeSnapshotAfterInitialLoad = true;
+        if(isMakeSnapshotAfterInitialLoad) {
+            (client as LanguageClient).sendNotification("parser/make-snapshot");
+        }
     });
     return client;
 }

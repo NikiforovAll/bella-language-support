@@ -6,6 +6,7 @@ import { LSPParserProxy } from './lsp-parser-proxy';
 import { DiagnosticsHandler } from './handlers/diagnostics.handler';
 import { DefinitionHandler } from './handlers/definition.handler';
 import { ReferenceHandler } from './handlers/reference.handler';
+import { SnapshotHandler } from './handlers/snapshot.handler';
 
 
 /**
@@ -67,6 +68,7 @@ export default class BellaServer {
 		connection.onWorkspaceSymbol(this.onWorkspaceSymbol.bind(this));
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
 		connection.onReferences(this.onReferences.bind(this))
+		connection.onNotification("parser/make-snapshot", this.onMakeSnapshot.bind(this));
 		// connection.onCompletion(this.onCompletion.bind(this))
 		// connection.onCompletionResolve(this.onCompletionResolve.bind(this))
 	}
@@ -112,6 +114,14 @@ export default class BellaServer {
 			this.analyzer.declarationCache,
 			this.analyzer.referencesCache);
 		return handler.findReferences(params);
+	}
+
+	private onMakeSnapshot() {
+		let handler =  new SnapshotHandler(
+			this.analyzer.declarationCache,
+			this.analyzer.referencesCache);
+		handler.setConnection(this.connection);
+		handler.makeSnapshot();
 	}
 
 	private static initializeParser() {
