@@ -97,10 +97,41 @@ export class LSPDeclarationRegistry {
     }
 
     public getLSPDeclarationsForQuery(query: NodeRegistrySearchQuery): LSP.SymbolInformation[] {
-        let declarations: KeyedDeclaration[] = this.getDeclarationsForQuery(query);
-        let result = query.descendantsFilter?.active && query.descendantsFilter?.discardParent
+        // let declarations: KeyedDeclaration[] = this.getDeclarationsForQueryLocal(query);
+        // let result = query.descendantsFilter?.active && query.descendantsFilter?.discardParent
+        //     ? []
+        //     : DeclarationFactoryMethods.toLSPDeclarations(declarations);
+        // // do we need to fetch descendants?
+        // if (query.descendantsFilter?.active) {
+        //     for (const declaration of declarations) {
+        //         let keyedDeclarations = declaration.members?.map((d: BaseDeclaration): KeyedDeclaration => ({
+        //             ...d, uri: declaration.uri, parentName: declaration.name
+        //         })) || [];
+        //         const descendantsQuery = query.descendantsFilter.query;
+        //         if (!!descendantsQuery) {
+        //             keyedDeclarations = keyedDeclarations.filter(d => {
+        //                 let passed = true;
+        //                 if (!isNil(descendantsQuery.typeFilter) && descendantsQuery.typeFilter?.active) {
+        //                     passed = passed && (d.type === descendantsQuery.typeFilter.type);
+        //                 }
+        //                 if (!isNil(descendantsQuery.nameFilter) && descendantsQuery.nameFilter.active) {
+        //                     passed = passed && (d.name === descendantsQuery.nameFilter.name);
+        //                 }
+        //                 return passed;
+        //             });
+        //         }
+        //         result.push(...DeclarationFactoryMethods.toLSPDeclarations(keyedDeclarations));
+        //     }
+        // }
+        // return result;
+        return DeclarationFactoryMethods.toLSPDeclarations(this.getDeclarationsForQuery(query));
+    }
+
+    public getDeclarationsForQuery(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
+        let declarations: KeyedDeclaration[] = this.getDeclarationsForQueryLocal(query);
+        let result: KeyedDeclaration[] = query.descendantsFilter?.active && query.descendantsFilter?.discardParent
             ? []
-            : DeclarationFactoryMethods.toLSPDeclarations(declarations);
+            : declarations;
         // do we need to fetch descendants?
         if (query.descendantsFilter?.active) {
             for (const declaration of declarations) {
@@ -120,13 +151,13 @@ export class LSPDeclarationRegistry {
                         return passed;
                     });
                 }
-                result.push(...DeclarationFactoryMethods.toLSPDeclarations(keyedDeclarations));
+                result.push(...keyedDeclarations);
             }
         }
         return result;
     }
 
-    private getDeclarationsForQuery(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
+    private getDeclarationsForQueryLocal(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
         let result: KeyedDeclaration[] = [];
         if (query.uriFilter.active) {
             result = this.getRegistryNode(query.uriFilter.uri || '').getDeclarations(query);

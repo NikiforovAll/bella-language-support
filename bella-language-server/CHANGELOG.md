@@ -5,7 +5,14 @@
 * Command: `Go To References`
   * Keyboard shortcuts: `ctrl+F12`, `ctrl+shift+F12`
   * Implemented:
-    * internal procedure invocation
+    * internal procedure invocation (procedure \<procedureName\>)
+      * looks for (call \<procedureName\>)
+    * service usage: `service \<serviceName\>
+      * looks for (\<serviceName\>.someMethod)
+* Command: `Bella: Make Server Snapshot`
+  * makes snapshot of the server and puts in tmp folder (folder could be found in Bella Language Server output)
+* Extend: `Go To Definition...`
+  * go to definition of service entry from procedure body
 
 ## draft-version - v0.2.5
 

@@ -89,10 +89,6 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
             });
         }
         vscode.window.showInformationMessage("Bella Language Server is loaded! 🚀");
-        let isMakeSnapshotAfterInitialLoad = true;
-        if(isMakeSnapshotAfterInitialLoad) {
-            (client as LanguageClient).sendNotification("parser/make-snapshot");
-        }
     });
     return client;
 }

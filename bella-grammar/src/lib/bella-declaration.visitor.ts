@@ -107,10 +107,10 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     visitComponentServiceDeclaration(context: ComponentServiceDeclarationContext): BaseDeclaration{
         let serviceName = context.Identifier().text;
         let line = context.start.line - 1;
-        let csd: BaseDeclaration = {
-            // serviceType: context.HOSTED().text,
-            // serviceName: serviceName,
-            // serviceTransportName: context.enclosedServiceIdentifier().text,
+        let csd: ComponentServiceDeclaration= {
+            serviceType: context.HOSTED().text,
+            serviceName: serviceName,
+            serviceTransportName: context.enclosedServiceIdentifier().text,
             name: serviceName,
             range: BellaVisitorUtils.createRange(line, 0, line),
             type: DeclarationType.ComponentService

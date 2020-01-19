@@ -7,7 +7,7 @@
   "repository": {
     "url": "http://gitlab.hysdev.com/alexey.nikiforov/bella-language-support"
   },
-  "version": "0.2.13",
+  "version": "0.2.14",
   "engines": {
     "vscode": "^1.40.0"
   },
@@ -94,6 +94,10 @@
       {
         "command": "bellaLanguageSupport.generateAssets",
         "title": "Bella: Generate Project Assets"
+      },
+      {
+        "command": "bella.makeServerSnapshot",
+        "title": "Bella: Make Server Snapshot"
       }
     ]
   },

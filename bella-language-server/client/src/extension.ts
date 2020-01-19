@@ -28,10 +28,12 @@ function registerCommands(context: ExtensionContext) {
 		}
 	));
 	context.subscriptions.push(
-		commands
-			.registerCommand('bellaLanguageSupport.generateAssets', async () => generateAssets())
-	);
+		commands.registerCommand('bellaLanguageSupport.generateAssets',
+			async () => generateAssets()));
 
+	context.subscriptions.push(
+		commands.registerCommand('bella.makeServerSnapshot',
+			async () => (client as LanguageClient).sendNotification("parser/make-snapshot")));
 }
 
 function registerServer(context: ExtensionContext) {
