@@ -120,7 +120,7 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     }
 
     visitServiceDeclaration(context: ServiceDeclarationContext): BaseDeclaration {
-        let serviceName = context.Identifier().text;
+        let serviceName = context.servicePrefix().Identifier().text;
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || (startLine + 1)) - 1;
         let sd: ServiceDeclaration = {

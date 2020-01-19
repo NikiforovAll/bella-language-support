@@ -1,0 +1,6 @@
+procedure TestHW2Internal(Test1)
+    LogInfo("Test")
+    HelloWorld.ExampleMethod()
+
+// service HelloWorld
+//     ExampleMethod()

@@ -461,7 +461,7 @@ repository:
 
   throw-statement:
     name: meta.common.statement.throw.bella
-    begin: \s*(error)(\[)(.+)(\])\s+(.+)\s*(?=\s*$)
+    begin: \s*(error)\s*(\[)(.+)(\])\s+(.+)\s*(?=\s*$)
     beginCaptures:
       '1': { name: keyword.control.error.bella }
       '2': { name: punctuation.parenthesis.open.bella }

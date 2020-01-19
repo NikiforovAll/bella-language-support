@@ -22,8 +22,4 @@
 //    With(DunningProcessesHistory.activeDunningProcesses
 //            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty))
 
-PropositionCashbackCreationRequest = new PropositionCashbackCreationRequest
-                (
-                name = Proposition.cashback.name,
-                amount = Proposition.cashback.amount,
-                )
+InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()

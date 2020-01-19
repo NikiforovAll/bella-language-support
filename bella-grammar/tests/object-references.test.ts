@@ -46,3 +46,22 @@ describe("alias-dict-refs", () => {
         expect(r2.nameTo).to.equal("IdKey");
     });
 });
+
+describe("localVariableAssignment-refs", () => {
+    it("should return refs for local declarations", () => {
+        let input = `
+procedure SaveGlEvent(GlEvent, SourceCreationDate)
+    SourceCreationDate = SourceCreationDate.Date() as DateTime
+    if not IsEmpty(GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent)
+        GlEventLog = GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId]
+        GlEventLog.historyGlEvents ++= GlEventLog.currentGlEvent
+        GlEventLog.currentGlEvent = GlEvent
+    else
+        GlEventsByDate[SourceCreationDate][GlEvent.eventType][GlEvent.sourceId].currentGlEvent = GlEvent`;
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
+        visitor.visit(tree);
+        let refs = visitor.references.filter(r => r.referenceTo === DeclarationType.Object && !r.isDeclaration);
+        expect(refs).to.have.lengthOf(4);
+    });
+});

@@ -73,3 +73,9 @@ enum BalanceRecordRevert
     NotSpecified
     Reverted
     NotReverted
+
+procedure ValidatePagination(PageNumber, PerPage)
+    if PageNumber < 1
+        error [InvalidPageNumber] "Page number cannot be less than 1"
+    if PerPage < 1
+        error [InvalidPerPage] "Per page cannot be less than 1"

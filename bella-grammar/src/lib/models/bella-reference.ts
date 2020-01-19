@@ -6,4 +6,5 @@ export interface BellaReference {
     nameTo: string;
     referenceTo: DeclarationType
     isDeclaration: boolean
+    parentContainer?: string
 }

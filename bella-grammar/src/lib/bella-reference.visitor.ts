@@ -9,10 +9,16 @@ import {
     ServiceDeclarationEntryContext,
     TypeContext,
     GeneralSignatureContext,
-    FormulaSignatureContext
+    FormulaSignatureContext,
+    LocalVariableDeclarationContext,
+    InvocationStatementContext,
+    GenericInvocationContext,
+    ServiceDeclarationContext,
+    ServicePrefixContext
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaReference } from './models/bella-reference';
+import { BellaAmbiguousReference } from "./models/bella-ambiguous-reference";
 import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
 
@@ -23,16 +29,16 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     protected defaultResult() {
         return [];
     }
-    // visitCompilationUnit(context: CompilationUnitContext) {
-    //     return  this.visitType(context.typeDeclaration());
+
+    // visitServiceDeclaration(context: ServiceDeclarationContext): BellaReference[] {
+    //     let result = this.visitIdentifierLocal(context.Identifier(), DeclarationType.Service, true);
+    //     return this.accumulateResult(result);
     // }
-    // visitObjectDeclaration(context: ObjectDeclarationContext) {
-    //     let simpleObjectDeclaration = context.simpleObjectDeclaration();
-    //     if(simpleObjectDeclaration) {
-    //         return this.visitType(simpleObjectDeclaration.type());
-    //     }
-    //     return [];
-    // }
+
+    visitServicePrefix(context: ServicePrefixContext): BellaReference[] {
+        let result = this.visitIdentifierLocal(context.Identifier(), DeclarationType.Service, true);
+        return this.accumulateResult(result);
+    }
 
     // currently, it is entry point for procedure signature parsing
     visitGeneralSignature(context: GeneralSignatureContext): BellaReference[] {
@@ -73,6 +79,28 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         let result = this.visitIdentifierLocal(context.explicitGenericInvocation().Identifier(), DeclarationType.Procedure);
         return this.accumulateResult(result);
     }
+
+    // TODO: this implementation doesn't not include formulas calculated on expressions TBD
+    visitInvocationStatement(context: InvocationStatementContext): BellaReference[] {
+        const baseContainer = this.visitTypeLocal(context.type())[0];
+        // let's assume base as service
+        baseContainer.referenceTo = DeclarationType.Service;
+        let container: BellaAmbiguousReference = {
+            ...baseContainer,
+            possibleTypes: [DeclarationType.Service, DeclarationType.Object]
+        };
+
+        let result = [
+            container,
+            ...this.visitGenericInvocationLocal(context.genericInvocation())
+        ];
+        return this.accumulateResult(result);
+    }
+
+    visitGenericInvocationLocal(context: GenericInvocationContext): BellaReference[] {
+        return [];
+    }
+
 
 
 

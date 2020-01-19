@@ -76,7 +76,11 @@ enumBody
     ;
 
 serviceDeclaration
-    :   SERVICE Identifier serviceBody
+    :   servicePrefix serviceBody
+    ;
+
+servicePrefix
+    :   SERVICE Identifier
     ;
 
 serviceBody
@@ -140,9 +144,10 @@ statement
     | callStatement
     | errorStatement
     | localVariableDeclarationStatement
-    | statementExpression
+    | invocationStatement
     | newStatement
     | Return
+    | statementExpression
     ;
 
 // prasedIdentifier
@@ -150,6 +155,19 @@ statement
 //     | PrimitiveType
 //     | Error
 //     ;
+
+// this way it easilty to parse type token
+invocationStatement
+    : type genericInvocation
+    ;
+
+genericInvocation
+    : DOT (propertyAccessor | explicitGenericInvocation)
+    ;
+
+propertyAccessor
+    : DOT (Identifier | PrimitiveType | Error)
+    ;
 
 expression
     :   literal
@@ -200,6 +218,11 @@ expression
     | (Identifier | PrimitiveType | Error)
     ;
 
+// memberInvocation
+//     // : expression DOT explicitGenericInvocation
+//     : expression DOT explicitGenericInvocation
+//     ;
+
 explicitGenericInvocation
     : (Identifier | PrimitiveType | Error) arguments
     ;
@@ -240,7 +263,8 @@ localVariableDeclarationStatement
     ;
 
 localVariableDeclaration
-    :   type ASSIGN New? expression?
+    :   type ASSIGN invocationStatement
+    |   type ASSIGN New? expression?
     |   type ASSIGN (New | EmptyLiteral)
     ;
 

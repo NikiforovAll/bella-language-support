@@ -4,6 +4,7 @@ import { LSPReferenceRegistry } from '../registry/references-registry/lsp-refere
 import { ReferenceFactoryMethods } from '../factories/reference.factory';
 import { ReferencesRegistrySearchQuery } from '../registry/references-registry/references-registry-query';
 import { CommonUtils } from '../utils/common.utils';
+import { DeclarationType } from 'bella-grammar';
 
 export class ReferenceHandler {
     constructor(
@@ -19,14 +20,16 @@ export class ReferenceHandler {
         if (!referenceToken || !referenceToken.isDeclaration) {
             return [];
         }
+        // if it is service reference, we need to search everywhere
+        let namespaceFilter = {
+            active: referenceToken.referenceTo === DeclarationType.Service ? false : true,
+            namespace: CommonUtils.getNamespaceFromURI(params.textDocument.uri)
+        };
         let query: ReferencesRegistrySearchQuery = {
             uriFilter: {
                 active: false
             },
-            namespaceFilter: {
-                active: true,
-                namespace: CommonUtils.getNamespaceFromURI(params.textDocument.uri)
-            },
+            namespaceFilter,
             nameFilter: {
                 active: true,
                 name: referenceToken.nameTo
