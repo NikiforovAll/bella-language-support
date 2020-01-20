@@ -80,7 +80,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     visitCallStatement(context: CallStatementContext): BellaReference[] {
         let result = this.visitIdentifierLocal(context.explicitGenericInvocation().Identifier(), DeclarationType.Procedure);
-        result.forEach(r => { r.container = this.inferProcedureDeclaration(context); })
+        // result.forEach(r => { r.container = this.inferProcedureDeclaration(context); })
         return this.accumulateResult(result);
     }
 
@@ -96,7 +96,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
             //TODO: this should be ambiguous
             childType: DeclarationType.ServiceEntry,
             referenceType: BellaReferenceType.NestedReference,
-            container: this.inferProcedureDeclaration(context)
+            // container: this.inferProcedureDeclaration(context)
         };
 
         // TODO: add ambiguous context for mapping resolution inside registry

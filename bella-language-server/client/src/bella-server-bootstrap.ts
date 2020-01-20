@@ -98,6 +98,9 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
 
             // console.log("core/showReferencesCallback", payload);
             let transformedArgs = ClientUtils.transformPayloadToShowReferences(payload);
+            if((transformedArgs[2] as any[]).length === 0) {
+                vscode.window.showInformationMessage('Bella: [Go To References]: no references found');
+            }
             let success = vscode.commands.executeCommand('editor.action.showReferences', ...transformedArgs);
         });
 
