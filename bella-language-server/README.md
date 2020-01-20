@@ -9,6 +9,6 @@ Visit <http://gitlab.hysdev.com/alexey.nikiforov/bella-language-support> for mor
 - download extension in working directory
 - open terminal in working directory
 - install extension
-code --install-extension `./bella-language-server-0.1.1.vsix`
+code --install-extension `./bella-language-server-x.y.z.vsix`
 - OR check out this extension
 <https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-install-vsix>

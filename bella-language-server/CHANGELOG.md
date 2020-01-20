@@ -13,6 +13,9 @@
   * makes snapshot of the server and puts in tmp folder (folder could be found in Bella Language Server output)
 * Extend: `Go To Definition...`
   * go to definition of service entry from procedure body
+* CodeLens support 💥
+  * internal procedure referencing
+  * service entry referecing
 
 ## draft-version - v0.2.5
 
