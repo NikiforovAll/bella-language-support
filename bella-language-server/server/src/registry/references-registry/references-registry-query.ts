@@ -17,6 +17,14 @@ export interface ReferencesRegistrySearchQuery {
     nameFilter: {
         name: string;
     } & Activatable
+
+    //used to search through NestedReferences
+    descendantsFilter?: {
+        query: {
+            name: string,
+            type: DeclarationType
+        }
+    } & Activatable
 }
 
 interface Activatable {

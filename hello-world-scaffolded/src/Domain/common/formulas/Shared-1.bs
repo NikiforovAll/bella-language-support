@@ -1,0 +1,4 @@
+
+service TaskManager
+    CreateTask(taskCreationRequest):TaskId
+

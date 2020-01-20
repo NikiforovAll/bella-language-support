@@ -13,5 +13,7 @@ enum TestEnum
     Value1
     Value2
 
-procedure CreateTask(taskCreationRequest)
-    Test()
+
+
+service UniqueService
+    DoSomethingUnique(Test3)

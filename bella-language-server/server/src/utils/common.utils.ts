@@ -46,6 +46,28 @@ export namespace CommonUtils {
         return truncatedName;
     }
 
+    export  function extractComponentNameFromUrl(sourceUri: string, namespaces?: string[]): string {
+        // we are in common file, need to look for namespace
+        let getComponentName = (uri: string): string => {
+            const identificationToken = 'common/services';
+            let servicePart = uri.substring(
+                uri.lastIndexOf(identificationToken) + identificationToken.length + 1);
+            var lastIndex = servicePart.search(/[^0-9A-Za-z]+/);
+            let result = servicePart.substring(0, lastIndex);
+            return result;
+        };
+        let componentName = getComponentName(sourceUri);
+        if(!namespaces) {
+            console.log('extractComponentNameFromUrl. Skipping namespace validation (namespace might be not from subset)')
+            return componentName;
+        }
+        let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))
+        if (!targetNamespace) {
+            return CommonUtils.SHARED_NAMESPACE_NAME;
+        }
+        return targetNamespace;
+    }
+
     export function parserTypeToLSPType(type: DeclarationType): LSP.SymbolKind {
         switch (type) {
             case DeclarationType.ComponentService:

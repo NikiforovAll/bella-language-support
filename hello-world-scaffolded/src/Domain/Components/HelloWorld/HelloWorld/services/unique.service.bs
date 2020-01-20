@@ -1,0 +1,5 @@
+procedure DoSomethingUnique(Params)
+    LogInfo("Unique")
+
+procedure internalProcedure()
+    call DoSomethingUnique(Params)

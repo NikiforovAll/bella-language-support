@@ -62,7 +62,12 @@ export class LSPDeclarationRegistry {
         descendantQuery?: NodeRegistrySearchQuery) {
         let targetNamespace = CommonUtils.getNamespaceFromURI(sourceUri);
         if (targetNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
-            targetNamespace = this.extractComponentNameFromUrl(sourceUri);
+
+            //TODO: this is convention to speed things up, consider fallback with global search
+            let namespaces = uniq(
+                this.cache.keys()
+                    .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace || ''));
+            targetNamespace = CommonUtils.extractComponentNameFromUrl(sourceUri, namespaces);
         }
 
         let query: NodeRegistrySearchQuery = {
@@ -98,33 +103,6 @@ export class LSPDeclarationRegistry {
     }
 
     public getLSPDeclarationsForQuery(query: NodeRegistrySearchQuery): LSP.SymbolInformation[] {
-        // let declarations: KeyedDeclaration[] = this.getDeclarationsForQueryLocal(query);
-        // let result = query.descendantsFilter?.active && query.descendantsFilter?.discardParent
-        //     ? []
-        //     : DeclarationFactoryMethods.toLSPDeclarations(declarations);
-        // // do we need to fetch descendants?
-        // if (query.descendantsFilter?.active) {
-        //     for (const declaration of declarations) {
-        //         let keyedDeclarations = declaration.members?.map((d: BaseDeclaration): KeyedDeclaration => ({
-        //             ...d, uri: declaration.uri, parentName: declaration.name
-        //         })) || [];
-        //         const descendantsQuery = query.descendantsFilter.query;
-        //         if (!!descendantsQuery) {
-        //             keyedDeclarations = keyedDeclarations.filter(d => {
-        //                 let passed = true;
-        //                 if (!isNil(descendantsQuery.typeFilter) && descendantsQuery.typeFilter?.active) {
-        //                     passed = passed && (d.type === descendantsQuery.typeFilter.type);
-        //                 }
-        //                 if (!isNil(descendantsQuery.nameFilter) && descendantsQuery.nameFilter.active) {
-        //                     passed = passed && (d.name === descendantsQuery.nameFilter.name);
-        //                 }
-        //                 return passed;
-        //             });
-        //         }
-        //         result.push(...DeclarationFactoryMethods.toLSPDeclarations(keyedDeclarations));
-        //     }
-        // }
-        // return result;
         return DeclarationFactoryMethods.toLSPDeclarations(this.getDeclarationsForQuery(query));
     }
 
@@ -184,27 +162,7 @@ export class LSPDeclarationRegistry {
         return result;
     }
 
-    private extractComponentNameFromUrl(sourceUri: string): string {
-        // we are in common file, need to look for namespace
-        let namespaces = uniq(
-            this.cache.keys()
-                .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace));
-        let getComponentName = (uri: string): string => {
-            const identificationToken = 'common/services';
-            let servicePart = uri.substring(
-                uri.lastIndexOf(identificationToken) + identificationToken.length + 1);
-            var lastIndex = servicePart.search(/[^0-9A-Za-z]+/);
-            let result = servicePart.substring(0, lastIndex);
-            return result;
-        };
-        let componentName = getComponentName(sourceUri);
-        let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))
-        if (!targetNamespace) {
-            return CommonUtils.SHARED_NAMESPACE_NAME;
-        }
-        return targetNamespace;
-        //TODO: this is convention to speed things up, consider fallback with global search
-    }
+
 }
 
 export interface KeyedDeclaration extends BaseDeclaration, MemberComposite {

@@ -64,9 +64,9 @@ export class LSPReferenceRegistry {
                     registry?.namespace !== query.namespaceFilter.namespace) {
                     continue;
                 }
-                result.push(...registry.getReferences(query).map(
-                    r => ({...r, uri: registry_key})
-                ));
+                let resultRefs = registry.getReferences(query).map(
+                    r => ({...r, uri: registry_key}));
+                result.push(...resultRefs);
             }
         }
         return result;

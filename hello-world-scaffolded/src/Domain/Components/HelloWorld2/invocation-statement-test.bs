@@ -13,3 +13,4 @@ procedure ExampleMethod(Test1)
 
 procedure Method2(Test1)
     LogInfo(1.3)
+    UniqueService.DoSomethingUnique()

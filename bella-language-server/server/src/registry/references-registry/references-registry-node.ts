@@ -1,4 +1,4 @@
-import { BellaReference } from 'bella-grammar';
+import { BellaReference, BellaReferenceType, BellaNestedReference } from 'bella-grammar';
 import { isNil } from 'lodash';
 import { BSTreeKV } from 'typescript-collections';
 
@@ -29,9 +29,14 @@ export class ReferencesRegistryNode {
         return this.referencesToSearch?.search(pos);
     }
 
+    /**
+     * Returns all references that are not declaration (currently, declarations are all stored in this registry)
+     * @param query - query to search through declarations
+     */
     getReferences(query: ReferencesRegistrySearchQuery): BellaReference[] {
+
         if (!isNil(query)) {
-            let { typeFilter, nameFilter } = query;
+            let { typeFilter, nameFilter, descendantsFilter } = query;
             if (typeFilter?.active || nameFilter?.active) {
                 return this.getValues().filter(ref => {
                     let passed = true;
@@ -44,6 +49,15 @@ export class ReferencesRegistryNode {
                     if (!isNil(nameFilter) && nameFilter.active) {
                         passed = passed && (ref.nameTo === nameFilter.name);
                     }
+                    //descendant references is declared like this
+                    if(descendantsFilter
+                        && descendantsFilter.active
+                        && ref.referenceType === BellaReferenceType.NestedReference) {
+                        let nestedRef = ref as BellaNestedReference
+                        passed = passed
+                            && nestedRef.childTo === descendantsFilter.query.name
+                            && nestedRef.childType === descendantsFilter.query.type
+                    }
                     return passed;
                 });
             }
@@ -52,7 +66,7 @@ export class ReferencesRegistryNode {
         return this.getValues();
     }
 
-    private getValues() {
+    private getValues(): BellaReference[] {
         return this.referencesToSearch.toArray()
     }
 }
