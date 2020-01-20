@@ -45,7 +45,7 @@ export class LSPReferenceRegistry {
     }
 
     // TODO: consider to factor out common querying logic into common module for declarations and references queries
-    private getReferencesForQuery(query: ReferencesRegistrySearchQuery): LocatedBellaReference[] {
+    public getReferencesForQuery(query: ReferencesRegistrySearchQuery): LocatedBellaReference[] {
         let result: LocatedBellaReference[] = [];
         if (query.uriFilter.active) {
             result = this.getRegistryNode(query.uriFilter.uri || '').getReferences(query).map(

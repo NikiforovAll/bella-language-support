@@ -81,6 +81,7 @@ export class LSPDeclarationRegistry {
                 active: true,
                 name
             },
+            //TODO: consider relation of this with ambiguous declaration/references. Probably need to build it based on ambiguous types
             fallbackRules: {
                 fallbackTypeProbe: {
                     type: DeclarationType.Object,
@@ -225,10 +226,7 @@ export class DeclarationKey {
         public type: DeclarationType) {
     }
     toString() {
-        const name = this.name;
-        const takeNumChars = name
-            .indexOf('(') === -1 ? name.length : name.indexOf('(');
-        let truncatedName = name.substr(0, takeNumChars);
+        let truncatedName = CommonUtils.getProcedureTruncatedName(this.name);
         return `${truncatedName} - ${this.type}`;
         // return `${this.name} - ${this.type}`;
     }

@@ -1,4 +1,4 @@
-import { DeclarationType, Range } from 'bella-grammar';
+import { DeclarationType, Range, Position } from 'bella-grammar';
 import * as LSP from 'vscode-languageserver';
 
 export namespace CommonUtils {
@@ -33,6 +33,17 @@ export namespace CommonUtils {
             range.endPosition.row,
             range.endPosition.col,
         )
+    }
+
+    export function position(position: Position) {
+        return LSP.Position.create(position.row, position.col);
+    }
+
+    export function getProcedureTruncatedName(fullName: string): string {
+        const takeNumChars = fullName
+            .indexOf('(') === -1 ? fullName.length : fullName.indexOf('(');
+        let truncatedName = fullName.substr(0, takeNumChars);
+        return truncatedName;
     }
 
     export function parserTypeToLSPType(type: DeclarationType): LSP.SymbolKind {

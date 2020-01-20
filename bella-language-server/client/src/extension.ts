@@ -1,4 +1,4 @@
-import { commands, env, ExtensionContext, Uri, workspace } from 'vscode';
+import { commands, env, ExtensionContext, Uri } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient';
 
 import { registerLanguageFeatures } from './bella-server-bootstrap';

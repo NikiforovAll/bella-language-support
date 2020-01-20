@@ -14,6 +14,7 @@ import {
 } from 'vscode-languageclient';
 import { addAssetsIfNecessary, AddAssetResult } from './assets';
 import { getWorkspaceInformation } from './common';
+import { SessionManager } from './session';
 
 export function registerLanguageFeatures(context: vscode.ExtensionContext): LanguageClient {
     // The server is implemented in node
@@ -37,6 +38,7 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'bella' }],
+        middleware: new SessionManager()
         // synchronize: {
         //     // Notify the server about file changes
         //     fileEvents: workspace.createFileSystemWatcher('**/.bs')
@@ -48,7 +50,7 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
 
     if (isLSPStreamingMode) {
         // Hijacks all LSP logs and redirect them to a specific port through WebSocket connection
-        const websocketOutputChannel: vscode.OutputChannel =  createWebSocketListener();
+        const websocketOutputChannel: vscode.OutputChannel = createWebSocketListener();
         clientOptions.outputChannel = websocketOutputChannel;
     }
 
@@ -57,8 +59,13 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
         'bellaLanguageServer',
         'Bella Language Server',
         serverOptions,
-        clientOptions
+        clientOptions,
     );
+
+    // client.onNotification("core/showReferences", (payload) => {
+    //     console.log("core/showReferences", payload);
+    // });
+
     // Start the client. This will also launch the server
     let languageServerDisposable = client.start();
     context.subscriptions.push(languageServerDisposable);

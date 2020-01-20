@@ -7,6 +7,7 @@ import { DiagnosticsHandler } from './handlers/diagnostics.handler';
 import { DefinitionHandler } from './handlers/definition.handler';
 import { ReferenceHandler } from './handlers/reference.handler';
 import { SnapshotHandler } from './handlers/snapshot.handler';
+import { CodeLensHandler } from './handlers/codeLens.handler';
 
 
 /**
@@ -69,6 +70,8 @@ export default class BellaServer {
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
 		connection.onReferences(this.onReferences.bind(this))
 		connection.onNotification("parser/make-snapshot", this.onMakeSnapshot.bind(this));
+		connection.onCodeLens(this.onCodeLens.bind(this));
+		connection.onCodeLensResolve(this.onCodeLensResolve.bind(this));
 		// connection.onCompletion(this.onCompletion.bind(this))
 		// connection.onCompletionResolve(this.onCompletionResolve.bind(this))
 	}
@@ -89,7 +92,10 @@ export default class BellaServer {
 			definitionProvider: true,
 			documentSymbolProvider: true,
 			workspaceSymbolProvider: true,
-			referencesProvider: true
+			referencesProvider: true,
+			codeLensProvider: {
+				resolveProvider: true
+			}
 		}
 	}
 
@@ -110,10 +116,18 @@ export default class BellaServer {
 	}
 
 	private onReferences(params : LSP.ReferenceParams): LSP.Location[]{
-		let handler = new ReferenceHandler(
-			this.analyzer.declarationCache,
-			this.analyzer.referencesCache);
+		let handler = new ReferenceHandler(this.analyzer.declarationCache,this.analyzer.referencesCache);
 		return handler.findReferences(params);
+	}
+
+	private onCodeLens(params: LSP.CodeLensParams): LSP.CodeLens[] {
+		let handler = new CodeLensHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
+		return handler.getCodeLens(params.textDocument);
+	}
+
+	private onCodeLensResolve(codeLens: LSP.CodeLens): LSP.CodeLens{
+		let handler = new CodeLensHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
+		return handler.resolve(codeLens);
 	}
 
 	private onMakeSnapshot() {
