@@ -7,7 +7,9 @@ import { DiagnosticsHandler } from './handlers/diagnostics.handler';
 import { DefinitionHandler } from './handlers/definition.handler';
 import { ReferenceHandler } from './handlers/reference.handler';
 import { SnapshotHandler } from './handlers/snapshot.handler';
-import { CodeLensHandler } from './handlers/codeLens.handler';
+import { CodeLensHandler, CodeLensPayload } from './handlers/codeLens.handler';
+import { CommonUtils } from './utils/common.utils';
+import { ReferenceFactoryMethods } from './factories/reference.factory';
 
 
 /**
@@ -70,6 +72,7 @@ export default class BellaServer {
 		// connection.onDocumentHighlight(this.onDocumentHighlight.bind(this))
 		connection.onReferences(this.onReferences.bind(this))
 		connection.onNotification("parser/make-snapshot", this.onMakeSnapshot.bind(this));
+		connection.onNotification("core/findReferences", this.onLazyReferences.bind(this));
 		connection.onCodeLens(this.onCodeLens.bind(this));
 		connection.onCodeLensResolve(this.onCodeLensResolve.bind(this));
 		// connection.onCompletion(this.onCompletion.bind(this))
@@ -138,10 +141,23 @@ export default class BellaServer {
 		handler.makeSnapshot();
 	}
 
+	private onLazyReferences(payload: CodeLensPayload) {
+        let { uri, declaration, parentDeclaration }: CodeLensPayload = (payload as CodeLensPayload);
+		let handler = new CodeLensHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
+		let refs = handler.resolveDeclaration(uri, declaration, parentDeclaration);
+		let referencesResult = [
+			uri,
+			CommonUtils.position(declaration.range.startPosition),
+			ReferenceFactoryMethods.toLSPLocations(refs)
+		]
+		this.connection.sendNotification("core/showReferencesCallback", referencesResult);
+	}
+
 	private static initializeParser() {
 		return new LSPParserProxy();
 	}
 }
+
 
 // export interface BellaLanguageServerParsingResult {
 // 	server: BellaServer;

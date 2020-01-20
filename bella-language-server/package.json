@@ -98,6 +98,10 @@
       {
         "command": "bella.makeServerSnapshot",
         "title": "Bella: Make Server Snapshot"
+      },
+      {
+        "command": "bella.findReferencesLazy",
+        "title": "Bella[Core]: Find References (Lazy)"
       }
     ]
   },

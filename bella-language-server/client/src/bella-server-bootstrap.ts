@@ -15,6 +15,7 @@ import {
 import { addAssetsIfNecessary, AddAssetResult } from './assets';
 import { getWorkspaceInformation } from './common';
 import { SessionManager } from './session';
+import { ClientUtils } from './utils';
 
 export function registerLanguageFeatures(context: vscode.ExtensionContext): LanguageClient {
     // The server is implemented in node
@@ -62,9 +63,6 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
         clientOptions,
     );
 
-    // client.onNotification("core/showReferences", (payload) => {
-    //     console.log("core/showReferences", payload);
-    // });
 
     // Start the client. This will also launch the server
     let languageServerDisposable = client.start();
@@ -96,6 +94,13 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
             });
         }
         vscode.window.showInformationMessage("Bella Language Server is loaded! 🚀");
+        client.onNotification("core/showReferencesCallback", (...payload) => {
+
+            // console.log("core/showReferencesCallback", payload);
+            let transformedArgs = ClientUtils.transformPayloadToShowReferences(payload);
+            let success = vscode.commands.executeCommand('editor.action.showReferences', ...transformedArgs);
+        });
+
     });
     return client;
 }

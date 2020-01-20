@@ -1,5 +1,5 @@
 import { BaseHandler } from "./base.handler";
-import { TextDocumentIdentifier, CodeLens, Command, ReferenceParams, Position } from "vscode-languageserver";
+import { TextDocumentIdentifier, CodeLens, Command, ReferenceParams, Position, Location } from "vscode-languageserver";
 import { LSPDeclarationRegistry } from "../registry/declaration-registry/lsp-declaration-registry";
 import { LSPReferenceRegistry } from "../registry/references-registry/lsp-references-registry";
 import { DeclarationType, BaseDeclaration } from "bella-grammar";
@@ -84,24 +84,37 @@ export class CodeLensHandler extends BaseHandler {
         return codeLensResult;
     }
 
+    public resolveDeclaration(uri: string, declaration: BaseDeclaration, parentDeclaration?: BaseDeclaration): LocatedBellaReference[] {
+        let query = this.generateResolutionQuery(declaration, uri, parentDeclaration);
+        let references = this.refRegistry.getReferencesForQuery(query);
+        return references;
+    }
+
     public resolve(codeLens: CodeLens) {
         let { uri, declaration, parentDeclaration }: CodeLensPayload = (codeLens.data as CodeLensPayload);
-
-
-        let query = this.generateResolutionQuery(declaration, uri, parentDeclaration);
-        let refs = this.refRegistry.getReferencesForQuery(query);
-
-        let target = uri; //URI.parse(uri);
-        let command = {
-            title: this.getCodeLensLabel(refs),
-            command: 'editor.action.showReferences',//'vscode.executeReferenceProvider',
-            arguments: [
-                target,
-                CommonUtils.position(declaration.range.startPosition),
-                ReferenceFactoryMethods.toLSPLocations(refs)
-            ]
-        };
-        codeLens.command = command;
+        if(declaration.type === DeclarationType.Procedure) {
+            let refs = this.resolveDeclaration(uri, declaration, parentDeclaration);
+            let target = uri; //URI.parse(uri);
+            let command = {
+                title: this.getCodeLensLabel(refs),
+                command: 'editor.action.showReferences',//'vscode.executeReferenceProvider',
+                arguments: [
+                    target,
+                    CommonUtils.position(declaration.range.startPosition),
+                    ReferenceFactoryMethods.toLSPLocations(refs)
+                ]
+            };
+            codeLens.command = command;
+        }else {
+            let command = {
+                title: "Go To References",
+                command: 'bella.findReferencesLazy',//'vscode.executeReferenceProvider',
+                arguments: [
+                    codeLens.data
+                ]
+            };
+            codeLens.command = command;
+        }
         return codeLens;
     }
 
@@ -116,14 +129,6 @@ export class CodeLensHandler extends BaseHandler {
     private generateResolutionQuery(declaration: BaseDeclaration, uri: string, parentDeclaration?: BaseDeclaration ): ReferencesRegistrySearchQuery {
         let queryExtension;
         let namespace = CommonUtils.getNamespaceFromURI(uri);
-        // if (namespace === CommonUtils.SHARED_NAMESPACE_NAME) {
-        //     //TODO: this is convention to speed things up, consider fallback with global search
-        //     // let namespaces = uniq(
-        //     //     this.cache.keys()
-        //     //         .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace || ''));
-        //     namespace = CommonUtils.extractComponentNameFromUrl(uri);
-        // }
-
         let baseQuery = {
             uriFilter: {
                 active: false
@@ -188,7 +193,7 @@ export class CodeLensHandler extends BaseHandler {
     }
 }
 
-interface CodeLensPayload {
+export interface CodeLensPayload {
     parentDeclaration?: BaseDeclaration;
     declaration: BaseDeclaration;
     uri: string;

@@ -34,6 +34,11 @@ function registerCommands(context: ExtensionContext) {
 	context.subscriptions.push(
 		commands.registerCommand('bella.makeServerSnapshot',
 			async () => (client as LanguageClient).sendNotification("parser/make-snapshot")));
+	context.subscriptions.push(
+		commands.registerCommand('bella.findReferencesLazy', async (payload)=> {
+			// console.log('[bella.findReferences]', payload);
+			(client as LanguageClient).sendNotification("core/findReferences", payload);
+		}));
 }
 
 function registerServer(context: ExtensionContext) {
