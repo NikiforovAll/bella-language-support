@@ -103,6 +103,16 @@ export function registerLanguageFeatures(context: vscode.ExtensionContext): Lang
             }
             let success = vscode.commands.executeCommand('editor.action.showReferences', ...transformedArgs);
         });
+        client.onNotification("core/goToDeclarationCallback", (...payload) => {
+
+            // let transformedArgs = ClientUtils.transformPayloadToGoToServiceDeclaration(payload);
+            let transformedArgs = ClientUtils.transformPayloadToShowReferences(payload);
+            if((transformedArgs[2] as any[]).length === 0) {
+                vscode.window.showInformationMessage('Bella: [Go To Declaration]: no declarations found');
+            }
+            // vscode.window.showInformationMessage('Bella: [Go To Declaration]');
+            let success = vscode.commands.executeCommand('editor.action.showReferences', ...transformedArgs);
+        });
 
     });
     return client;
@@ -140,5 +150,4 @@ function createWebSocketListener(): vscode.OutputChannel {
     };
     return websocketOutputChannel;
 }
-
 

@@ -56,6 +56,13 @@ export class LSPDeclarationRegistry {
         });
     }
 
+    /**
+     * Used to search declaration in a file
+     * @param name declaration name
+     * @param type declaration type
+     * @param sourceUri uri of file
+     * @param descendantQuery find descendants query
+     */
     public getLSPDeclarationsForNameAndType(
         name: string, type: DeclarationType,
         sourceUri: string,
@@ -151,6 +158,12 @@ export class LSPDeclarationRegistry {
                 if (registry?.namespace !== CommonUtils.SHARED_NAMESPACE_NAME && query.namespaceFilter?.active &&
                     registry?.namespace !== query.namespaceFilter.namespace) {
                     continue;
+                }
+
+                if(query.namespaceFilter?.active
+                    && !!query.namespaceFilter.componentName
+                    && query.namespaceFilter.componentName.indexOf(registry.componentName) === -1){
+                        continue;
                 }
                 result.push(...registry.getDeclarations(query));
             }

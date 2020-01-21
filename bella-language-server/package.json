@@ -7,7 +7,7 @@
   "repository": {
     "url": "http://gitlab.hysdev.com/alexey.nikiforov/bella-language-support"
   },
-  "version": "0.3.1",
+  "version": "0.3.2",
   "engines": {
     "vscode": "^1.40.0"
   },
@@ -102,6 +102,10 @@
       {
         "command": "bella.findReferencesLazy",
         "title": "Bella[Core]: Find References (Lazy)"
+      },
+      {
+        "command": "bella.goToDeclarationLazy",
+        "title": "Bella[Core]: Go To Declaration (Lazy)"
       }
     ]
   },

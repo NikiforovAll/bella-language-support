@@ -20,4 +20,14 @@ export namespace ClientUtils{
         ]
         return newArgs;
     }
+
+    // export function transformPayloadToGoToServiceDeclaration(oldArgs: any[]) {
+    //     let fixedUri = vscode.Uri.parse(oldArgs[0]);
+    //     let serviceDeclaration = oldArgs[1];
+    //     let newArgs = [
+    //         fixedUri,
+    //         serviceDeclaration
+    //     ];
+    //     return newArgs;
+    // }
 }

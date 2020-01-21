@@ -21,6 +21,8 @@ export interface NodeRegistrySearchQuery {
 
     namespaceFilter?: {
         namespace: string;
+        //namespace subdivision as component name
+        componentName?: string
     } & Activatable
 
     nameFilter?: {

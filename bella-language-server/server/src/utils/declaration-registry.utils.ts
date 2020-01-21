@@ -30,7 +30,9 @@ export namespace DeclarationRegistryUtils {
             };
             return result;
         });
-        let registry = new DeclarationRegistryNode(dict, CommonUtils.getNamespaceFromURI(uri));
+        let namespace = CommonUtils.getNamespaceFromURI(uri);
+        let componentName = namespace === CommonUtils.SHARED_NAMESPACE_NAME ? CommonUtils.extractComponentNameFromUrl(uri) : namespace
+        let registry = new DeclarationRegistryNode(dict,namespace, componentName);
         registry.setOverloads(overloads);
         return registry;
     }

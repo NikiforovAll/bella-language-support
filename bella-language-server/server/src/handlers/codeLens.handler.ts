@@ -2,7 +2,7 @@ import { BaseHandler } from "./base.handler";
 import { TextDocumentIdentifier, CodeLens, Command, ReferenceParams, Position, Location } from "vscode-languageserver";
 import { LSPDeclarationRegistry, KeyedDeclaration } from "../registry/declaration-registry/lsp-declaration-registry";
 import { LSPReferenceRegistry } from "../registry/references-registry/lsp-references-registry";
-import { DeclarationType, BaseDeclaration } from "bella-grammar";
+import { DeclarationType, BaseDeclaration, Range} from "bella-grammar";
 import { CommonUtils } from "../utils/common.utils"
 import { ReferencesRegistrySearchQuery } from "../registry/references-registry/references-registry-query";
 import { URI } from 'vscode-uri'
@@ -35,57 +35,56 @@ export class CodeLensHandler extends BaseHandler {
 
             let lensCollection = this.createCodeLens(
                 declaration,
+                declaration.range,
                 CodeLensResolutionType.FindReferences,
                 docUri.uri);
             if(declaration.members) {
                 let childMembersLensCollection = declaration.members
                     .filter(d => supportedCodeLensDeclarations.includes(d.type))
-                    .map(d => this.createCodeLens(d, CodeLensResolutionType.FindReferences, docUri.uri, declaration));
+                    .map(d => this.createCodeLens(d, d.range, CodeLensResolutionType.FindReferences, docUri.uri, declaration));
                 codeLensResult.push(...childMembersLensCollection);
             }
             codeLensResult.push(lensCollection);
         }
-        // TODO: also register tokens for go to service command
-        for (const procedureDeclaration of declarations.filter(d=>d.type === DeclarationType.Procedure)) {
-            let query: NodeRegistrySearchQuery = {
-                uriFilter: {
-                    active: false
-                },
-                namespaceFilter: {
-                    active: true,
-                    namespace: CommonUtils.SHARED_NAMESPACE_NAME
-                },
-                typeFilter: {
-                    active: true,
-                    type: DeclarationType.Service
-                },
-                descendantsFilter: {
-                    active: true,
-                    discardParent: true,
-                    query: {
-                        uriFilter: {
-                            active: false
-                        },
-                        typeFilter: {
-                            active: true,
-                            type: DeclarationType.ServiceEntry
-                        },
-                        nameFilter: {
-                            active: true,
-                            name: CommonUtils.getProcedureTruncatedName(procedureDeclaration.name)
-                        }
+        let query: NodeRegistrySearchQuery = {
+            uriFilter: {
+                active: false
+            },
+            namespaceFilter: {
+                active: true,
+                namespace: CommonUtils.SHARED_NAMESPACE_NAME,
+                componentName: CommonUtils.getNamespaceFromURI(docUri.uri)
+
+            },
+            typeFilter: {
+                active: true,
+                type: DeclarationType.Service
+            },
+            descendantsFilter: {
+                active: true,
+                discardParent: true,
+                query: {
+                    uriFilter: {
+                        active: false
+                    },
+                    typeFilter: {
+                        active: true,
+                        type: DeclarationType.ServiceEntry
                     }
                 }
             }
-            let symbols = this.declarationRegistry.getDeclarationsForQuery(query)
-            symbols
-                .filter((serviceEntry: KeyedDeclaration) =>
-                    CommonUtils.extractComponentNameFromUrl(serviceEntry.uri) === CommonUtils.getNamespaceFromURI(docUri.uri)
+        }
+        let symbols = this.declarationRegistry.getDeclarationsForQuery(query)
+        for (const procedureDeclaration of declarations.filter(d=>d.type === DeclarationType.Procedure)) {
+            symbols.filter((serviceEntry: KeyedDeclaration) =>
+                    // CommonUtils.extractComponentNameFromUrl(serviceEntry.uri) === CommonUtils.getNamespaceFromURI(docUri.uri) &&
+                    serviceEntry.name === CommonUtils.getProcedureTruncatedName(procedureDeclaration.name)
                 )
                 .forEach((serviceEntry: KeyedDeclaration)=>{
                 codeLensResult.push(
                     this.createCodeLens(
-                        procedureDeclaration,
+                        serviceEntry,
+                        procedureDeclaration.range,
                         CodeLensResolutionType.GoToService,
                         procedureDeclaration.uri
                     ))});
@@ -100,16 +99,22 @@ export class CodeLensHandler extends BaseHandler {
     }
 
     public resolve(codeLens: CodeLens) {
-        let { type }: CodeLensPayload = (codeLens.data as CodeLensPayload);
+        let { type, declaration, uri }: CodeLensPayload = (codeLens.data as CodeLensPayload);
         switch (type) {
             case CodeLensResolutionType.FindReferences:
                 this.resolveReferenceDeclaration(codeLens, codeLens.data);
                 break;
             case CodeLensResolutionType.GoToService:
                 codeLens.command = {
-                    command: '',
-                    title: 'service contract'
+                    // command: 'editor.action.goToImplementation',
+                    // command: 'editor.action.peekDefinition',
+                    command: 'bella.goToDeclarationLazy',
+                    title: 'service contract',
+                    arguments: [
+                        codeLens.data
+                    ]
                 }
+                break;
             default:
                 break;
         }
@@ -248,6 +253,7 @@ export class CodeLensHandler extends BaseHandler {
 
     private createCodeLens(
         declaration: BaseDeclaration,
+        range: Range,
         type: CodeLensResolutionType,
         uri: string,
         parentDeclaration?: BaseDeclaration) {
@@ -260,7 +266,7 @@ export class CodeLensHandler extends BaseHandler {
                 type: parentDeclaration.type
             }
         }
-        return CodeLens.create(CommonUtils.range(declaration.range), payload);
+        return CodeLens.create(CommonUtils.range(range), payload);
     }
 }
 

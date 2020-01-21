@@ -17,4 +17,11 @@ export namespace DeclarationFactoryMethods {
             declaration.parentName
         )
     }
+
+    export function toLSPLocation(declaration: KeyedDeclaration): LSP.Location {
+        return {
+            range: CommonUtils.range(declaration.range),
+            uri: declaration.uri
+        };
+    }
 }

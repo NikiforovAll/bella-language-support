@@ -10,6 +10,8 @@ import { SnapshotHandler } from './handlers/snapshot.handler';
 import { CodeLensHandler, CodeLensPayload } from './handlers/codeLens.handler';
 import { CommonUtils } from './utils/common.utils';
 import { ReferenceFactoryMethods } from './factories/reference.factory';
+import { DeclarationFactoryMethods } from './factories/declaration.factory';
+import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
 
 
 /**
@@ -73,6 +75,7 @@ export default class BellaServer {
 		connection.onReferences(this.onReferences.bind(this))
 		connection.onNotification("parser/make-snapshot", this.onMakeSnapshot.bind(this));
 		connection.onNotification("core/findReferences", this.onLazyReferences.bind(this));
+		connection.onNotification("core/goToDeclaration", this.onLazyDeclaration.bind(this));
 		connection.onCodeLens(this.onCodeLens.bind(this));
 		connection.onCodeLensResolve(this.onCodeLensResolve.bind(this));
 		// connection.onCompletion(this.onCompletion.bind(this))
@@ -151,6 +154,16 @@ export default class BellaServer {
 			ReferenceFactoryMethods.toLSPLocations(refs)
 		]
 		this.connection.sendNotification("core/showReferencesCallback", referencesResult);
+	}
+
+	private onLazyDeclaration(payload: CodeLensPayload) {
+		let { uri, declaration }: CodeLensPayload = (payload as CodeLensPayload);
+		let referencesResult = [
+			uri,
+			CommonUtils.position(declaration.range.startPosition),
+			[DeclarationFactoryMethods.toLSPLocation((declaration as KeyedDeclaration))]
+		]
+		this.connection.sendNotification("core/goToDeclarationCallback", referencesResult);
 	}
 
 	private static initializeParser() {

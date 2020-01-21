@@ -39,6 +39,11 @@ function registerCommands(context: ExtensionContext) {
 			// console.log('[bella.findReferences]', payload);
 			(client as LanguageClient).sendNotification("core/findReferences", payload);
 		}));
+	context.subscriptions.push(
+		commands.registerCommand('bella.goToDeclarationLazy', async (payload)=> {
+			// console.log('[bella.findReferences]', payload);
+			(client as LanguageClient).sendNotification("core/goToDeclaration", payload);
+		}));
 }
 
 function registerServer(context: ExtensionContext) {
