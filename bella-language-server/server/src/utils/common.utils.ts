@@ -9,6 +9,10 @@ export namespace CommonUtils {
         return uri;
     }
 
+    /**
+     * Looks for COMPONENT_FOLDER and get component name as namespace
+     * @param uri source URI to process
+     */
     export function getNamespaceFromURI(uri: string): string {
         // TODO: CRITICAL add functionally to get this token from configuration passed by client
         // getWorkspaceInformation() but for server
@@ -46,6 +50,11 @@ export namespace CommonUtils {
         return truncatedName;
     }
 
+    /**
+     * Extracts name of component from 'common' uri
+     * @param sourceUri uri to process
+     * @param namespaces whitelist of possible URIs
+     */
     export  function extractComponentNameFromUrl(sourceUri: string, namespaces?: string[]): string {
         // we are in common file, need to look for namespace
         let getComponentName = (uri: string): string => {

@@ -10,6 +10,7 @@ export interface NodeRegistrySearchQuery {
         type: DeclarationType,
     } & Activatable
 
+    // flattens descendants to search result
     descendantsFilter?: {
         query?: NodeRegistrySearchQuery
         // if
