@@ -19,28 +19,6 @@ export class CodeLensHandler extends BaseHandler {
 
     public getCodeLens(docUri: TextDocumentIdentifier): CodeLens[] {
         let codeLensResult = [];
-        // let declarations = this.executeQueries(
-        //     {
-        //         uriFilter: {
-        //             active: true,
-        //             uri: docUri.uri
-        //         },
-        //         typeFilter: {
-        //             active: true,
-        //             type: DeclarationType.Procedure
-        //         }
-        //     },
-        //     {
-        //         uriFilter: {
-        //             active: true,
-        //             uri: docUri.uri
-        //         },
-        //         typeFilter: {
-        //             active: true,
-        //             type: DeclarationType.ServiceEntry
-        //         }
-        //     }
-        // )
         let supportedCodeLensDeclarations = [
             DeclarationType.Procedure,
             DeclarationType.ServiceEntry,
@@ -76,9 +54,9 @@ export class CodeLensHandler extends BaseHandler {
                     ));
                 codeLensResult.push(...childMembersLensCollection);
             }
-            if(declaration.type === DeclarationType.Service) {
-                continue;
-            }
+            // if(declaration.type === DeclarationType.Service) {
+            //     continue;
+            // }
             codeLensResult.push(lensCollection);
         }
         return codeLensResult;
@@ -92,27 +70,48 @@ export class CodeLensHandler extends BaseHandler {
 
     public resolve(codeLens: CodeLens) {
         let { uri, declaration, parentDeclaration }: CodeLensPayload = (codeLens.data as CodeLensPayload);
+        let command;
+        switch (declaration.type) {
+            case DeclarationType.Procedure:
+                let refs = this.resolveDeclaration(uri, declaration, parentDeclaration);
+                let target = uri;
+                command = {
+                    title: this.getCodeLensLabel(refs),
+                    command: 'editor.action.showReferences',
+                    arguments: [
+                        target,
+                        CommonUtils.position(declaration.range.startPosition),
+                        ReferenceFactoryMethods.toLSPLocations(refs)
+                    ]
+                };
+
+                break;
+            case DeclarationType.Service:
+                command = {
+                    title: "Go To All References",
+                    command: 'bella.findReferencesLazy',
+                    arguments: [
+                        codeLens.data
+                    ]
+                };
+                break;
+            case DeclarationType.ServiceEntry:
+                command = {
+                    title: "Go To References",
+                    command: 'bella.findReferencesLazy',
+                    arguments: [
+                        codeLens.data
+                    ]
+                };
+                break;
+            default:
+                throw "Unable to resolve codeLens - Not supported CodeLens type"
+        }
+        codeLens.command = command;
         if(declaration.type === DeclarationType.Procedure) {
-            let refs = this.resolveDeclaration(uri, declaration, parentDeclaration);
-            let target = uri; //URI.parse(uri);
-            let command = {
-                title: this.getCodeLensLabel(refs),
-                command: 'editor.action.showReferences',//'vscode.executeReferenceProvider',
-                arguments: [
-                    target,
-                    CommonUtils.position(declaration.range.startPosition),
-                    ReferenceFactoryMethods.toLSPLocations(refs)
-                ]
-            };
-            codeLens.command = command;
+
         }else {
-            let command = {
-                title: "Go To References",
-                command: 'bella.findReferencesLazy',//'vscode.executeReferenceProvider',
-                arguments: [
-                    codeLens.data
-                ]
-            };
+
             codeLens.command = command;
         }
         return codeLens;
@@ -135,7 +134,6 @@ export class CodeLensHandler extends BaseHandler {
             }
         }
         switch (declaration.type) {
-
             case DeclarationType.Procedure:
                 let declarationName = CommonUtils.getProcedureTruncatedName(declaration.name);
                 queryExtension = {
@@ -149,6 +147,22 @@ export class CodeLensHandler extends BaseHandler {
                     },
                     namespaceFilter: {
                         active: true,
+                        namespace
+                    }
+                }
+                break;
+            case DeclarationType.Service:
+                queryExtension = {
+                    nameFilter: {
+                        active: true,
+                        name: declaration.name
+                    },
+                    typeFilter: {
+                        active: true,
+                        type: declaration.type
+                    },
+                    namespaceFilter: {
+                        active: false,
                         namespace
                     }
                 }

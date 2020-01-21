@@ -17,3 +17,4 @@ enum TestEnum
 
 service UniqueService
     DoSomethingUnique(Test3)
+    DoSomethingUnique2(Test3)
