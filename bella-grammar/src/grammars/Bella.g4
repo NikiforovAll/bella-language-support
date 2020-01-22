@@ -214,7 +214,7 @@ expression
         |   '<<='
         |   '%='
         )
-        expression
+        (invocationStatement | expression)
     | (Identifier | PrimitiveType | Error)
     ;
 

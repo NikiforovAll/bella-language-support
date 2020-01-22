@@ -67,7 +67,7 @@ export namespace CommonUtils {
         };
         let componentName = getComponentName(sourceUri);
         if(!namespaces) {
-            console.log('extractComponentNameFromUrl. Skipping namespace validation (namespace might be not from subset)')
+            // console.log('extractComponentNameFromUrl. Skipping namespace validation (namespace might be not from subset)')
             return componentName;
         }
         let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))

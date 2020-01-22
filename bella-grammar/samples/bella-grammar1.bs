@@ -22,4 +22,9 @@
 //    With(DunningProcessesHistory.activeDunningProcesses
 //            .FirstOrDefault(x => x.invoiceIds.Contains(InvoiceId), empty))
 
-InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
+//InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
+
+procedure ExampleMethod(Test1)
+    LogInfo(123)
+    call Method2(Test1)
+    TestDataHolder ++= UniqueService.DoSomethingUnique2()

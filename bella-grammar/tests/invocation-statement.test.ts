@@ -59,3 +59,18 @@ procedure CrmPortalGetServiceAccountDetails(AccountId, ServiceAccountId, out Ser
     });
 });
 
+describe("invocation-statement-references-complex", () => {
+    it("should return refs to service and external method", () => {
+        let input = `
+procedure ExampleMethod(Test1)
+    LogInfo(123)
+    TestDataHolder ++= UniqueService.DoSomethingUnique2()
+`;
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
+        visitor.visit(tree);
+        let refs2 = visitor.references.filter(r => r.referenceTo === DeclarationType.Service);
+        expect(refs2).to.have.lengthOf(1);
+    });
+});
+
