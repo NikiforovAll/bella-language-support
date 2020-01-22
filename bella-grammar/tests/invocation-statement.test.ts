@@ -19,7 +19,8 @@ procedure TryStartDunning(InvoiceProcessingRequest, CurrentDateTime)
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
         visitor.visit(tree);
         let refs2 = visitor.references.filter(r => r.referenceTo === DeclarationType.Service);
-        expect(refs2).to.have.lengthOf(1);
+        //ambiguity with reference
+        expect(refs2).to.have.lengthOf(2);
         // let refs = visitor.references.filter(r => r.referenceTo === DeclarationType.Procedure && !r.isDeclaration);
         // expect(refs).to.have.lengthOf(1);
     });
