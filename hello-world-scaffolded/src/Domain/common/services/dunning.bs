@@ -1,0 +1,51 @@
+service DunningService
+    GetAllActiveDunningProcessesByAccountIdAndServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):DunningProcesses
+    GetAllClosedDunningProcessesByAccountIdAndServiceAccountId(accountId:AccountId, serviceAccountId:ServiceAccountId):DunningProcesses
+    StopDunningProcess(accountId:AccountId, serviceAccountId:ServiceAccountId, dunningProcessId:DunningProcessId, closedOn:ClosedOn)
+    GetPotentialInvoiceOverviewsByServiceAccountId(serviceAccountId:ServiceAccountId):InvoiceOverviews
+    GetAllInvoiceOverviews():InvoiceOverviews
+    RunDunning(currentDateTime:CurrentDateTime) oneway
+    GetDunningBlockStateCollectionForInvoices(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceIds:InvoiceIds):InvoiceDunningBlockStateCollection
+
+    GetDunningBlocksForInvoice(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceId:InvoiceId):DunningBlocks
+    GetDunningBlocksForServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId):DunningBlocks
+    AddDunningBlockToInvoice(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceId:InvoiceId, dunningBlockCreationRequest:DunningBlockCreationRequest)
+    StopInvoiceDunningBlock(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceId:InvoiceId, dunningBlockId:DunningBlockId, stoppedBy:StoppedBy)
+    StopServiceAccountDunningBlock(accountId:AccountId, serviceAccountId:ServiceAccountId, dunningBlockId:DunningBlockId, stoppedBy:StoppedBy)
+    GetDunningBlockReasons():FinancialBlockReasonCollection
+    StartAndCancelEndOfSupply(currentDateTime:CurrentDateTime) oneway
+    GetProcessesByAccountId(accountId:AccountId):Processes
+    GetProcessesForServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId):Processes
+    GetDunningLevelForInvoice(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceId:InvoiceId):Integer
+    InitiateQuestPlusReportEntriesRetrieval(currentDateTime:CurrentDateTime)
+    ReSendMtpReminderForDunningProcesses(dunningProcessIds:DunningProcessIds)
+
+
+service DunningServiceAsync
+    ProcessInvoice(request:InvoiceProcessingRequest, CurrentDateTime)
+    UpdateServiceAccount(serviceAccountDunningPart:ServiceAccountDunningPart)
+    ProcessDunningInvoiceGenerationResult(result:DunningInvoiceGenerationResult)
+    ProcessDunningInvoiceRecreationRequest(dunningInvoiceRecreationRequest:DunningInvoiceRecreationRequest)
+    IdentifyEntities(clearanceEntityIdentificationRequests:ClearanceEntityIdentificationRequests)
+    ConfirmInvoiceDunningBlockCreationRequest(accountId:AccountId, serviceAccountId:ServiceAccountId, invoiceId:InvoiceId, correlationId:CorrelationId)
+    InitiateQuestPlusReportEntriesRetrieval(currentDateTime:CurrentDateTime)
+    UpdateServiceAccounts(serviceAccountDunningParts:ServiceAccountDunningPartCollection)
+    AddDunningBlockToServiceAccount(accountId:AccountId, serviceAccountId:ServiceAccountId, dunningBlockCreationRequest:DunningBlockCreationRequest)
+    AddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
+    SendEndOfSupplyPaymentRequest(AccountId, ServiceAccountId, DueDate)
+
+service DunningComponentMigrationTestApi
+    GetCountOfAllOpenDunningProcesses():AllOpenDunningProcessesCount
+    GetCountOfAllClosedDunningProcesses():AllClosedDunningProcessesCount
+    GetCountOfAllDunningProcessesWithLevel(dunningLevelNum:DunningLevelNum):AllDunningProcessesWithLevelCount
+    GetLeftToPayOfAllOpenDunningProcesses():LeftToPayOfAllOpenDunningProcesses
+    GetLeftToPayOfAllDunningProcessesWithLevel(dunningLevelNum:DunningLevelNum):LeftToPayOfAllDunningProcessesWithLevel
+    GetCountOfInvoicesInAllDunningProcesses():InvoicesInAllDunningProcessesCount
+    GetIdOfRandomDunningProcess():RandomDunningProcessId
+    GetDunningProcessById(dunningProcessId:DunningProcessId):DunningProcess
+
+
+service DunningServiceTestApi
+    RemoveServiceAccountDunningPart(serviceAccountId:ServiceAccountId)
+    FixMigratedDunningBlocks()
+    RemoveDunningProcessesForDeletedInvoices()

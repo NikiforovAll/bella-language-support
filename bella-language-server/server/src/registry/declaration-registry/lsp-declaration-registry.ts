@@ -162,7 +162,7 @@ export class LSPDeclarationRegistry {
 
                 if(query.namespaceFilter?.active
                     && !!query.namespaceFilter.componentName
-                    && query.namespaceFilter.componentName.indexOf(registry.componentName) === -1){
+                    && query.namespaceFilter.componentName.toLowerCase().indexOf(registry.componentName.toLowerCase()) === -1){
                         continue;
                 }
                 result.push(...registry.getDeclarations(query));

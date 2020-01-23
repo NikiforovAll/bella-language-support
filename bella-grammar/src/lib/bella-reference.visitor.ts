@@ -86,7 +86,11 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     // TODO: this implementation doesn't not include formulas calculated on expressions TBD
     visitInvocationStatement(context: InvocationStatementContext): BellaReference[] {
-        const baseContainer = this.visitTypeLocal(context.type())[0];
+        let typeContext = context.type();
+        if(!typeContext) {
+            return [];
+        }
+        const baseContainer = this.visitTypeLocal(typeContext)[0];
         baseContainer.referenceTo = DeclarationType.Service;
         let invocationExpression = this.visitGenericInvocationLocal(context.genericInvocation())[0];
         let container: BellaAmbiguousReference & BellaNestedReference = {

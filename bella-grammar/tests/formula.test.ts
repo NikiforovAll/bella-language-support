@@ -1,4 +1,4 @@
-import { BellaLanguageSupport, ProcedureDeclaration, FormulaDeclaration } from "../src/lib/index";
+import { BellaLanguageSupport, ProcedureDeclaration, FormulaDeclaration, ThrowingErrorListener, BellaErrorStrategy } from "../src/lib/index";
 import { expect, assert } from "chai";
 import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 import { BellaReferenceVisitor } from "../src/lib/bella-reference.visitor";
@@ -95,3 +95,26 @@ formula GetDutchMonthName(Integer):String = if(Integer == 1, "januari",
         expect(declarations).to.have.lengthOf(8);
     });
 });
+describe("formula-declaration-inline-expression", () => {
+    it("should return parsed formula", () => {
+        let input = `
+formula IsLevelTransitionPossible(DunningProcess, DateTime, Calendar):Boolean =
+    !DunningProcess.IsLocked() &&
+        DateTime.Date() >= DunningProcess.lastActionDateTime.AddDelays
+            (
+                DunningProcess.currentDunningLevel.expirationDelays,
+                Calendar
+            ).Date()`;
+
+        // let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
+        let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        expect(declarations).to.have.lengthOf(1);
+        // let [ d1, d2 ] = declarations as FormulaDeclaration[];
+        // expect(d1.name).to.equal('ToProcessName(Flow):ProcessName', 'declaration is parsed incorrectly');
+        // expect(d2.name).to.equal('ToProcessName(Order):ProcessName', 'declaration of simple object is parsed incorrectly');
+    });
+});
+

@@ -27,6 +27,7 @@ export namespace CommonUtils {
             const componentPath = uri.substr(pos + sourceCodeLocation.length, uri.length - pos);
             result = componentPath.substr(0, componentPath.indexOf(componentDelimiter));
         }
+        result = result.toLowerCase();
         return result;
     }
 
@@ -62,7 +63,8 @@ export namespace CommonUtils {
             let servicePart = uri.substring(
                 uri.lastIndexOf(identificationToken) + identificationToken.length + 1);
             var lastIndex = servicePart.search(/[^0-9A-Za-z]+/);
-            let result = servicePart.substring(0, lastIndex);
+            let result = servicePart.substring(0, lastIndex)
+                .toLowerCase();
             return result;
         };
         let componentName = getComponentName(sourceUri);
@@ -70,7 +72,8 @@ export namespace CommonUtils {
             // console.log('extractComponentNameFromUrl. Skipping namespace validation (namespace might be not from subset)')
             return componentName;
         }
-        let targetNamespace = namespaces.find(namespace => namespace?.includes(componentName))
+        let targetNamespace = namespaces
+            .find(namespace => namespace?.includes(componentName))
         if (!targetNamespace) {
             return CommonUtils.SHARED_NAMESPACE_NAME;
         }

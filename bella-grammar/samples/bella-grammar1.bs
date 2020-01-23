@@ -24,7 +24,6 @@
 
 //InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
 
-procedure ExampleMethod(Test1)
-    LogInfo(123)
-    call Method2(Test1)
-    TestDataHolder ++= UniqueService.DoSomethingUnique2()
+
+service Test
+    SeedAddFutureConnectionId(orderId:OrderId, external:ExternalId)
