@@ -171,8 +171,9 @@ propertyAccessor
     ;
 
 expression
-    :   literal
-    |   LPAREN expression RPAREN
+    :   LPAREN expression RPAREN
+    |   expression RANGE expression
+    |   literal
     |   expression DOT (Identifier | PrimitiveType | Error | HOSTED)
     // |   expression DOT explicitGenericInvocation
     |   expression LBRACK expression RBRACK
@@ -181,7 +182,6 @@ expression
     |   New expression
     |   expression As type
     |   expression Is Not? (type | literal)
-    |   expression RANGE expression
     |   expression In expression
     //cover the case with collection modifier
     |   expression ('++' | '--') expression?
@@ -485,8 +485,8 @@ NonZeroDigit
 
 fragment
 DecimalFloatingPointLiteral
-    :   Digits '.' Digits? ExponentPart?
-    |   '.' Digits ExponentPart?
+    :   Digits '.' Digits+ ExponentPart?
+    //|   '.' Digits ExponentPart?
     |   Digits ExponentPart
     |   Digits
     ;

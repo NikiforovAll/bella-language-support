@@ -189,7 +189,12 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
 
     // local declarations
     visitObjectFieldDeclarationLocal(context: ObjectFieldDeclarationContext): SimpleObjectDeclaration {
-        let name = context.Identifier()?.text || context.PrimitiveType()?.text || context.Error()?.text;
+        let name =
+            context.Identifier()?.text ||
+            context.PrimitiveType()?.text ||
+            context.Error()?.text ||
+            context.generalSignature()?.text
+        ;
         if(!name) {
             throw new Error("visitObjectFieldDeclarationLocal: unknown token");
         }

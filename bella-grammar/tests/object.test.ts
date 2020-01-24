@@ -2,7 +2,8 @@ import {
     BellaLanguageSupport,
     SimpleObjectDeclaration,
     CompositeObjectDeclaration,
-    ObjectBase } from "../src/lib/index";
+    ObjectBase,
+    ThrowingErrorListener} from "../src/lib/index";
 import { expect, assert } from "chai";
 import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 describe("object-declaration", () => {
@@ -72,6 +73,21 @@ object Account
         expect(f1.returnType).to.have.property('objectBase', ObjectBase.Alias);
         expect(f2.returnType).to.have.property('objectBase', ObjectBase.Alias);
         expect(f3.returnType).to.have.property('objectBase', ObjectBase.Alias);
+    });
+});
+
+describe("object-declaration-composite-with-multi-line-expression", () => {
+    it("should return parsed composite object", () => {
+        let input = `
+object Test
+    getNextDunningLevel():DunningLevel = if(dunningProcessTemplate.dunningLevelByOrder.ContainsKey(currentDunningLevel.order + 1),
+            dunningProcessTemplate.dunningLevelByOrder[currentDunningLevel.order + 1],
+            empty)`;
+        let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        expect(declarations).to.have.lengthOf(1);
     });
 });
 
