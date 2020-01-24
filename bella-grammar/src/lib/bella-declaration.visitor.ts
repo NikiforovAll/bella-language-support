@@ -193,6 +193,8 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
             context.Identifier()?.text ||
             context.PrimitiveType()?.text ||
             context.Error()?.text ||
+            context.HOSTED()?.text ||
+            context.SERVICE()?.text ||
             context.generalSignature()?.text
         ;
         if(!name) {

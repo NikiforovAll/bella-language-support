@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BellaErrorStrategy, BellaLanguageSupport, ProcedureDeclaration } from '../src/lib';
+import { BellaErrorStrategy, BellaLanguageSupport, ProcedureDeclaration, ThrowingErrorListener } from '../src/lib';
 import { BellaDeclarationVisitor } from '../src/lib/bella-declaration.visitor';
 
 
@@ -41,6 +41,20 @@ describe("procedure-declaration-generic-specific", () => {
         let input = `hosted procedure Test1(T1, out T2)`;
         // let tree = BellaLanguageSupport.parse(input);
         let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations ;
+        expect(declarations).to.have.lengthOf(1);
+    });
+});
+describe("procedure-declaration-generic-specific", () => {
+    it("should return parsed generic/specific procedure", () => {
+        let input = `
+onfirstrun procedure InitializeManualExcassoIbans
+    ManualExcassoIbans = new
+    `;
+        // let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
         let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations ;
@@ -93,7 +107,7 @@ procedure SaveGlEvent(GlEvent, SourceCreationDate)
 });
 
 describe("procedure-declaration-fairly-complex", () => {
-    it("should return parsed procedure body", () => {
+    it("should return parsed procedure body - complex", () => {
         let input = `
 procedure CrmPortalGetFilteredPagedEmployeeAccounts(CrmEmployeeFilterDto, PageNumber, PerPage, out PagedEmployeeAccountsDto)
 call NormalizeFilter(CrmEmployeeFilterDto)
@@ -161,10 +175,22 @@ procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionReq
             else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
                 SubscribedBundlesPerProduct.tvBundles = Bundles
             else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
-                SubscribedBundlesPerProduct.voipBundles = Bundles`;
+                SubscribedBundlesPerProduct.voipBundles = Bundles
+procedure GetTaskForEmployee(AccountId, out BaseTask)
+    call GetCurrentTaskForEmployee(AccountId, out BaseTask)
+    if IsEmpty(BaseTask)
+        call GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+        let ExcludedTasks = ExcludeListForTaskPostponingPerUser[AccountId]
+        BaseTask = TaskCatalog.Where(t => t.status == TaskStatus.Open && t.requiredSkill in TaskSkillList && t.id not in ExcludedTasks).OrderBy(t => t.createdOn).FirstOrDefault(true, empty)
 
-        let tree = BellaLanguageSupport.parse(input);
-        // let tree = BellaLanguageSupport.parseWithErrorStrategy(input, new BellaErrorStrategy());
+        if !IsEmpty(BaseTask)
+            call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PutTaskInProgress, AccountId)
+generic procedure UpdateOrderInfo(UpdateOrderRequest, out BaseOrderResponse)
+    BaseOrderResponse = new
+    error [GenericObjectPassed] "You've passed generic UpdateOrderRequest object. Try specific one (UpdateOrderCustomerDataRequest, etc.)"`;
+
+        // let tree = BellaLanguageSupport.parse(input);
+        let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
         let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
         visitor.visit(tree);
         let declarations = visitor.declarations;

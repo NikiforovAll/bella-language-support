@@ -56,7 +56,7 @@ objectBody
     ;
 objectFieldDeclaration
     // TODO: BUG, keywords are excluded from declarations because of this need better approach on identifier definition
-    : (Identifier | PrimitiveType | Error | HOSTED) COLON type (objectFieldDeclarationRest)
+    : (Identifier | PrimitiveType | Error | HOSTED | SERVICE) COLON type (objectFieldDeclarationRest)
     | generalSignature COLON type (objectFieldDeclarationRest)
     ;
 
@@ -72,7 +72,7 @@ enumDeclaration
     ;
 
 enumBody
-    :   ((Identifier | PrimitiveType | Error | HOSTED) (ASSIGN literal)*)+
+    :   ((Identifier | PrimitiveType | Error | HOSTED | SERVICE) (ASSIGN literal)*)+
     ;
 
 serviceDeclaration
@@ -98,13 +98,14 @@ procedureDeclaration
 
 generalSignature
     :   Identifier LPAREN procedureParamList? RPAREN
+    |   Identifier
     ;
 procedureParamList
     : procedureParam (COMMA procedureParam)*
     ;
 
 procedureParam
-    : 'out'? ((Identifier | PrimitiveType | Error | HOSTED) COLON)? type
+    : 'out'? ((Identifier | PrimitiveType | Error | HOSTED | SERVICE) COLON)? type
     ;
 
 procedureBody: statement*?;
@@ -167,14 +168,14 @@ genericInvocation
     ;
 
 propertyAccessor
-    : DOT (Identifier | PrimitiveType | Error | HOSTED)
+    : DOT (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
     ;
 
 expression
     :   LPAREN expression RPAREN
     |   expression RANGE expression
     |   literal
-    |   expression DOT (Identifier | PrimitiveType | Error | HOSTED)
+    |   expression DOT (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
     // |   expression DOT explicitGenericInvocation
     |   expression LBRACK expression RBRACK
     |   expression LPAREN expressionList? ','? RPAREN
@@ -182,7 +183,7 @@ expression
     |   New expression
     |   expression As type
     |   expression Is Not? (type | literal)
-    |   expression In expression
+    |   expression Not? In expression
     //cover the case with collection modifier
     |   expression ('++' | '--') expression?
     |   ('+'|'-'|'++'|'--') expression
@@ -197,7 +198,7 @@ expression
     |   expression '|' expression
     |   expression ( '&&' | 'and' ) expression
     |   expression ( '||'| 'or' ) expression
-    |   (LPAREN expressionList? RPAREN | (Identifier | PrimitiveType | Error | HOSTED)) LAMBDA_LIKE expression
+    |   (LPAREN expressionList? RPAREN | (Identifier | PrimitiveType | Error | HOSTED | SERVICE)) LAMBDA_LIKE expression
     |   If LPAREN expression COMMA expression COMMA expression RPAREN
     |   <assoc=right> expression
         (   '='
@@ -217,7 +218,7 @@ expression
         )
         (expression)
     | invocationStatement
-    | (Identifier | PrimitiveType | Error | HOSTED)
+    | (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
     ;
 
 // memberInvocation
@@ -226,7 +227,7 @@ expression
 //     ;
 
 explicitGenericInvocation
-    : (Identifier | PrimitiveType | Error | HOSTED) arguments
+    : (Identifier | PrimitiveType | Error | HOSTED | SERVICE) arguments
     ;
 
 arguments
@@ -261,13 +262,14 @@ newStatement
     ;
 
 localVariableDeclarationStatement
-    :    Let? localVariableDeclaration
+    :   Let? localVariableDeclaration
     ;
 
 localVariableDeclaration
     :   type ASSIGN invocationStatement
-    |   type ASSIGN New? expression?
     |   type ASSIGN (New | EmptyLiteral)
+    |   (type | expression) ASSIGN New? expression?
+    |    ASSIGN expression
     ;
 
 statementExpression
@@ -296,11 +298,11 @@ collectionDeclaration
     ;
 
 arrayDeclaration
-    : (Identifier | PrimitiveType | Error | HOSTED) LBRACK '*'? RBRACK
+    : (Identifier | PrimitiveType | Error | HOSTED | SERVICE) LBRACK '*'? RBRACK
     ;
 
 dictionaryDeclaration
-    : (Identifier | PrimitiveType | Error | HOSTED) LBRACK type RBRACK
+    : (Identifier | PrimitiveType | Error | HOSTED | SERVICE) LBRACK type RBRACK
     ;
 
 /*

@@ -24,7 +24,6 @@
 
 //InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
 
-1
-
-(1..1000000000).TakeWhile(Boolean)
-    //foreach (1..1000000000).TakeWhile(Boolean)
+generic procedure UpdateOrderInfo(UpdateOrderRequest, out BaseOrderResponse)
+    BaseOrderResponse = new
+    error [GenericObjectPassed] "You've passed generic UpdateOrderRequest object. Try specific one (UpdateOrderCustomerDataRequest, etc.)"

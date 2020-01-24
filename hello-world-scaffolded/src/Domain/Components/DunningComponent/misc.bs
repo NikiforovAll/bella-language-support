@@ -1,0 +1,144 @@
+specific procedure ApplyChange(PropositionCreationChange, ProductCatalogEntity)
+
+    PropositionId = PropositionCreationChange.propositionId
+
+    PropositionCreationRequest = PropositionCreationChange.propositionCreationRequest
+
+    Proposition = new Proposition
+        (
+        id = PropositionId,
+        name = PropositionCreationRequest.name,
+        description = PropositionCreationRequest.description,
+        serviceCategoryId = PropositionCreationRequest.serviceCategoryId,
+        createdOn = now,
+        startOn = PropositionCreationRequest.startOn,
+        endOn = PropositionCreationRequest.endOn,
+        allowedSalesTypes = PropositionCreationRequest.allowedSalesType,
+        orderTypes = PropositionCreationRequest.orderTypes.Distinct(),
+        contractDuration = PropositionCreationRequest.contractDuration,
+        isDefault = PropositionCreationRequest.isDefault
+        )
+
+    Proposition.propositionProductByTypeOfServiceId = new
+
+    foreach PropositionCreationRequest.propositionProductCreationRequestCollection
+
+        Product = ProductCatalogEntity.productMap[PropositionProductCreationRequest.productId]
+
+        Proposition.propositionProductByTypeOfServiceId[Product.productTemplate.typeOfServiceId] = new PropositionProduct
+            (
+            id = Product.productTemplate.typeOfServiceId,
+            product = Product,
+            usageCondition = PropositionProductCreationRequest.usageCondition
+            )
+
+    if not IsEmpty(PropositionCreationRequest.propositionCashbackCreationRequest)
+        if PropositionCreationRequest.propositionCashbackCreationRequest.type == PropositionCashbackType.OnInvoice
+            Proposition.cashback = new PropositionCashbackOnInvoice(
+                id = CreateGuid(),
+                amount = PropositionCreationRequest.propositionCashbackCreationRequest.amount,
+                name = PropositionCreationRequest.propositionCashbackCreationRequest.name,
+                invoiceNumber = PropositionCreationRequest.propositionCashbackCreationRequest.invoiceNumber
+                )
+        else
+            Proposition.cashback = new PropositionCashbackOnDate(
+                id = CreateGuid(),
+                amount = PropositionCreationRequest.propositionCashbackCreationRequest.amount,
+                name = PropositionCreationRequest.propositionCashbackCreationRequest.name,
+                date = PropositionCreationRequest.propositionCashbackCreationRequest.date
+                )
+    if Proposition.isDefault == false
+        ProductCatalogEntity.propositionMap[Proposition.id] = Proposition
+    else
+        if ProductCatalogEntity.defaultPropositionsByServiceCategoryId[Proposition.serviceCategoryId].Any()
+            ProductCatalogEntity.defaultPropositionsByServiceCategoryId[Proposition.serviceCategoryId].Last().endOn = PropositionCreationRequest.startOn
+        ProductCatalogEntity.defaultPropositionsByServiceCategoryId[Proposition.serviceCategoryId] ++= Proposition
+
+
+
+specific procedure ApplyChange(PropositionUpdateChange, ProductCatalogEntity)
+
+    PropositionUpdateRequest = PropositionUpdateChange.propositionUpdateRequest
+
+    Proposition = ProductCatalogEntity.propositionMap[PropositionUpdateRequest.propositionId]
+
+    Proposition.name = PropositionUpdateRequest.name
+
+    Proposition.description = PropositionUpdateRequest.description
+
+    Proposition.contractDuration = PropositionUpdateRequest.contractDuration
+
+    Proposition.propositionProductByTypeOfServiceId = new
+
+    Proposition.startOn = PropositionUpdateRequest.startOn
+
+    Proposition.endOn = PropositionUpdateRequest.endOn
+
+    Proposition.allowedSalesTypes = PropositionUpdateRequest.allowedSalesType
+
+    Proposition.orderTypes = PropositionUpdateRequest.orderTypes.Distinct()
+
+    foreach PropositionUpdateRequest.propositionProductUpdateRequestCollection
+
+        Product = ProductCatalogEntity.productMap[PropositionProductUpdateRequest.productId]
+
+        Proposition.propositionProductByTypeOfServiceId[Product.productTemplate.typeOfServiceId] = new PropositionProduct
+            (
+            id = Product.productTemplate.typeOfServiceId,
+            product = Product,
+            usageCondition = PropositionProductUpdateRequest.usageCondition
+            )
+
+    if not IsEmpty(PropositionUpdateRequest.propositionCashbackUpdateRequest)
+        if PropositionUpdateRequest.propositionCashbackUpdateRequest.type == PropositionCashbackType.OnInvoice
+            Proposition.cashback = new PropositionCashbackOnInvoice(
+                id = CreateGuid(),
+                amount = PropositionUpdateRequest.propositionCashbackUpdateRequest.amount,
+                name = PropositionUpdateRequest.propositionCashbackUpdateRequest.name,
+                invoiceNumber = PropositionUpdateRequest.propositionCashbackUpdateRequest.invoiceNumber
+                )
+        else
+            Proposition.cashback = new PropositionCashbackOnDate(
+                id = CreateGuid(),
+                amount = PropositionUpdateRequest.propositionCashbackUpdateRequest.amount,
+                name = PropositionUpdateRequest.propositionCashbackUpdateRequest.name,
+                date = PropositionUpdateRequest.propositionCashbackUpdateRequest.date.Date()
+                )
+
+
+specific procedure ApplyChange(PropositionDeletionChange, ProductCatalogEntity)
+    PropositionId = PropositionDeletionChange.propositionId
+    ServiceCategoryId = ProductCatalogEntity.propositionMap[PropositionId]
+    ProductCatalogEntity.propositionMap --= PropositionId
+
+specific procedure ApplyChange(SwitchPropositionMonthlyTerminableStateChange, ProductCatalogEntity)
+    if IsEmpty(ProductCatalogEntity.propositionsActiveForMonthlyTerminable)
+        ProductCatalogEntity.propositionsActiveForMonthlyTerminable = new
+    Proposition = ProductCatalogEntity.propositionMap[SwitchPropositionMonthlyTerminableStateChange.propositionId]
+    ProductCatalogEntity.propositionsActiveForMonthlyTerminable[Proposition.serviceCategoryId] = Proposition.id
+
+
+specific procedure ApplyChange(SwitchPropositionOrderTypeNewChange, ProductCatalogEntity)
+    Proposition = ProductCatalogEntity.propositionMap[SwitchPropositionOrderTypeNewChange.propositionId]
+    if Proposition.orderTypes.Any(t => t == OrderType.New)
+        Proposition.orderTypes --= OrderType.New
+        if !Proposition.orderTypes.Any()
+            error[NoOrderType] "Proposition must have any type"
+    else
+        Proposition.orderTypes ++= OrderType.New
+
+
+specific procedure ApplyChange(SwitchPropositionOrderTypeProlongateChange, ProductCatalogEntity)
+    Proposition = ProductCatalogEntity.propositionMap[SwitchPropositionOrderTypeProlongateChange.propositionId]
+    if Proposition.orderTypes.Any(t => t == OrderType.Prolongation)
+        Proposition.orderTypes --= OrderType.Prolongation
+        if !Proposition.orderTypes.Any()
+            error[NoOrderType] "Proposition must have any type"
+    else
+        Proposition.orderTypes ++= OrderType.Prolongation
+
+
+formula ToPropositionVendor(PropositionVendorCreationRequest):PropositionVendor = new PropositionVendor(
+    vendorId = PropositionVendorCreationRequest.vendorId,
+    startDate = PropositionVendorCreationRequest.startDate,
+    endDate = PropositionVendorCreationRequest.endDate)

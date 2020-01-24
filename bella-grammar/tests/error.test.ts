@@ -13,7 +13,7 @@ describe("throws-error", () => {
             // let tree = BellaLanguageSupport.parse(input);
             visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
             visitor.visit(tree);
-        }).to.throw(BellaRecognitionException, /extraneous/g, "Error doesn't contain 'extraneous' in it");
+        }).to.throw(BellaRecognitionException, /mismatched/g, "Error doesn't contain 'extraneous' in it");
     });
 });
 
