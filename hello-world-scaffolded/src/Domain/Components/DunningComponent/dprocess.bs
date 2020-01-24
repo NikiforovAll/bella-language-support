@@ -1,53 +1,53 @@
-object DunningProcessId:String
-object DunningProcessIds:DunningProcessId[*]
+// object DunningProcessId:String
+// object DunningProcessIds:DunningProcessId[*]
 
-object DunningProcess
-    id:DunningProcessId
-    accountId:AccountId
-    serviceAccountId:ServiceAccountId
-    status:DunningStatus
-    serviceCategoryId:ServiceCategoryId
-    invoiceIds:InvoiceIds
-    dunningProcessTemplate:DunningProcessTemplate
-    currentDunningLevel:DunningLevel
-    getNextDunningLevel():DunningLevel = if
-        (
-        dunningProcessTemplate.dunningLevelByOrder.ContainsKey(currentDunningLevel.order + 1),
-        dunningProcessTemplate.dunningLevelByOrder[currentDunningLevel.order + 1],
-        empty
-        )
-    getPreviousDunningLevel():DunningLevel = if
-        (
-        dunningProcessTemplate.dunningLevelByOrder.ContainsKey(currentDunningLevel.order - 1),
-        dunningProcessTemplate.dunningLevelByOrder[currentDunningLevel.order - 1],
-        empty
-        )
-    lastActionDateTime:DateTime
-    closedOn:ClosedOn
-    startOn:StartOn
-    isInvoiceOverviewsAddingPossible(InvoiceOverview):Boolean =
-        currentDunningLevel.order
-        ==
-        dunningProcessTemplate.dunningLevelByOrder.Keys().Min(x => x)
-        &&
-        dunningProcessTemplate.allowedInvoiceTypes.Contains(InvoiceOverview.type)
-    isCurrentDunningLevelLast:Boolean =
-        currentDunningLevel.order
-        ==
-        dunningProcessTemplate.dunningLevelByOrder.Keys().Max(x => x)
+// object DunningProcess
+//     id:DunningProcessId
+//     accountId:AccountId
+//     serviceAccountId:ServiceAccountId
+//     status:DunningStatus
+//     serviceCategoryId:ServiceCategoryId
+//     invoiceIds:InvoiceIds
+//     dunningProcessTemplate:DunningProcessTemplate
+//     currentDunningLevel:DunningLevel
+//     getNextDunningLevel():DunningLevel = if
+//         (
+//         dunningProcessTemplate.dunningLevelByOrder.ContainsKey(currentDunningLevel.order + 1),
+//         dunningProcessTemplate.dunningLevelByOrder[currentDunningLevel.order + 1],
+//         empty
+//         )
+//     getPreviousDunningLevel():DunningLevel = if
+//         (
+//         dunningProcessTemplate.dunningLevelByOrder.ContainsKey(currentDunningLevel.order - 1),
+//         dunningProcessTemplate.dunningLevelByOrder[currentDunningLevel.order - 1],
+//         empty
+//         )
+//     lastActionDateTime:DateTime
+//     closedOn:ClosedOn
+//     startOn:StartOn
+//     isInvoiceOverviewsAddingPossible(InvoiceOverview):Boolean =
+//         currentDunningLevel.order
+//         ==
+//         dunningProcessTemplate.dunningLevelByOrder.Keys().Min(x => x)
+//         &&
+//         dunningProcessTemplate.allowedInvoiceTypes.Contains(InvoiceOverview.type)
+//     isCurrentDunningLevelLast:Boolean =
+//         currentDunningLevel.order
+//         ==
+//         dunningProcessTemplate.dunningLevelByOrder.Keys().Max(x => x)
 
 
 
-enum DunningStatus
-    Active
-    Closed
+// enum DunningStatus
+//     Active
+//     Closed
 
-object HasActiveDunningProcesses:Boolean
+// object HasActiveDunningProcesses:Boolean
 
-object DunningProcesses:DunningProcess[*]
-object ClosedDunningProcesses:DunningProcesses
+// object DunningProcesses:DunningProcess[*]
+// object ClosedDunningProcesses:DunningProcesses
 
-object DunningProcessesByClosedOn:DunningProcesses[ClosedOn]
-object DunningProcessMap:DunningProcess[DunningProcessId]
+// object DunningProcessesByClosedOn:DunningProcesses[ClosedOn]
+// object DunningProcessMap:DunningProcess[DunningProcessId]
 
 

@@ -71,9 +71,7 @@ export class LSPDeclarationRegistry {
         if (targetNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
 
             //TODO: this is convention to speed things up, consider fallback with global search
-            let namespaces = uniq(
-                this.cache.keys()
-                    .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace || ''));
+            let namespaces = this.getKeys();
             targetNamespace = CommonUtils.extractComponentNameFromUrl(sourceUri, namespaces);
         }
 
@@ -141,6 +139,13 @@ export class LSPDeclarationRegistry {
             }
         }
         return result;
+    }
+
+    public getKeys() {
+        let namespaces = uniq(
+            this.cache.keys()
+                .map(k => this.cache.get<DeclarationRegistryNode>(k)?.namespace || ''));
+        return namespaces;
     }
 
     private getDeclarationsForQueryLocal(query: NodeRegistrySearchQuery): KeyedDeclaration[] {

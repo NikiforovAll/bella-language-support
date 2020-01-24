@@ -88,6 +88,23 @@
 				// "preLaunchTask": "npm"
 			},
 			{
+				"name": "Small Bella Project",
+				"type": "extensionHost",
+				"request": "launch",
+				"runtimeExecutable": "${workspaceFolder:bella-language-server}/${execPath}",
+				"args": [
+					"--extensionDevelopmentPath=${workspaceFolder:bella-language-server}/",
+					"--extensions-dir=${workspaceFolder:hello-world-scaffolded}/extension-dir",
+					// "--user-data-dir=${workspaceFolder:hello-world-scaffolded}/extension-dir",
+					"--folder-uri=${workspaceFolder:hello-world-scaffolded}/../../small-bella",
+					"--enable-logging"
+				],
+				"stopOnEntry": false,
+				"sourceMaps": true,
+				"outFiles": [ "${workspaceFolder:bella-language-server}/dist/**/*.js"]
+				// "preLaunchTask": "npm"
+			},
+			{
 				"type": "node",
 				"request": "attach",
 				"name": "Attach by Process ID",
