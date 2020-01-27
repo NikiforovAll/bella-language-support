@@ -114,7 +114,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     private inferProcedureDeclaration(ruleContext: ParserRuleContext): ReferenceIdentifier | undefined {
         // infer procedure name as container
-        let maxDepth = 5;
+        let maxDepth = 15;
         let currentDepthLevel = 0;
         let containerContext = ruleContext.parent;
         while (!!ruleContext.parent && !(containerContext instanceof ProcedureDeclarationContext) && currentDepthLevel < maxDepth) {

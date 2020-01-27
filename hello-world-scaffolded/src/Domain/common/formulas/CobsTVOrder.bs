@@ -85,6 +85,11 @@ object TvOrderStatusChangeDto
     status: String
     user: String
 
+formula ToDto(TvOrderStatusChange): TvOrderStatusChangeDto = new TvOrderStatusChangeDto
+    (
+    date = TvOrderStatusChange.date,
+    status = TvOrderStatusChange.status,
+    user = TvOrderStatusChange.user)
 formula ToDto(TvOrderStatusChange): TvOrderStatusChangeDto = new TvOrderStatusChangeDto(
     date = TvOrderStatusChange.date,
     status = TvOrderStatusChange.status,

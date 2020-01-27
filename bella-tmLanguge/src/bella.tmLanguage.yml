@@ -521,9 +521,9 @@ repository:
     name: meta.common.expression.invocation
     begin: |-
       (?x)
-      (@?\s*\b[[:upper:]][_[:alnum:]]+\.|\s*)
+      (@?\s*\b[[:upper:]][_[:alnum:]]+\.)
       (@?[_[:alpha:]][_[:alnum:]]+)\s*                 # method name
-      (?=\()                                           # open paren of argument list
+      (?=\()
     beginCaptures:
       '1': { name: entity.name.class.type-invocation.bella }
       '2': { name: entity.name.function.bella }

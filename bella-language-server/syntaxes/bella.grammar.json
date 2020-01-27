@@ -663,7 +663,7 @@
     },
     "invocation-expression": {
       "name": "meta.common.expression.invocation",
-      "begin": "(?x)\n(@?\\s*\\b[[:upper:]][_[:alnum:]]+\\.|\\s*)\n(@?[_[:alpha:]][_[:alnum:]]+)\\s*                 # method name\n(?=\\()                                           # open paren of argument list",
+      "begin": "(?x)\n(@?\\s*\\b[[:upper:]][_[:alnum:]]+\\.)\n(@?[_[:alpha:]][_[:alnum:]]+)\\s*                 # method name\n(?=\\()",
       "beginCaptures": {
         "1": {
           "name": "entity.name.class.type-invocation.bella"
