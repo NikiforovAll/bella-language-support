@@ -65,3 +65,17 @@ procedure SaveGlEvent(GlEvent, SourceCreationDate)
         expect(refs).to.have.lengthOf(4);
     });
 });
+
+
+describe("object-declaration-composite-with-multi-line-expression", () => {
+    it("should return parsed composite object", () => {
+        let input = `
+object Test: Test2
+    field1: String`;
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
+        visitor.visit(tree);
+        let refs = visitor.references;
+        expect(refs).to.have.lengthOf(1);
+    });
+});

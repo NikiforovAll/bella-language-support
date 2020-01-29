@@ -15,7 +15,8 @@ import {
     GenericInvocationContext,
     ServiceDeclarationContext,
     ServicePrefixContext,
-    ProcedureDeclarationContext
+    ProcedureDeclarationContext,
+    ObjectExtensionContext
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaReference, BellaReferenceType, ReferenceIdentifier } from './models/bella-reference';
@@ -114,6 +115,10 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
             invocationExpression
         ];
         return this.accumulateResult(result);
+    }
+
+    visitObjectExtension(context: ObjectExtensionContext): BellaReference[] {
+        return this.accumulateResult(this.visitIdentifierLocal(context.Identifier(), DeclarationType.Object, false));
     }
 
     private inferProcedureDeclaration(ruleContext: ParserRuleContext): ReferenceIdentifier | undefined {

@@ -140,54 +140,7 @@ call NormalizeFilter(CrmEmployeeFilterDto)
                     EmployeeAccountMap[x.accountId]
                         .ToDtoEmployee(x)
                 )
-            )
-procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
-    SubscribedBundlesPerProduct = new
-    AvailableProposition = Fulfillment.GetAvailablePropositonByOrderId(OrderId)
-
-    if AvailableProposition is not empty
-        AvailableProducts = AvailableProposition.products
-
-        foreach CreateSubscriptionRequest in CreateSubscriptionRequestCollection
-            SubscribeBundleWithDiscountRequests = CreateSubscriptionRequest.subscribeBundleWithDiscountRequests
-            if AvailableProducts is empty
-                error[EmptyArgument] "No available products connected with available proposition"
-            AvailableProduct = AvailableProducts.First(x => x.id == CreateSubscriptionRequest.productId)
-            BundleIds = SubscribeBundleWithDiscountRequests.Select(x => x.bundleId)
-            let Bundles = AvailableProduct.bundles.Where(x => BundleIds.Contains(x.id))
-            ProductId = CreateSubscriptionRequest.productId
-            Product = ProductCatalog.GetProductById(ProductId)
-            PricePlanId = Product.pricePlan.id
-
-            foreach AvailableBundle in Bundles
-                DiscountId = SubscribeBundleWithDiscountRequests.First(x => x.bundleId == AvailableBundle.id).discountId // unneeded ?
-                BundleId = AvailableBundle.id
-                if !IsEmpty(DiscountId)
-                    Discount = ProductCatalog.GetDiscountById(PricePlanId, BundleId)
-
-                    Amount = Discount.GetDiscountedAmount(AvailableBundle.price)
-
-                    AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
-                    AvailableBundle.discountId = Discount.id
-
-            if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
-                SubscribedBundlesPerProduct.internetBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
-                SubscribedBundlesPerProduct.tvBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
-                SubscribedBundlesPerProduct.voipBundles = Bundles
-procedure GetTaskForEmployee(AccountId, out BaseTask)
-    call GetCurrentTaskForEmployee(AccountId, out BaseTask)
-    if IsEmpty(BaseTask)
-        call GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
-        let ExcludedTasks = ExcludeListForTaskPostponingPerUser[AccountId]
-        BaseTask = TaskCatalog.Where(t => t.status == TaskStatus.Open && t.requiredSkill in TaskSkillList && t.id not in ExcludedTasks).OrderBy(t => t.createdOn).FirstOrDefault(true, empty)
-
-        if !IsEmpty(BaseTask)
-            call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PutTaskInProgress, AccountId)
-generic procedure UpdateOrderInfo(UpdateOrderRequest, out BaseOrderResponse)
-    BaseOrderResponse = new
-    error [GenericObjectPassed] "You've passed generic UpdateOrderRequest object. Try specific one (UpdateOrderCustomerDataRequest, etc.)"`;
+            )`;
 
         // let tree = BellaLanguageSupport.parse(input);
         let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE);
