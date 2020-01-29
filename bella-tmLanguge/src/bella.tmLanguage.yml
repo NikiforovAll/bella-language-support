@@ -188,6 +188,7 @@ repository:
     - match: '\b(oneway)\b'
       captures:
         '1': { name: keyword.declaration.return-type.bella }
+    - include: '#statement'
     - include: '#expression'
 
   procedure-params-declaration:
@@ -254,6 +255,7 @@ repository:
     # - include: '#object-creation-expression'
     # - include: '#member-access-expression'
     # - include: '#element-access-expression'
+    - include: '#new-statement'
     - include: '#literal'
     - include: '#parenthesized-expression'
     # - include: '#initializer-expression'
@@ -269,6 +271,8 @@ repository:
     # - include: '#else-part'
     # - include: '#return-statement'
     - include: '#throw-statement'
+    - include: '#call-statement'
+    - include: '#new-statement'
     - include: '#local-declaration'
     # - include: '#block'
     - include: '#expression'
@@ -317,10 +321,10 @@ repository:
       (?:(\.)\s*)                        # preceding dot?
       (?:(@?[_[:alpha:]][_[:alnum:]]*)\s*)? # property name
     beginCaptures:
-      '1': { name: keyword.operator.null-conditional.apex }
-      '2': { name: punctuation.accessor.apex }
-      '3': { name: variable.other.object.property.apex }
-      '4': { name: keyword.operator.null-conditional.apex }
+      '1': { name: keyword.operator.null-conditional.bella }
+      '2': { name: punctuation.accessor.bella }
+      '3': { name: variable.other.object.property.bella }
+      '4': { name: keyword.operator.null-conditional.bella }
     end: (?=\B)
 
 
@@ -348,8 +352,8 @@ repository:
   #     (\g<identifier>)\s*
   #     (?=,|;|=|\))
   #   beginCaptures:
-  #     '1': { name: storage.modifier.apex }
-  #     '2': { name: keyword.other.var.apex }
+  #     '1': { name: storage.modifier.bella }
+  #     '2': { name: keyword.other.var.bella }
   #     '3':
   #       patterns:
   #       - include: '#support-type'
@@ -357,10 +361,10 @@ repository:
   #     # '4': ?<identifier> is a sub-expression. It's final value is not considered.
   #     # '5': ?<name-and-type-args> is a sub-expression. It's final value is not considered.
   #     # '6': ?<type-args> is a sub-expression. It's final value is not considered.
-  #     '7': { name: entity.name.variable.local.apex }
+  #     '7': { name: entity.name.variable.local.bella }
   #   end: (?=;|\))
   #   patterns:
-  #   - name: entity.name.variable.local.apex
+  #   - name: entity.name.variable.local.bella
   #     match: '@?[_[:alpha:]][_[:alnum:]]*'
   #   - include: '#punctuation-comma'
   #   - include: '#comment'
@@ -369,7 +373,7 @@ repository:
   # variable-initializer:
   #   begin: (?<!=|!)(=)(?!=|>)
   #   beginCaptures:
-  #     '1': { name: keyword.operator.assignment.apex }
+  #     '1': { name: keyword.operator.assignment.bella }
   #   end: (?=[,\)\];}])
   #   patterns:
   #   - include: '#expression'
@@ -379,13 +383,13 @@ repository:
   #   patterns:
   #   - match: (@?[_[:alpha:]][_[:alnum:]]*)\s*(\.)
   #     captures:
-  #       '1': { name: storage.type.apex }
-  #       '2': { name: punctuation.accessor.apex }
+  #       '1': { name: storage.type.bella }
+  #       '2': { name: punctuation.accessor.bella }
   #   - match: (\.)\s*(@?[_[:alpha:]][_[:alnum:]]*)
   #     captures:
-  #       '1': { name: punctuation.accessor.apex }
-  #       '2': { name: storage.type.apex }
-  #   - name: storage.type.apex
+  #       '1': { name: punctuation.accessor.bella }
+  #       '2': { name: storage.type.bella }
+  #   - name: storage.type.bella
   #     match: '@?[_[:alpha:]][_[:alnum:]]*'
 
   # if-statement-ternary:
@@ -470,6 +474,23 @@ repository:
       '5':
         patterns:
           - include: '#expression'
+    end: (?=$)
+
+  call-statement:
+    name: meta.common.statement.call.bella
+    begin: \s*(call)\s*(@?[_[:alpha:]][_[:alnum:]]+)\s*
+    beginCaptures:
+      '1': { name: keyword.control.support.call.bella }
+      '2': { name: entity.name.function.bella }
+    end: (?=$)
+
+  new-statement:
+    name: meta.common.statement.new.bella
+    begin: (new)\s*\b([_[:alpha:]][_[:alnum:]]+)\s*
+    beginCaptures:
+      '1': { name: keyword.control.support.new.bella }
+      # '2': { name: entity.name.class.object-initializer.bella }
+      '2': { name: storage.type.object-initializer.bella }
     end: (?=$)
 
   # This rule applies exclusively for namespace situations

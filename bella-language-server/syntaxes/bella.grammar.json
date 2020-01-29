@@ -333,6 +333,9 @@
           }
         },
         {
+          "include": "#statement"
+        },
+        {
           "include": "#expression"
         }
       ]
@@ -433,6 +436,9 @@
           "include": "#expression-operators"
         },
         {
+          "include": "#new-statement"
+        },
+        {
           "include": "#literal"
         },
         {
@@ -453,6 +459,12 @@
         },
         {
           "include": "#throw-statement"
+        },
+        {
+          "include": "#call-statement"
+        },
+        {
+          "include": "#new-statement"
         },
         {
           "include": "#local-declaration"
@@ -500,16 +512,16 @@
       "begin": "(?x)\n(?:(\\.)\\s*)                        # preceding dot?\n(?:(@?[_[:alpha:]][_[:alnum:]]*)\\s*)? # property name",
       "beginCaptures": {
         "1": {
-          "name": "keyword.operator.null-conditional.apex"
+          "name": "keyword.operator.null-conditional.bella"
         },
         "2": {
-          "name": "punctuation.accessor.apex"
+          "name": "punctuation.accessor.bella"
         },
         "3": {
-          "name": "variable.other.object.property.apex"
+          "name": "variable.other.object.property.bella"
         },
         "4": {
-          "name": "keyword.operator.null-conditional.apex"
+          "name": "keyword.operator.null-conditional.bella"
         }
       },
       "end": "(?=\\B)"
@@ -594,6 +606,32 @@
               "include": "#expression"
             }
           ]
+        }
+      },
+      "end": "(?=$)"
+    },
+    "call-statement": {
+      "name": "meta.common.statement.call.bella",
+      "begin": "\\s*(call)\\s*(@?[_[:alpha:]][_[:alnum:]]+)\\s*",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.support.call.bella"
+        },
+        "2": {
+          "name": "entity.name.function.bella"
+        }
+      },
+      "end": "(?=$)"
+    },
+    "new-statement": {
+      "name": "meta.common.statement.new.bella",
+      "begin": "(new)\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\s*",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.support.new.bella"
+        },
+        "2": {
+          "name": "storage.type.object-initializer.bella"
         }
       },
       "end": "(?=$)"

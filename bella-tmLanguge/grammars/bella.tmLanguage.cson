@@ -1,5 +1,5 @@
 name: "Bella"
-scopeName: "source.Bella"
+scopeName: "source.bs"
 fileTypes: [
   "bs"
 ]
@@ -7,8 +7,308 @@ patterns: [
   {
     include: "#comment"
   }
+  {
+    include: "#declarations"
+  }
 ]
 repository:
+  declarations:
+    patterns: [
+      {
+        include: "#type-declarations"
+      }
+      {
+        include: "#support-top-level-declaration-keywords"
+      }
+    ]
+  "type-declarations":
+    patterns: [
+      {
+        include: "#service-host-declaration"
+      }
+      {
+        include: "#service-declaration"
+      }
+      {
+        include: "#procedure-declaration"
+      }
+      {
+        include: "#formula-declaration"
+      }
+      {
+        include: "#object-declaration"
+      }
+      {
+        include: "#setting-declaration"
+      }
+      {
+        include: "#enum-declaration"
+      }
+      {
+        include: "#comment"
+      }
+    ]
+  "service-host-declaration":
+    begin: "(?=\\b(hosted|external)\\b)"
+    end: "(?=$)"
+    patterns: [
+      {
+        begin: '''
+          (?x)
+          \\b(hosted|external)\\b\\s+
+          \\b(service)\\b\\s+
+          (@?[_[:alpha:]][_[:alnum:]]+)\\s+
+          \\b(on)\\b\\s+
+          (@?\\[*[_[:alpha:]][_[:alnum:]]+\\]*)\\s*
+        '''
+        beginCaptures:
+          "1":
+            name: "storage.modifier.declaration.service.bella"
+          "2":
+            name: "keyword.other.class.service.bella"
+          "3":
+            name: "entity.name.type.service.bella"
+          "4":
+            name: "keyword.other.class.service.bella"
+          "5":
+            name: "variable.parameter.type.transport.service.bella"
+        patterns: [
+          {
+            include: "#procedure-signature-declaration"
+          }
+        ]
+        end: "(?=$)"
+      }
+    ]
+  "service-declaration":
+    name: "meta.function.service.bella"
+    begin: "\\b(service)\\b\\s+([_[:alpha:]][_[:alnum:]]+)"
+    beginCaptures:
+      "1":
+        name: "keyword.other.class.service.bella"
+      "2":
+        name: "entity.name.type.service.bella"
+    patterns: [
+      {
+        include: "#procedure-signature-declaration"
+      }
+      {
+        include: "#comment"
+      }
+    ]
+    end: "(?=^\\S)"
+  "object-declaration":
+    name: "meta.object.declaration.bella"
+    begin: "(?=\\b(object|persistent)\\b)"
+    end: "(^\\s*$)"
+    patterns: [
+      {
+        match: "(persistent)\\b\\s+"
+        name: "storage.modifier.declaration.service.bella"
+      }
+      {
+        begin: "\\b(object)\\b\\s+([_[:alpha:]][_[:alnum:]]+)\\s*(.*)"
+        beginCaptures:
+          "1":
+            name: "keyword.other.object.declaration.bella"
+          "2":
+            name: "entity.name.type.object.bella"
+          "3":
+            patterns: [
+              {
+                include: "#return-type-declaration"
+              }
+            ]
+        end: "(?=$)"
+      }
+      {
+        include: "#object-field-declaration"
+      }
+      {
+        include: "#comment"
+      }
+    ]
+  "enum-declaration":
+    name: "meta.enum.declaration.bella"
+    begin: "\\b(enum)\\b\\s+\\b(@?[_[:alpha:]][_[:alnum:]]*)\\s+"
+    beginCaptures:
+      "1":
+        name: "keyword.other.enum.declaration.bella"
+      "2":
+        patterns: [
+          {
+            match: "@?[_[:alpha:]][_[:alnum:]]*"
+            name: "entity.name.type.enum.bella"
+          }
+        ]
+    end: "(^\\s*$)"
+    patterns: [
+      {
+        include: "#identifier"
+      }
+    ]
+  "setting-declaration":
+    name: "meta.settings.declaration.bella"
+    begin: "\\b(setting)\\b\\s+([_[:alpha:]][_[:alnum:]]+)\\b\\s*(.+)"
+    beginCaptures:
+      "1":
+        name: "keyword.other.settings.declaration.bella"
+      "2":
+        name: "entity.name.class.object.bella"
+      "3":
+        patterns: [
+          {
+            include: "#return-type-declaration"
+          }
+          {
+            include: "#expression"
+          }
+        ]
+    end: "(?=$)"
+  "object-field-declaration":
+    name: "meta.object.field.declaration"
+    match: "([_[:alpha:]][_[:alnum:]]+)\\b\\s*(.+)\\s*"
+    captures:
+      "1":
+        name: "variable.parameter.object.bella"
+      "2":
+        patterns: [
+          {
+            include: "#return-type-declaration"
+          }
+          {
+            include: "#expression"
+          }
+        ]
+  "return-type-declaration":
+    name: "meta.common.declaration.return-type.bella"
+    match: "(\\:)\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b(\\S+)*\\s*"
+    captures:
+      "1":
+        name: "punctuation.separator.colon.return-type.bella"
+      "2":
+        name: "support.function.return-type.bella"
+      "3":
+        patterns: [
+          {
+            include: "#collection-modifier"
+          }
+        ]
+  "collection-modifier":
+    name: "meta.common.declaration.collection-modifier"
+    begin: "(\\[)([_[:alpha:]][_[:alnum:]]+|\\*)"
+    beginCaptures:
+      "1":
+        name: "punctuation.parenthesis.close.bella"
+      "2":
+        name: "variable.language.accessor.placeholder"
+    end: "(\\])"
+    endCaptures:
+      "1":
+        name: "punctuation.parenthesis.close.bella"
+  "procedure-declaration":
+    name: "meta.function.procedure.declaration.bella"
+    begin: "^\\s*\\b(specific|generic|.*)\\b(procedure)\\b\\s+(.+)"
+    beginCaptures:
+      "1":
+        name: "storage.modifier.declaration.generic-specific.bella"
+      "2":
+        name: "keyword.declaration.procedure.bella"
+      "3":
+        patterns: [
+          {
+            include: "#procedure-signature-declaration"
+          }
+        ]
+    end: "(?=^\\S)"
+    patterns: [
+      {
+        include: "#statement"
+      }
+    ]
+  "formula-declaration":
+    name: "meta.function.formula.declaration.bella"
+    begin: "^\\s*\\b(specific|generic|.*)\\b(formula)\\b\\s+(.+)"
+    beginCaptures:
+      "1":
+        name: "storage.modifier.declaration.generic-specific.bella"
+      "2":
+        name: "keyword.declaration.formula.bella"
+      "3":
+        patterns: [
+          {
+            include: "#procedure-signature-declaration"
+          }
+        ]
+    end: "(?=^\\S)"
+    patterns: [
+      {
+        include: "#statement"
+      }
+    ]
+  "procedure-signature-declaration":
+    name: "meta.function.procedure.signature.declaration.bella"
+    begin: "\\s*([_[:alpha:]][_[:alnum:]]+)"
+    beginCaptures:
+      "1":
+        name: "entity.name.function.bella"
+    end: "(?=$)"
+    patterns: [
+      {
+        begin: "\\("
+        beginCaptures:
+          "0":
+            name: "punctuation.parenthesis.open.bella"
+        end: "\\)"
+        endCaptures:
+          "0":
+            name: "punctuation.parenthesis.close.bella"
+        patterns: [
+          {
+            include: "#procedure-params-declaration"
+          }
+        ]
+      }
+      {
+        include: "#return-type-declaration"
+      }
+      {
+        match: "\\b(oneway)\\b"
+        captures:
+          "1":
+            name: "keyword.declaration.return-type.bella"
+      }
+      {
+        include: "#expression"
+      }
+    ]
+  "procedure-params-declaration":
+    name: "meta.function.parameter.declaration.bella"
+    patterns: [
+      {
+        match: "\\s*\\b(out)\\b\\s+"
+        captures:
+          "1":
+            name: "keyword.declaration.function.procedure.out.bella"
+      }
+      {
+        match: "\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b\\s*:\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b"
+        captures:
+          "1":
+            name: "meta.variable.definition.parameter.procedure.bella"
+          "2":
+            name: "variable.parameter.function.procedure.bella"
+      }
+      {
+        match: "\\s*\\b([_[:alpha:]][_[:alnum:]]+)\\b"
+        captures:
+          "1":
+            name: "variable.parameter.function.procedure.bella"
+      }
+      {
+        include: "#punctuation-comma"
+      }
+    ]
   comment:
     patterns: [
       {
@@ -40,3 +340,430 @@ repository:
         ]
       }
     ]
+  expression:
+    patterns: [
+      {
+        include: "#if-statement-ternary3"
+      }
+      {
+        include: "#comment"
+      }
+      {
+        include: "#support-expression"
+      }
+      {
+        include: "#invocation-expression"
+      }
+      {
+        include: "#arrow-function-expression-body"
+      }
+      {
+        include: "#expression-operators"
+      }
+      {
+        include: "#literal"
+      }
+      {
+        include: "#parenthesized-expression"
+      }
+    ]
+  statement:
+    patterns: [
+      {
+        include: "#comment"
+      }
+      {
+        include: "#foreach-statement"
+      }
+      {
+        include: "#if-statement"
+      }
+      {
+        include: "#throw-statement"
+      }
+      {
+        include: "#call-statement"
+      }
+      {
+        include: "#local-declaration"
+      }
+      {
+        include: "#expression"
+      }
+    ]
+  "local-declaration":
+    patterns: [
+      {
+        include: "#variable-declaration"
+      }
+    ]
+  "variable-declaration":
+    name: "meta.variable.declaration.bella"
+    begin: "^\\s*(let|\\s*)\\s*\\b([_[:alpha:]][_[:alnum:]]+)(\\[.*|\\s*)\\s*(?:=)\\s*(.+)"
+    beginCaptures:
+      "1":
+        name: "storage.modifier.declaration.generic-specific.bella"
+      "2":
+        name: "variable.parameter.variable.declaration.bella"
+      "3":
+        patterns: [
+          {
+            include: "#collection-modifier"
+          }
+        ]
+      "4":
+        patterns: [
+          {
+            include: "#expression"
+          }
+        ]
+    end: "(?=$)"
+  "element-access-expression":
+    begin: '''
+      (?x)
+      (?:(\\.)\\s*)                        # preceding dot?
+      (?:(@?[_[:alpha:]][_[:alnum:]]*)\\s*)? # property name
+    '''
+    beginCaptures:
+      "1":
+        name: "keyword.operator.null-conditional.apex"
+      "2":
+        name: "punctuation.accessor.apex"
+      "3":
+        name: "variable.other.object.property.apex"
+      "4":
+        name: "keyword.operator.null-conditional.apex"
+    end: "(?=\\B)"
+  "if-statement-ternary3":
+    name: "meta.common.expression.ternary.multi-line.bella"
+    begin: '''
+      (?x)
+      (@?if)\\s*
+      (?=\\(|\\s*$)
+    '''
+    beginCaptures:
+      "1":
+        name: "keyword.control.conditional-ternary.if.bella"
+    end: "(?<=\\))"
+    patterns: [
+      {
+        include: "#expression"
+      }
+      {
+        include: "#punctuation-comma"
+      }
+    ]
+  "if-statement":
+    name: "meta.common.statement.if.bella"
+    begin: "\\s(if|else if|else)\\s+(.*)(?=\\s*$)"
+    beginCaptures:
+      "1":
+        name: "keyword.control.conditional.if.bella"
+      "2":
+        patterns: [
+          {
+            include: "#expression"
+          }
+        ]
+    end: "(?=$)"
+  "foreach-statement":
+    name: "meta.common.statement.foreach.bella"
+    begin: "\\s*(foreach)(.+)\\b(in)\\b(.+)\\s*(?=\\s*$)"
+    beginCaptures:
+      "1":
+        name: "keyword.control.foreach.bella"
+      "2":
+        name: "variable.parameter.variable.declaration.bella"
+      "3":
+        name: "keyword.declaration.foreach.in.bella"
+      "4":
+        patterns: [
+          {
+            include: "#expression"
+          }
+        ]
+    end: "(?=$)"
+  "throw-statement":
+    name: "meta.common.statement.throw.bella"
+    begin: "\\s*(error)\\s*(\\[)(.+)(\\])\\s+(.+)\\s*(?=\\s*$)"
+    beginCaptures:
+      "1":
+        name: "keyword.control.error.bella"
+      "2":
+        name: "punctuation.parenthesis.open.bella"
+      "3":
+        name: "invalid.illegal.error-enum.bella"
+      "4":
+        name: "punctuation.parenthesis.close.bella"
+      "5":
+        patterns: [
+          {
+            include: "#expression"
+          }
+        ]
+    end: "(?=$)"
+  "call-statement":
+    name: "meta.common.statement.call.bella"
+    begin: "\\s*(call)\\s*(@?[_[:alpha:]][_[:alnum:]]+)\\s*"
+    beginCaptures:
+      "1":
+        name: "keyword.control.support.call.bella"
+      "2":
+        name: "entity.name.function.bella"
+    end: "(?=$)"
+  "support-expression":
+    patterns: [
+      {
+        include: "#support-type"
+      }
+      {
+        include: "#support-keywords"
+      }
+    ]
+  "support-type":
+    name: "meta.support.bella"
+    patterns: [
+      {
+        include: "#support-functions"
+      }
+    ]
+  "support-functions":
+    match: "\\b(LogInfo|LogError|IsEmpty|With)\\b"
+    captures:
+      "1":
+        name: "support.function.bella"
+  "support-keywords":
+    patterns: [
+      {
+        include: "#support-control-keywords"
+      }
+      {
+        include: "#support-declaration-keywords"
+      }
+      {
+        include: "#support-top-level-declaration-keywords"
+      }
+    ]
+  "support-control-keywords":
+    match: "\\b(new|empty|return|not|in|let|call|foreach)\\b"
+    captures:
+      "1":
+        name: "keyword.control.support.bella"
+  "support-declaration-keywords":
+    match: "\\b(out|is|as)\\b"
+    captures:
+      "1":
+        name: "keyword.declaration.support.bella"
+  "support-top-level-declaration-keywords":
+    match: "\\b(service|procedure|object|formula|persistent|generic|specific)\\b"
+    captures:
+      "1":
+        name: "keyword.declaration.support.bella"
+  "invocation-expression":
+    name: "meta.common.expression.invocation"
+    begin: '''
+      (?x)
+      (@?\\s*\\b[[:upper:]][_[:alnum:]]+\\.)
+      (@?[_[:alpha:]][_[:alnum:]]+)\\s*                 # method name
+      (?=\\()
+    '''
+    beginCaptures:
+      "1":
+        name: "entity.name.class.type-invocation.bella"
+      "2":
+        name: "entity.name.function.bella"
+    end: "(?<=\\))"
+    patterns: [
+      {
+        include: "#argument-list"
+      }
+    ]
+  "argument-list":
+    begin: "\\("
+    beginCaptures:
+      "0":
+        name: "punctuation.parenthesis.open.bella"
+    end: "\\)"
+    endCaptures:
+      "0":
+        name: "punctuation.parenthesis.close.bella"
+    patterns: [
+      {
+        include: "#expression"
+      }
+      {
+        include: "#punctuation-comma"
+      }
+    ]
+  "parenthesized-expression":
+    name: "meta.common.expression.parenthesized-expression"
+    begin: "\\("
+    beginCaptures:
+      "0":
+        name: "punctuation.parenthesis.open.bella"
+    end: "\\)"
+    endCaptures:
+      "0":
+        name: "punctuation.parenthesis.close.bella"
+    patterns: [
+      {
+        include: "#expression"
+      }
+    ]
+  "arrow-function-expression-body":
+    name: "meta.common.expression.arrow-func"
+    begin: "=>"
+    beginCaptures:
+      "0":
+        name: "keyword.declaration.function.arrow.bella"
+    end: "(?=\\))"
+    patterns: [
+      {
+        include: "#expression"
+      }
+    ]
+  "expression-operators":
+    patterns: [
+      {
+        name: "keyword.operator.collection.compound.bella"
+        match: "--=|\\+\\+="
+      }
+      {
+        name: "keyword.operator.assignment.compound.bella"
+        match: "\\*=|/=|%=|\\+=|-="
+      }
+      {
+        name: "keyword.operator.assignment.compound.bitwise.bella"
+        match: "\\&=|\\^=|<<=|>>=|\\|="
+      }
+      {
+        name: "keyword.operator.bitwise.shift.bella"
+        match: "<<|>>"
+      }
+      {
+        name: "keyword.operator.comparison.bella"
+        match: "==|!="
+      }
+      {
+        name: "keyword.operator.relational.bella"
+        match: "<=|>=|<|>"
+      }
+      {
+        name: "keyword.operator.logical.bella"
+        match: "\\!|&&|\\|\\|"
+      }
+      {
+        name: "keyword.operator.bitwise.bella"
+        match: "\\&|~|\\^|\\|"
+      }
+      {
+        name: "keyword.operator.assignment.bella"
+        match: "\\="
+      }
+      {
+        name: "keyword.operator.decrement.bella"
+        match: "--"
+      }
+      {
+        name: "keyword.operator.increment.bella"
+        match: "\\+\\+"
+      }
+      {
+        name: "keyword.operator.arithmetic.bella"
+        match: "%|\\*|/|-|\\+"
+      }
+    ]
+  "punctuation-comma":
+    name: "punctuation.separator.comma.bella"
+    match: ","
+  literal:
+    patterns: [
+      {
+        include: "#boolean-literal"
+      }
+      {
+        include: "#null-literal"
+      }
+      {
+        include: "#numeric-literal"
+      }
+      {
+        include: "#string-literal"
+      }
+    ]
+  "boolean-literal":
+    patterns: [
+      {
+        name: "constant.language.boolean.true.bella"
+        match: "(?<!\\.)\\btrue\\b"
+      }
+      {
+        name: "constant.language.boolean.false.bella"
+        match: "(?<!\\.)\\bfalse\\b"
+      }
+    ]
+  "null-literal":
+    name: "constant.language.null.bella"
+    match: "(?<!\\.)\\bnull\\b"
+  "numeric-literal":
+    patterns: [
+      {
+        name: "constant.numeric.datetime.bella"
+        match: "\\b(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}(\\-|\\+)\\d{2}\\:\\d{2})\\b"
+      }
+      {
+        name: "constant.numeric.datetime.bella"
+        match: "\\b(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}(Z)?)\\b"
+      }
+      {
+        name: "constant.numeric.date.bella"
+        match: "\\b(\\d{4}\\-\\d{2}\\-\\d{2})\\b"
+      }
+      {
+        name: "constant.numeric.hex.bella"
+        match: "\\b0(x|X)[0-9a-fA-F_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+      }
+      {
+        name: "constant.numeric.binary.bella"
+        match: "\\b0(b|B)[01_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+      }
+      {
+        name: "constant.numeric.decimal.bella"
+        match: "\\b([0-9_]+)?\\.[0-9_]+((e|E)[0-9]+)?(F|f|D|d|M|m)?\\b"
+      }
+      {
+        name: "constant.numeric.decimal.bella"
+        match: "\\b[0-9_]+(e|E)[0-9_]+(F|f|D|d|M|m)?\\b"
+      }
+      {
+        name: "constant.numeric.decimal.bella"
+        match: "\\b[0-9_]+(F|f|D|d|M|m)\\b"
+      }
+      {
+        name: "constant.numeric.decimal.bella"
+        match: "\\b[0-9_]+(U|u|L|l|UL|Ul|uL|ul|LU|Lu|lU|lu)?\\b"
+      }
+    ]
+  "string-literal":
+    name: "string.quoted.double.bella"
+    begin: "\""
+    beginCaptures:
+      "0":
+        name: "punctuation.definition.string.begin.bella"
+    end: "(\\\")|((?:[^\\\\\\n])$)"
+    endCaptures:
+      "1":
+        name: "punctuation.definition.string.end.bella"
+      "2":
+        name: "invalid.illegal.newline.bella"
+    patterns: [
+      {
+        include: "#string-character-escape"
+      }
+    ]
+  "string-character-escape":
+    name: "constant.character.escape.bella"
+    match: "\\\\."
+  identifier:
+    name: "variable.other.readwrite.bella"
+    match: "@?[_[:alpha:]][_[:alnum:]]*"

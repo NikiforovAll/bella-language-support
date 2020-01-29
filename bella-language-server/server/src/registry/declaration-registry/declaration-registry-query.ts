@@ -28,7 +28,8 @@ export interface NodeRegistrySearchQuery {
     nameFilter?: {
         name: string;
     } & Activatable
-
+    // this should be used only for natural replacements in language: e.g. object, enum, primitiveType
+    // for potential ambiguity - use BellaAmbiguousReference
     fallbackRules?: {
         fallbackTypeProbe: {
             type: DeclarationType

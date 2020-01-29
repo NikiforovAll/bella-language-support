@@ -6,6 +6,7 @@ procedure internalProcedure()
     call DoSomethingUnique(Params)
     // let ObjectForFormula = new
     SomeObject.ToObjectForFormula()
+    let T = new Test;
 
 
 object ObjectForFormula
