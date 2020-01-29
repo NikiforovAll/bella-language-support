@@ -1,5 +1,17 @@
 procedure DoSomethingUnique(Params)
     LogInfo("Unique")
+    UnknownService.internalProcedure()
 
 procedure internalProcedure()
     call DoSomethingUnique(Params)
+    // let ObjectForFormula = new
+    SomeObject.ToObjectForFormula()
+
+
+object ObjectForFormula
+    test1:String
+    test2: Date
+
+formula ToObjectForFormula(String):ObjectForFormula = new Test
+
+object SomeObject: String

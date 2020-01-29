@@ -37,6 +37,7 @@ export { BellaErrorStrategy } from './bella-error-strategy';
 
 export { BellaReference, BellaReferenceType } from './models/bella-reference';
 export { BellaNestedReference } from './models/bella-nested-reference';
+export { BellaAmbiguousReference } from './models/bella-ambiguous-reference';
 
 export class BellaLanguageSupport {
     public static tokenize(expr: string): Token[] {

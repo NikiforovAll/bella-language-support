@@ -95,7 +95,12 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         let invocationExpression = this.visitGenericInvocationLocal(context.genericInvocation())[0];
         let container: BellaAmbiguousReference & BellaNestedReference = {
             ...baseContainer,
-            possibleTypes: [DeclarationType.Service, DeclarationType.Object],
+            possibleTypes: [
+                {
+                    referenceTo: DeclarationType.Object,
+                    nameTo: baseContainer.nameTo
+                }
+            ],
             childTo: invocationExpression.nameTo,
             //TODO: this should be ambiguous
             childType: DeclarationType.ServiceEntry,
@@ -106,9 +111,8 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         // TODO: add ambiguous context for mapping resolution inside registry
         let result = [
             container,
-            // invocationExpression
+            invocationExpression
         ];
-        //TODO: MAJOR - impl ambiguous search for formulas !!!
         return this.accumulateResult(result);
     }
 
@@ -141,9 +145,14 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
         let identifier = genericInvocationContext.Identifier()
             || genericInvocationContext.Error()
             || genericInvocationContext.PrimitiveType();
+        // but procedure will not be defined this scope, it it semantically true, but not real case
+        let identifierReference = (this.visitIdentifierLocal(identifier, DeclarationType.Procedure, false)[0]);
         let result: BellaAmbiguousReference[] = [{
-            ...(this.visitIdentifierLocal(identifier, DeclarationType.Procedure, false)[0]),
-            possibleTypes: [DeclarationType.Procedure, DeclarationType.Formula]
+            ...identifierReference,
+            possibleTypes: [{
+                nameTo: identifierReference.nameTo,
+                referenceTo: DeclarationType.Formula
+            }]
         }];
         return result;
     }

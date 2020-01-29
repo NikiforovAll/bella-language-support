@@ -2,8 +2,9 @@ import { DocumentSymbolParams, LocationLink, Position } from 'vscode-languageser
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { LSPReferenceRegistry } from '../registry/references-registry/lsp-references-registry';
 import { ReferenceFactoryMethods } from '../factories/reference.factory';
-import { BellaReferenceType, DeclarationType, BellaNestedReference } from 'bella-grammar';
+import { BellaReferenceType, DeclarationType, BellaNestedReference, BellaAmbiguousReference } from 'bella-grammar';
 import { NodeRegistrySearchQuery } from '../registry/declaration-registry/declaration-registry-query';
+import _ = require('lodash');
 export class DefinitionHandler {
     constructor(
         private cache: LSPDeclarationRegistry, private refCache: LSPReferenceRegistry) {
@@ -47,6 +48,21 @@ export class DefinitionHandler {
             params.textDocument.uri,
             descendantsQuery
         );
+        const ambiguousToken = referenceToken as BellaAmbiguousReference;
+        const fallbackTypes = ambiguousToken.possibleTypes;
+        if(fallbackTypes && _.isEmpty(symbols)) {
+            for (let index = 0; index < fallbackTypes.length; index++) {
+                let fallbackSearchResult = this.cache.getLSPDeclarationsForNameAndType(
+                    fallbackTypes[index].nameTo,
+                    fallbackTypes[index].referenceTo,
+                    params.textDocument.uri
+                );
+                if(!_.isEmpty(fallbackSearchResult)) {
+                    symbols = fallbackSearchResult;
+                    break;
+                }
+            }
+        }
         let result: LocationLink[] = [];
         for (const symbol of symbols) {
             let ll = ReferenceFactoryMethods.createLSPLocationLink(symbol, referenceToken);
