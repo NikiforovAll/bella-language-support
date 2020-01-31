@@ -34,7 +34,8 @@ export class SnapshotHandler extends BaseHandler {
                     this.exportHostedServices(),
                     this.exportServiceReference(),
                     this.exportProcedures(),
-                    this.exportReferences()
+                    this.exportReferences(),
+                    this.exportObjects()
                 ]);
             })
             .then(() => {
@@ -131,6 +132,52 @@ export class SnapshotHandler extends BaseHandler {
         return writeFile(destPath, JSON.stringify(result, null, 2));
     }
 
+    private exportObjects() {
+        if (!this.folder) {
+            throw "Can't export, folder is not set"
+        }
+        let declarationRegistry = this.cache;
+        let declarations = declarationRegistry.getDeclarationsForQuery({
+            uriFilter: {
+                active: false
+            },
+            namespaceFilter: {
+                active: false,
+                namespace: CommonUtils.SHARED_NAMESPACE_NAME
+            },
+            typeFilter: {
+                active: true,
+                type: DeclarationType.Object
+            },
+            descendantsFilter: {
+                active: true
+            }
+        });
+        let persistentObjects = declarationRegistry.getDeclarationsForQuery({
+            uriFilter: {
+                active: false
+            },
+            namespaceFilter: {
+                active: false,
+                namespace: CommonUtils.SHARED_NAMESPACE_NAME
+            },
+            typeFilter: {
+                active: true,
+                type: DeclarationType.PersistentObject
+            },
+            descendantsFilter: {
+                active: true
+            }
+        });
+        const result = this.groupDeclarationByScope([...declarations, ...persistentObjects]);
+        const destPath = path.join(this.folder, "objects.json");
+        return writeFile(destPath, JSON.stringify(result, null, 2));
+    }
+
+    /**
+     * returns scope for a given uri: common, system, componentName
+     * @param uri - uri to be parsed
+     */
     private getScope(uri: string) {
         if (_.isNil(this.keys)) {
             this.keys = this.cache.getKeys();
@@ -147,7 +194,7 @@ export class SnapshotHandler extends BaseHandler {
             _.groupBy(decs, ((kd: KeyedDeclaration) => this.getScope(kd.uri)))
         const declarations: NamespacedDeclarations[] = _.map(groupedDeclarations, (group, key) => ({
             namespace: key,
-            procedures: group
+            declarations: group
         }))
         return declarations;
     }
@@ -164,7 +211,7 @@ export class SnapshotHandler extends BaseHandler {
 
 interface NamespacedDeclarations {
     namespace: string;
-    procedures: KeyedDeclaration[]
+    declarations: KeyedDeclaration[]
 }
 
 interface NamespacedReferences {

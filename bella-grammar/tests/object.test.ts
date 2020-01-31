@@ -3,7 +3,8 @@ import {
     SimpleObjectDeclaration,
     CompositeObjectDeclaration,
     ObjectBase,
-    ThrowingErrorListener} from "../src/lib/index";
+    ThrowingErrorListener,
+    DeclarationType} from "../src/lib/index";
 import { expect, assert } from "chai";
 import { BellaDeclarationVisitor } from "../src/lib/bella-declaration.visitor";
 describe("object-declaration", () => {
@@ -88,6 +89,22 @@ object Test
         visitor.visit(tree);
         let declarations = visitor.declarations;
         expect(declarations).to.have.lengthOf(1);
+    });
+});
+
+describe("persistent-object-declaration", () => {
+    it("should return parsed persistent object", () => {
+        let input = "persistent object Test:String";
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        expect(declarations).to.have.lengthOf(1);
+        let [ d ] = declarations;
+        let declaration = d as SimpleObjectDeclaration;
+        assert.ok(declaration);
+        // expect(declaration.objectBase).to.equal(ObjectBase.);
+        expect(declaration.type).to.equal(DeclarationType.PersistentObject);
     });
 });
 
