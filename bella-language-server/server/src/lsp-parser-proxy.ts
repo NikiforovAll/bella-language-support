@@ -1,6 +1,7 @@
 import { BellaLanguageSupport, BaseDeclaration, BellaReference, VisitorType, ThrowingErrorListener } from "bella-grammar";
 import { BellaDeclarationVisitor } from "bella-grammar/dist/lib/bella-declaration.visitor";
 import { BellaReferenceVisitor } from "bella-grammar/dist/lib/bella-reference.visitor";
+import { BellaCompletionVisitor } from "bella-grammar/dist/lib/bella-completion.visitor";
 
 export class LSPParserProxy {
 
@@ -22,6 +23,17 @@ export class LSPParserProxy {
         let {references} = referenceVisitor;
         return {
             declarations, references
+        };
+    }
+
+    public scanForCompletions(input: string) {
+        let tree = BellaLanguageSupport.parse(input);
+            BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        let completionVisitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
+        completionVisitor.visit(tree);
+        let { triggers } = completionVisitor;
+        return {
+            triggers
         };
     }
 

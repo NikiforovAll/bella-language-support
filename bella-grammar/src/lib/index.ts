@@ -13,8 +13,9 @@ import { BellaParser } from '../grammars/.antlr4/BellaParser';
 import { BellaDeclarationVisitor } from './bella-declaration.visitor';
 import { BellaErrorStrategy } from './bella-error-strategy';
 import { BellaReferenceVisitor } from './bella-reference.visitor';
-import { CompletionVisitor } from './completion.visitor';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
+import { BellaCompletionVisitor } from './bella-completion.visitor';
+// export { CompletionVisitor } from './completion.visitor';
 
 export {
     BaseDeclaration,
@@ -88,7 +89,7 @@ export class BellaLanguageSupport {
             case VisitorType.ReferencesVisitor:
                 return new BellaReferenceVisitor();
             case VisitorType.CompletionVisitor:
-                return new CompletionVisitor();
+                return new BellaCompletionVisitor();
             default:
                 throw Error('Can\'t create visitor: unknown type');
         }

@@ -31,6 +31,31 @@ export namespace CommonUtils {
         return result;
     }
 
+    export function getDeclarationFullRelativePath(uri: string): string {
+        // const sourceCodeLocation = 'src/Domain/components/';
+        // const pos = uri.lastIndexOf(sourceCodeLocation);
+        // let result;
+        // if(pos === -1) {
+        //     // component shares this namespace
+        //     const commonLastIndex = uri.lastIndexOf('src/Domain/common/')
+        //     result = commonLastIndex !== -1
+        //         ? uri.substr(commonLastIndex)
+        //         : CommonUtils.SHARED_NAMESPACE_NAME;
+        // } else {
+        //     result = uri.substr(pos, uri.length - pos);
+        // }
+        const sourceCodeLocation = 'src/Domain/';
+        const pos = uri.lastIndexOf(sourceCodeLocation);
+        let result;
+        if(pos === -1) {
+            return 'common'
+        } else {
+            result = uri.substr(pos + sourceCodeLocation.length);
+        }
+
+        return result;
+    }
+
     export function range(range: Range): LSP.Range {
         return LSP.Range.create(
             range.startPosition.row,

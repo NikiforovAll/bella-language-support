@@ -1,0 +1,9 @@
+procedure Test()
+    call Test2()
+    LogInfo()
+
+object Params2
+    Test:String
+
+procedure Test2(Param)
+    call Test()

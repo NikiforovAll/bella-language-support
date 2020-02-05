@@ -6,6 +6,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { LSPDeclarationRegistry } from "./registry/declaration-registry/lsp-declaration-registry";
 import { LSPReferenceRegistry } from "./registry/references-registry/lsp-references-registry";
+import { LSPCompletionRegistry } from "./registry/completion-registry.ts/lsp-completion-registry";
 
 type FileDeclarations = { [uri: string]: Declarations };
 type Declarations = { [name: string]: LSP.SymbolInformation[] };
@@ -17,6 +18,7 @@ export default class BellaAnalyzer {
     // private uriToFileContent: Texts = {}
     public declarationCache: LSPDeclarationRegistry;
     public referencesCache: LSPReferenceRegistry;
+    public completionCache: LSPCompletionRegistry;
     private connection: LSP.Connection;
 
 
@@ -27,6 +29,7 @@ export default class BellaAnalyzer {
         this.connection = connection;
         this.declarationCache = new LSPDeclarationRegistry();
         this.referencesCache = new LSPReferenceRegistry();
+        this.completionCache = new LSPCompletionRegistry();
     }
 
     /**
@@ -128,6 +131,18 @@ export default class BellaAnalyzer {
             this.connection.console.warn(`Parsing Error in ${uri}: ${error}`);
         }
         //text snippet below
+    }
+
+    public scanForCompletions(document: LSP.TextDocument) {
+        const contents = document.getText();
+        let { uri } = document;
+        try {
+            this.connection.console.log(`Scanning for completions ${uri}`)
+            let res = this.parser.scanForCompletions(contents);
+            this.completionCache.setTriggers(res.triggers, uri);
+        } catch (error) {
+            this.connection.console.warn(`Scanning Error in ${uri}: ${error}`);
+        }
     }
 }
 

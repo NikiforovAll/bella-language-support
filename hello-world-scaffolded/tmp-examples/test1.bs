@@ -1,1435 +1,1435 @@
-//"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/model/BillingEngine/RevertedVirtualBalanceRecord.bs"
-//"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/model/CrmBackend/Subscription.bs"
-//"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/services/ApiGatewayDtos.bs"
-
-//====
-object SubscribedBundlesPerProduct
-    internetBundles:AvailableBundles
-    tvBundles:AvailableBundles
-    voipBundles:AvailableBundles
-
-procedure CrmPortalGetSubscribedAvailableBundlesPerProductForStartTvOrder(OrderId, out SubscribedBundlesPerProduct)
-    SubscribedBundlesPerProduct = new
-    AdjustingOrder = Fulfillment.GetAdjustingOrderById(OrderId)
-
-    if !(AdjustingOrder is StartTvOrder)
-        error[OrderNotFound] "Start Tv Order with ID " + OrderId + " not found"
-
-    StartTvOrder = AdjustingOrder as StartTvOrder
-    CreateSubscriptionRequestCollection = StartTvOrder.productList
-
-    call GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
-
-
-procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
-    SubscribedBundlesPerProduct = new
-    AvailableProposition = Fulfillment.GetAvailablePropositonByOrderId(OrderId)
-
-    if AvailableProposition is not empty
-        AvailableProducts = AvailableProposition.products
-
-        foreach CreateSubscriptionRequest in CreateSubscriptionRequestCollection
-            SubscribeBundleWithDiscountRequests = CreateSubscriptionRequest.subscribeBundleWithDiscountRequests
-            if AvailableProducts is empty
-                error[EmptyArgument] "No available products connected with available proposition"
-            AvailableProduct = AvailableProducts.First(x => x.id == CreateSubscriptionRequest.productId)
-            BundleIds = SubscribeBundleWithDiscountRequests.Select(x => x.bundleId)
-            let Bundles = AvailableProduct.bundles.Where(x => BundleIds.Contains(x.id))
-            ProductId = CreateSubscriptionRequest.productId
-            Product = ProductCatalog.GetProductById(ProductId)
-            PricePlanId = Product.pricePlan.id
-
-            foreach AvailableBundle in Bundles
-                DiscountId = SubscribeBundleWithDiscountRequests.First(x => x.bundleId == AvailableBundle.id).discountId // unneeded ?
-                BundleId = AvailableBundle.id
-                if !IsEmpty(DiscountId)
-                    Discount = ProductCatalog.GetDiscountById(PricePlanId, BundleId)
-
-                    Amount = Discount.GetDiscountedAmount(AvailableBundle.price)
-
-                    AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
-                    AvailableBundle.discountId = Discount.id
-
-            if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
-                SubscribedBundlesPerProduct.internetBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
-                SubscribedBundlesPerProduct.tvBundles = Bundles
-            else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
-                SubscribedBundlesPerProduct.voipBundles = Bundles
-
-procedure CrmPortalPostponeOrderPropositionVendorCheck(OrderId, Integer)
-    Fulfillment.PostponeOrderPropositionVendorCheck(OrderId, Integer)
-
-procedure CrmPortalCheckOrderProposition(OrderId, out CheckOrderPropositionResponse)
-    CheckOrderPropositionResponse = Fulfillment.CheckOrderProposition(OrderId)
-
-procedure CrmPortalGetOrderById(OrderId, out OrderDto)
-    Order = Fulfillment.GetOrderById(OrderId)
-    OrderDto = new
-    OrderDto.id = OrderId
-    OrderDto.status = Order.status
-    OrderDto.serviceCategoryId = Order.serviceCategoryId
-    OrderDto.vendorId = Order.salesOfficeId
-    OrderDto.propositionId = Order.propositionId
-
-    OrderProductDtoList = new
-    foreach ProductId in Order.productList.Keys()
-        Product = ProductCatalog.GetProductById(ProductId)
-        OrderBundleDtoList = new
-        foreach BundleId in Order.productList[ProductId].subscribeBundleWithDiscountRequests.Select(sbwdr => sbwdr.bundleId)
-            Bundle = ProductCatalog.GetBundleById(BundleId)
-            OrderBundleDtoList ++= new OrderBundleDto(bundleId = BundleId, bundleName = Bundle.name)
-        OrderProductDtoList ++= new OrderProductDto(productId = ProductId,
-            productName = Product.name,
-            bundleList = OrderBundleDtoList,
-            discountIdList = Order.productList[ProductId].subscribeBundleWithDiscountRequests.Select(sbwdr => sbwdr.discountId),
-            cashbackIdList = Order.productList[ProductId].cashbackIdList)
-
-    OrderDto.productList = OrderProductDtoList
-    OrderDto.mandate = Order.mandate.ToDto()
-    OrderDto.customer = Order.customer.ToDto()
-    OrderDto.isNewCustomer = Order.isNewCustomer
-    OrderDto.isOrderFromMyNle = Order.isOrderFromMyNle
-    OrderDto.additionalInformation = Order.additionalInformation
-    OrderDto.createdOn = Order.createdOn
-    OrderDto.startOn = Order.startOn
-    OrderDto.endOn = Order.endOn
-    OrderDto.log = Order.stateHistory.Select(x => x.ToDto())
-    OrderDto.lastOrderEvent = Order.state.ToDto()
-    OrderDto.assignedOrderInfo = Order.assignedOrderInfo.ToDto()
-    OrderDto.correspondedExternalIdList = Order.correspondedExternalIdList.Select(x => x.ToDto())
-    OrderDto.riskLevel = Order.riskLevel
-    OrderDto.isInstallationHelpNeeded = if(Order is AnnaOrder, (Order as AnnaOrder).isInstallationHelpNeeded, if(Order is TriplePlayOrder, (Order as TriplePlayOrder).isInstallationHelpNeeded, false))
-
-procedure CrmPortalGetPropositionsByBundleId(BundleId, out PropositionDtoCollection)
-    PropositionDtoCollection = ProductCatalog.GetPropositionsByBundleId(BundleId).Select(p => p.ToDto())
-
-procedure CrmPortalGetPropositionsByServiceCategoryId(ServiceCategoryId, out PropositionDtoCollection)
-    PropositionDtoCollection = ProductCatalog.GetPropositionsByServiceCategoryId(ServiceCategoryId).Select(p => p.ToDto())
-
-procedure CrmPortalGetBundlesByPropositionId(PropositionId, out BundleDtos)
-    BundleDtos = ProductCatalog.GetBundlesByPropositionId(PropositionId).Select(b => b.ToCrmDto())
-
-procedure CrmPortalUpdateBundleCoverage(UpdateBundleCoverageRequest)
-    ProductCatalog.UpdateBundleCoverage(UpdateBundleCoverageRequest)
-
-procedure CrmPortalAddEventRateClassCoverage(AddEventRateClassCoverageRequest)
-    ProductCatalog.AddEventRateClassCoverage(AddEventRateClassCoverageRequest)
-
-procedure CrmPortalDeleteEventRateClassCoverage(DeleteEventRateClassCoverageRequest)
-    ProductCatalog.DeleteEventRateClassCoverage(DeleteEventRateClassCoverageRequest)
-
-procedure CrmPortalAddBundleCoverageItem(AddBundleCoverageItemRequest, out EventRateClassCoverageId)
-    EventRateClassCoverageId = ProductCatalog.AddBundleCoverageItem(AddBundleCoverageItemRequest)
-
-procedure CrmPortalDeleteBundleCoverageItem(DeleteBundleCoverageItemRequest)
-    ProductCatalog.DeleteBundleCoverageItem(DeleteBundleCoverageItemRequest)
-
-procedure GetBundleCoveragesByBundleId(BundleId, out BundleCoverageDto)
-    BundleCoverageDto = ProductCatalog.GetBundleCoveragesByBundleId(BundleId)
-
-procedure CrmPortalGetDiscountsByPropositionId(PropositionId, out CrmDiscountDtos)
-    CrmDiscountDtos = ProductCatalog.GetDiscountsByPropositionId(PropositionId).Select(b => b.ToCrmDto())
-
-procedure CrmPortalGetPagedOrders(PageNumber, RecordsPerPage, out CrmPortalGetPagedOrdersResponse)
-    CrmPortalGetPagedOrdersResponse = Fulfillment.GetPagedOrders(PageNumber, RecordsPerPage)
-
-procedure CrmPortalGetPagedAndFilteredOrders(CrmPortalOrderFilterDto, PageNumber, RecordsPerPage, out CrmPortalGetFilteredAndPagedOrdersResponse)
-    SalesOfficeIds = ProductCatalog.GetSalesOfficeIdsWithName(CrmPortalOrderFilterDto.salespartnerName)
-    call FillOrderFiltersFromCrmPortalOrderFilterDto(CrmPortalOrderFilterDto, SalesOfficeIds, out OrderFilterList)
-
-    CrmPortalGetFilteredAndPagedOrdersResponse = Fulfillment.GetFilteredAndPagedOrders(OrderFilterList, PageNumber, RecordsPerPage)
-    SalesOfficeNamesById = ProductCatalog.GetSalesOfficeNamesForIds(SalesOfficeIds)
-    foreach OrderInfoShortDto in CrmPortalGetFilteredAndPagedOrdersResponse.orderList
-        if !IsEmpty(OrderInfoShortDto.salesOfficeId)
-            OrderInfoShortDto.salesPartnerName = SalesOfficeNamesById[OrderInfoShortDto.salesOfficeId]
-
-procedure CrmPortalGetFilteredOrdersForCsv(CrmPortalOrderFilterDto, out OrdersForCsv)
-    SalesOfficeIds = ProductCatalog.GetSalesOfficeIdsWithName(CrmPortalOrderFilterDto.salespartnerName)
-    call FillOrderFiltersFromCrmPortalOrderFilterDto(CrmPortalOrderFilterDto, SalesOfficeIds, out OrderFilterList)
-    OrdersForCsv = Fulfillment.GetFilteredOrdersForCsv(OrderFilterList).OrderByDescending(x => x.createdOn)
-    SalesOfficeNamesById = ProductCatalog.GetSalesOfficeNamesForIds(SalesOfficeIds)
-    foreach OrderForCsv in OrdersForCsv
-        if !IsEmpty(OrderForCsv.salesPartnerId)
-            OrderForCsv.salesPartnerName = SalesOfficeNamesById[OrderForCsv.salesPartnerId]
+// //"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/model/BillingEngine/RevertedVirtualBalanceRecord.bs"
+// //"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/model/CrmBackend/Subscription.bs"
+// //"file:///c%3A/Nikiforov/dev/nuts-bella/src/Domain/common/services/ApiGatewayDtos.bs"
+
+// //====
+// object SubscribedBundlesPerProduct
+//     internetBundles:AvailableBundles
+//     tvBundles:AvailableBundles
+//     voipBundles:AvailableBundles
+
+// procedure CrmPortalGetSubscribedAvailableBundlesPerProductForStartTvOrder(OrderId, out SubscribedBundlesPerProduct)
+//     SubscribedBundlesPerProduct = new
+//     AdjustingOrder = Fulfillment.GetAdjustingOrderById(OrderId)
+
+//     if !(AdjustingOrder is StartTvOrder)
+//         error[OrderNotFound] "Start Tv Order with ID " + OrderId + " not found"
+
+//     StartTvOrder = AdjustingOrder as StartTvOrder
+//     CreateSubscriptionRequestCollection = StartTvOrder.productList
+
+//     call GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
+
+
+// procedure GetSubscribedAvailableBundlesPerProduct(OrderId, CreateSubscriptionRequestCollection, out SubscribedBundlesPerProduct)
+//     SubscribedBundlesPerProduct = new
+//     AvailableProposition = Fulfillment.GetAvailablePropositonByOrderId(OrderId)
+
+//     if AvailableProposition is not empty
+//         AvailableProducts = AvailableProposition.products
+
+//         foreach CreateSubscriptionRequest in CreateSubscriptionRequestCollection
+//             SubscribeBundleWithDiscountRequests = CreateSubscriptionRequest.subscribeBundleWithDiscountRequests
+//             if AvailableProducts is empty
+//                 error[EmptyArgument] "No available products connected with available proposition"
+//             AvailableProduct = AvailableProducts.First(x => x.id == CreateSubscriptionRequest.productId)
+//             BundleIds = SubscribeBundleWithDiscountRequests.Select(x => x.bundleId)
+//             let Bundles = AvailableProduct.bundles.Where(x => BundleIds.Contains(x.id))
+//             ProductId = CreateSubscriptionRequest.productId
+//             Product = ProductCatalog.GetProductById(ProductId)
+//             PricePlanId = Product.pricePlan.id
+
+//             foreach AvailableBundle in Bundles
+//                 DiscountId = SubscribeBundleWithDiscountRequests.First(x => x.bundleId == AvailableBundle.id).discountId // unneeded ?
+//                 BundleId = AvailableBundle.id
+//                 if !IsEmpty(DiscountId)
+//                     Discount = ProductCatalog.GetDiscountById(PricePlanId, BundleId)
+
+//                     Amount = Discount.GetDiscountedAmount(AvailableBundle.price)
+
+//                     AvailableBundle.additionalInfos ++= new AdditionalInfo(name = "discountedPrice", value = Amount + "")
+//                     AvailableBundle.discountId = Discount.id
+
+//             if AvailableProduct.typeOfServiceId == InternetTypeOfServiceId
+//                 SubscribedBundlesPerProduct.internetBundles = Bundles
+//             else if AvailableProduct.typeOfServiceId == TvTypeOfServiceId
+//                 SubscribedBundlesPerProduct.tvBundles = Bundles
+//             else if AvailableProduct.typeOfServiceId == VoipTypeOfServiceId
+//                 SubscribedBundlesPerProduct.voipBundles = Bundles
+
+// procedure CrmPortalPostponeOrderPropositionVendorCheck(OrderId, Integer)
+//     Fulfillment.PostponeOrderPropositionVendorCheck(OrderId, Integer)
+
+// procedure CrmPortalCheckOrderProposition(OrderId, out CheckOrderPropositionResponse)
+//     CheckOrderPropositionResponse = Fulfillment.CheckOrderProposition(OrderId)
+
+// procedure CrmPortalGetOrderById(OrderId, out OrderDto)
+//     Order = Fulfillment.GetOrderById(OrderId)
+//     OrderDto = new
+//     OrderDto.id = OrderId
+//     OrderDto.status = Order.status
+//     OrderDto.serviceCategoryId = Order.serviceCategoryId
+//     OrderDto.vendorId = Order.salesOfficeId
+//     OrderDto.propositionId = Order.propositionId
+
+//     OrderProductDtoList = new
+//     foreach ProductId in Order.productList.Keys()
+//         Product = ProductCatalog.GetProductById(ProductId)
+//         OrderBundleDtoList = new
+//         foreach BundleId in Order.productList[ProductId].subscribeBundleWithDiscountRequests.Select(sbwdr => sbwdr.bundleId)
+//             Bundle = ProductCatalog.GetBundleById(BundleId)
+//             OrderBundleDtoList ++= new OrderBundleDto(bundleId = BundleId, bundleName = Bundle.name)
+//         OrderProductDtoList ++= new OrderProductDto(productId = ProductId,
+//             productName = Product.name,
+//             bundleList = OrderBundleDtoList,
+//             discountIdList = Order.productList[ProductId].subscribeBundleWithDiscountRequests.Select(sbwdr => sbwdr.discountId),
+//             cashbackIdList = Order.productList[ProductId].cashbackIdList)
+
+//     OrderDto.productList = OrderProductDtoList
+//     OrderDto.mandate = Order.mandate.ToDto()
+//     OrderDto.customer = Order.customer.ToDto()
+//     OrderDto.isNewCustomer = Order.isNewCustomer
+//     OrderDto.isOrderFromMyNle = Order.isOrderFromMyNle
+//     OrderDto.additionalInformation = Order.additionalInformation
+//     OrderDto.createdOn = Order.createdOn
+//     OrderDto.startOn = Order.startOn
+//     OrderDto.endOn = Order.endOn
+//     OrderDto.log = Order.stateHistory.Select(x => x.ToDto())
+//     OrderDto.lastOrderEvent = Order.state.ToDto()
+//     OrderDto.assignedOrderInfo = Order.assignedOrderInfo.ToDto()
+//     OrderDto.correspondedExternalIdList = Order.correspondedExternalIdList.Select(x => x.ToDto())
+//     OrderDto.riskLevel = Order.riskLevel
+//     OrderDto.isInstallationHelpNeeded = if(Order is AnnaOrder, (Order as AnnaOrder).isInstallationHelpNeeded, if(Order is TriplePlayOrder, (Order as TriplePlayOrder).isInstallationHelpNeeded, false))
+
+// procedure CrmPortalGetPropositionsByBundleId(BundleId, out PropositionDtoCollection)
+//     PropositionDtoCollection = ProductCatalog.GetPropositionsByBundleId(BundleId).Select(p => p.ToDto())
+
+// procedure CrmPortalGetPropositionsByServiceCategoryId(ServiceCategoryId, out PropositionDtoCollection)
+//     PropositionDtoCollection = ProductCatalog.GetPropositionsByServiceCategoryId(ServiceCategoryId).Select(p => p.ToDto())
+
+// procedure CrmPortalGetBundlesByPropositionId(PropositionId, out BundleDtos)
+//     BundleDtos = ProductCatalog.GetBundlesByPropositionId(PropositionId).Select(b => b.ToCrmDto())
+
+// procedure CrmPortalUpdateBundleCoverage(UpdateBundleCoverageRequest)
+//     ProductCatalog.UpdateBundleCoverage(UpdateBundleCoverageRequest)
+
+// procedure CrmPortalAddEventRateClassCoverage(AddEventRateClassCoverageRequest)
+//     ProductCatalog.AddEventRateClassCoverage(AddEventRateClassCoverageRequest)
+
+// procedure CrmPortalDeleteEventRateClassCoverage(DeleteEventRateClassCoverageRequest)
+//     ProductCatalog.DeleteEventRateClassCoverage(DeleteEventRateClassCoverageRequest)
+
+// procedure CrmPortalAddBundleCoverageItem(AddBundleCoverageItemRequest, out EventRateClassCoverageId)
+//     EventRateClassCoverageId = ProductCatalog.AddBundleCoverageItem(AddBundleCoverageItemRequest)
+
+// procedure CrmPortalDeleteBundleCoverageItem(DeleteBundleCoverageItemRequest)
+//     ProductCatalog.DeleteBundleCoverageItem(DeleteBundleCoverageItemRequest)
+
+// procedure GetBundleCoveragesByBundleId(BundleId, out BundleCoverageDto)
+//     BundleCoverageDto = ProductCatalog.GetBundleCoveragesByBundleId(BundleId)
+
+// procedure CrmPortalGetDiscountsByPropositionId(PropositionId, out CrmDiscountDtos)
+//     CrmDiscountDtos = ProductCatalog.GetDiscountsByPropositionId(PropositionId).Select(b => b.ToCrmDto())
+
+// procedure CrmPortalGetPagedOrders(PageNumber, RecordsPerPage, out CrmPortalGetPagedOrdersResponse)
+//     CrmPortalGetPagedOrdersResponse = Fulfillment.GetPagedOrders(PageNumber, RecordsPerPage)
+
+// procedure CrmPortalGetPagedAndFilteredOrders(CrmPortalOrderFilterDto, PageNumber, RecordsPerPage, out CrmPortalGetFilteredAndPagedOrdersResponse)
+//     SalesOfficeIds = ProductCatalog.GetSalesOfficeIdsWithName(CrmPortalOrderFilterDto.salespartnerName)
+//     call FillOrderFiltersFromCrmPortalOrderFilterDto(CrmPortalOrderFilterDto, SalesOfficeIds, out OrderFilterList)
+
+//     CrmPortalGetFilteredAndPagedOrdersResponse = Fulfillment.GetFilteredAndPagedOrders(OrderFilterList, PageNumber, RecordsPerPage)
+//     SalesOfficeNamesById = ProductCatalog.GetSalesOfficeNamesForIds(SalesOfficeIds)
+//     foreach OrderInfoShortDto in CrmPortalGetFilteredAndPagedOrdersResponse.orderList
+//         if !IsEmpty(OrderInfoShortDto.salesOfficeId)
+//             OrderInfoShortDto.salesPartnerName = SalesOfficeNamesById[OrderInfoShortDto.salesOfficeId]
+
+// procedure CrmPortalGetFilteredOrdersForCsv(CrmPortalOrderFilterDto, out OrdersForCsv)
+//     SalesOfficeIds = ProductCatalog.GetSalesOfficeIdsWithName(CrmPortalOrderFilterDto.salespartnerName)
+//     call FillOrderFiltersFromCrmPortalOrderFilterDto(CrmPortalOrderFilterDto, SalesOfficeIds, out OrderFilterList)
+//     OrdersForCsv = Fulfillment.GetFilteredOrdersForCsv(OrderFilterList).OrderByDescending(x => x.createdOn)
+//     SalesOfficeNamesById = ProductCatalog.GetSalesOfficeNamesForIds(SalesOfficeIds)
+//     foreach OrderForCsv in OrdersForCsv
+//         if !IsEmpty(OrderForCsv.salesPartnerId)
+//             OrderForCsv.salesPartnerName = SalesOfficeNamesById[OrderForCsv.salesPartnerId]
 
-procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
-    call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
-    GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
-    call ReplaceProcessesCreatedBy(Processes = GetPagedAndFilteredAdjustingProcessesResponse.processes, AccountId = empty)
-    CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = GetPagedAndFilteredAdjustingProcessesResponse.ToCrmPortalDto()
+// procedure CrmPortalGetPagedAndFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, PageNumber, PerPage, out CrmPortalGetPagedAndFilteredAdjustingProcessesResponse)
+//     call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
+//     GetPagedAndFilteredAdjustingProcessesResponse = Fulfillment.GetPagedAndFilteredAdjustingProcesses(AdjustingProcessFilterList, PageNumber, PerPage)
+//     call ReplaceProcessesCreatedBy(Processes = GetPagedAndFilteredAdjustingProcessesResponse.processes, AccountId = empty)
+//     CrmPortalGetPagedAndFilteredAdjustingProcessesResponse = GetPagedAndFilteredAdjustingProcessesResponse.ToCrmPortalDto()
 
-procedure CrmPortalGetFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, out FlowProcesses)
-    call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
-    Processes = Fulfillment.GetFilteredAdjustingProcesses(AdjustingProcessFilterList)
-    call ReplaceProcessesCreatedBy(Processes, AccountId = empty)
-    FlowProcesses = Processes.Select(x => x as FlowProcess)
+// procedure CrmPortalGetFilteredAdjustingProcesses(CrmPortalAdjustingProcessListFilterDto, out FlowProcesses)
+//     call FillAdjustingProcessFiltersFromCrmPortalAdjustingProcessListFilterDto(CrmPortalAdjustingProcessListFilterDto, out AdjustingProcessFilterList)
+//     Processes = Fulfillment.GetFilteredAdjustingProcesses(AdjustingProcessFilterList)
+//     call ReplaceProcessesCreatedBy(Processes, AccountId = empty)
+//     FlowProcesses = Processes.Select(x => x as FlowProcess)
 
-procedure CrmPortalGetServiceCategoriesByTypeOfServiceId(TypeOfServiceId, out ServiceCategoryFulfillmentPartListDtos)
-    ServiceCategoryFulfillmentPartListDtos = Fulfillment.GetServiceCategoriesByTypeOfServiceId(TypeOfServiceId).Select(sc => sc.ToCrmDto())
+// procedure CrmPortalGetServiceCategoriesByTypeOfServiceId(TypeOfServiceId, out ServiceCategoryFulfillmentPartListDtos)
+//     ServiceCategoryFulfillmentPartListDtos = Fulfillment.GetServiceCategoriesByTypeOfServiceId(TypeOfServiceId).Select(sc => sc.ToCrmDto())
 
-procedure CrmPortalGetTypeOfServicesByServiceCategoryId(ServiceCategoryId, out TypeOfServiceListDtos)
-    TypeOfServiceListDtos = Fulfillment.GetTypeOfServicesByServiceCategoryId(ServiceCategoryId).Select(tos => tos.ToCrmDto())
-procedure CrmPortalPutOrderOnHoldManually(OrderId)
-    Fulfillment.PutOrderOnHoldManually(OrderId)
+// procedure CrmPortalGetTypeOfServicesByServiceCategoryId(ServiceCategoryId, out TypeOfServiceListDtos)
+//     TypeOfServiceListDtos = Fulfillment.GetTypeOfServicesByServiceCategoryId(ServiceCategoryId).Select(tos => tos.ToCrmDto())
+// procedure CrmPortalPutOrderOnHoldManually(OrderId)
+//     Fulfillment.PutOrderOnHoldManually(OrderId)
 
-procedure CrmPortalReturnOrderBackToProccessAfterOnHoldManually(OrderId)
-    Fulfillment.ReturnOrderBackToProccessAfterOnHoldManually(OrderId)
+// procedure CrmPortalReturnOrderBackToProccessAfterOnHoldManually(OrderId)
+//     Fulfillment.ReturnOrderBackToProccessAfterOnHoldManually(OrderId)
 
-procedure CrmPortalCreateOrdersFromGui(CreatedBy, CrmPortalCreateOrderRequestsList, out CreateOrderResponsesList)
-    CreateOrderRequestsList = new
-    foreach CrmPortalCreateOrderRequest in CrmPortalCreateOrderRequestsList
-        call CheckCrmOrderObjectType(CrmPortalCreateOrderRequest)
+// procedure CrmPortalCreateOrdersFromGui(CreatedBy, CrmPortalCreateOrderRequestsList, out CreateOrderResponsesList)
+//     CreateOrderRequestsList = new
+//     foreach CrmPortalCreateOrderRequest in CrmPortalCreateOrderRequestsList
+//         call CheckCrmOrderObjectType(CrmPortalCreateOrderRequest)
 
-        if CrmPortalCreateOrderRequest is CrmPortalCreateTriplePlayOrderRequest
-            CrmPortalCreateTriplePlayOrderRequest = CrmPortalCreateOrderRequest as CrmPortalCreateTriplePlayOrderRequest
+//         if CrmPortalCreateOrderRequest is CrmPortalCreateTriplePlayOrderRequest
+//             CrmPortalCreateTriplePlayOrderRequest = CrmPortalCreateOrderRequest as CrmPortalCreateTriplePlayOrderRequest
 
-            if !CrmPortalCreateTriplePlayOrderRequest.isSwitchServiceNeeded && !CrmPortalCreateTriplePlayOrderRequest.isUrgent
-                LogInfo("Regular TriplePlay order detected")
-                CreateOrderRequestsList ++= CrmPortalCreateTriplePlayOrderRequest.ToCreateRegularTriplePlayOrderRequest()
-            // else if !CrmPortalCreateTriplePlayOrderRequest.isSwitchServiceNeeded && CrmPortalCreateTriplePlayOrderRequest.isUrgent
-            //     LogInfo("Urgent TriplePlay order detected")
-            //     CreateOrderRequestsList ++= CrmPortalCreateTriplePlayOrderRequest.ToCreateUrgentTriplePlayOrderRequest()
-            else
-                LogInfo("Overstap TriplePlay order detected")
-                CreateOrderRequestsList ++= CrmPortalCreateOrderRequest.ToCreateOrderRequestFromCrmGui()
-        else
-            CreateOrderRequestsList ++= CrmPortalCreateOrderRequest.ToCreateOrderRequestFromCrmGui()
-    CreateOrderResponsesList = Fulfillment.CreateOrders(CreatedBy, CreateOrderRequestsList)
+//             if !CrmPortalCreateTriplePlayOrderRequest.isSwitchServiceNeeded && !CrmPortalCreateTriplePlayOrderRequest.isUrgent
+//                 LogInfo("Regular TriplePlay order detected")
+//                 CreateOrderRequestsList ++= CrmPortalCreateTriplePlayOrderRequest.ToCreateRegularTriplePlayOrderRequest()
+//             // else if !CrmPortalCreateTriplePlayOrderRequest.isSwitchServiceNeeded && CrmPortalCreateTriplePlayOrderRequest.isUrgent
+//             //     LogInfo("Urgent TriplePlay order detected")
+//             //     CreateOrderRequestsList ++= CrmPortalCreateTriplePlayOrderRequest.ToCreateUrgentTriplePlayOrderRequest()
+//             else
+//                 LogInfo("Overstap TriplePlay order detected")
+//                 CreateOrderRequestsList ++= CrmPortalCreateOrderRequest.ToCreateOrderRequestFromCrmGui()
+//         else
+//             CreateOrderRequestsList ++= CrmPortalCreateOrderRequest.ToCreateOrderRequestFromCrmGui()
+//     CreateOrderResponsesList = Fulfillment.CreateOrders(CreatedBy, CreateOrderRequestsList)
 
-procedure CrmPortalCreateOrdersFromCsv(CreatedBy, CrmPortalCsvCreateOrderRequestsList, out CreateOrderResponsesList)
-    CreateOrderRequestsList = new
-    foreach CrmPortalCsvCreateOrderRequest in CrmPortalCsvCreateOrderRequestsList
-        call CheckCrmCsvOrderObjectType(CrmPortalCsvCreateOrderRequest)
-        CreateOrderRequestsList ++= CrmPortalCsvCreateOrderRequest.ToCreateOrderRequestFromCrmCsv()
-    CreateOrderResponsesList = Fulfillment.CreateOrders(CreatedBy, CreateOrderRequestsList)
+// procedure CrmPortalCreateOrdersFromCsv(CreatedBy, CrmPortalCsvCreateOrderRequestsList, out CreateOrderResponsesList)
+//     CreateOrderRequestsList = new
+//     foreach CrmPortalCsvCreateOrderRequest in CrmPortalCsvCreateOrderRequestsList
+//         call CheckCrmCsvOrderObjectType(CrmPortalCsvCreateOrderRequest)
+//         CreateOrderRequestsList ++= CrmPortalCsvCreateOrderRequest.ToCreateOrderRequestFromCrmCsv()
+//     CreateOrderResponsesList = Fulfillment.CreateOrders(CreatedBy, CreateOrderRequestsList)
 
-procedure CrmPortalUpdateOrder(CrmPortalUpdateOrderRequest, out BaseOrderResponse)
-    UpdateOrderRequest = CrmPortalUpdateOrderRequest.ToUpdateOrderRequest()
-    BaseOrderResponse = Fulfillment.UpdateOrder(UpdateOrderRequest)
+// procedure CrmPortalUpdateOrder(CrmPortalUpdateOrderRequest, out BaseOrderResponse)
+//     UpdateOrderRequest = CrmPortalUpdateOrderRequest.ToUpdateOrderRequest()
+//     BaseOrderResponse = Fulfillment.UpdateOrder(UpdateOrderRequest)
 
-procedure CrmPortalGetAnnaOrdersForPlugwise(PageNumber, PerPage, out AnnaOrdersForPlugwiseResponse)
-   AnnaOrdersForPlugwiseResponse = Fulfillment.GetAnnaOrdersForPlugwise(PageNumber, PerPage)
+// procedure CrmPortalGetAnnaOrdersForPlugwise(PageNumber, PerPage, out AnnaOrdersForPlugwiseResponse)
+//    AnnaOrdersForPlugwiseResponse = Fulfillment.GetAnnaOrdersForPlugwise(PageNumber, PerPage)
 
-procedure CrmPortalSkipOrderCooldownPeriod(OrderId,out OrderStatus)
-    OrderStatus = Fulfillment.SkipOrderCooldownPeriod(OrderId)
+// procedure CrmPortalSkipOrderCooldownPeriod(OrderId,out OrderStatus)
+//     OrderStatus = Fulfillment.SkipOrderCooldownPeriod(OrderId)
 
-procedure CrmPortalGetAllTypesOfService(out TypeOfServiceListDtos)
-    TypeOfServiceListDtos = ProductCatalog.GetAllTypesOfService().Select(t => t.ToCrmDto())
+// procedure CrmPortalGetAllTypesOfService(out TypeOfServiceListDtos)
+//     TypeOfServiceListDtos = ProductCatalog.GetAllTypesOfService().Select(t => t.ToCrmDto())
 
-procedure CrmPortalGetRangeOfTypesOfService(TypeOfServiceIdCollection,out TypeOfServiceListDtos)
-    TypeOfServiceListDtos = ProductCatalog.GetRangeOfTypeOfServices(TypeOfServiceIdCollection).Select(t => t.ToCrmDto())
+// procedure CrmPortalGetRangeOfTypesOfService(TypeOfServiceIdCollection,out TypeOfServiceListDtos)
+//     TypeOfServiceListDtos = ProductCatalog.GetRangeOfTypeOfServices(TypeOfServiceIdCollection).Select(t => t.ToCrmDto())
 
-procedure CrmPortalGetTypeOfServiceById(TypeOfServiceId, out TypeOfServiceDto)
-    TypeOfServiceDto = ProductCatalog.GetTypeOfServiceById(TypeOfServiceId).ToCrmDto()
+// procedure CrmPortalGetTypeOfServiceById(TypeOfServiceId, out TypeOfServiceDto)
+//     TypeOfServiceDto = ProductCatalog.GetTypeOfServiceById(TypeOfServiceId).ToCrmDto()
 
-procedure CrmPortalDeleteTypeOfService(TypeOfServiceId)
-    ProductCatalog.DeleteTypeOfService(TypeOfServiceId)
+// procedure CrmPortalDeleteTypeOfService(TypeOfServiceId)
+//     ProductCatalog.DeleteTypeOfService(TypeOfServiceId)
 
-procedure CrmPortalCreateTypeOfService(TypeOfServiceCreationRequest, out TypeOfServiceId)
-    TypeOfServiceId = ProductCatalog.CreateTypeOfService(TypeOfServiceCreationRequest)
+// procedure CrmPortalCreateTypeOfService(TypeOfServiceCreationRequest, out TypeOfServiceId)
+//     TypeOfServiceId = ProductCatalog.CreateTypeOfService(TypeOfServiceCreationRequest)
 
-procedure CrmPortalUpdateTypeOfService(TypeOfServiceUpdateRequest)
-    ProductCatalog.UpdateTypeOfService(TypeOfServiceUpdateRequest)
+// procedure CrmPortalUpdateTypeOfService(TypeOfServiceUpdateRequest)
+//     ProductCatalog.UpdateTypeOfService(TypeOfServiceUpdateRequest)
 
-procedure CrmPortalCreateBundle(BundleCreationRequest, out BundleId)
-    BundleId = ProductCatalog.CreateBundle(BundleCreationRequest)
+// procedure CrmPortalCreateBundle(BundleCreationRequest, out BundleId)
+//     BundleId = ProductCatalog.CreateBundle(BundleCreationRequest)
 
-procedure CrmPortalUpdateBundle(BundleUpdateRequest)
-    ProductCatalog.UpdateBundle(BundleUpdateRequest)
+// procedure CrmPortalUpdateBundle(BundleUpdateRequest)
+//     ProductCatalog.UpdateBundle(BundleUpdateRequest)
 
-procedure CrmPortalDeleteBundle(BundleId)
-    ProductCatalog.DeleteBundle(BundleId)
+// procedure CrmPortalDeleteBundle(BundleId)
+//     ProductCatalog.DeleteBundle(BundleId)
 
-procedure CrmPortalGetAllBundles(out BundleDtos)
-    BundleDtos = ProductCatalog.GetAllBundles().Select(x => x.ToCrmDto())
+// procedure CrmPortalGetAllBundles(out BundleDtos)
+//     BundleDtos = ProductCatalog.GetAllBundles().Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetBundlesByTypeOfServiceId(TypeOfServiceId, out BundleDtos)
+// procedure CrmPortalGetBundlesByTypeOfServiceId(TypeOfServiceId, out BundleDtos)
 
-    BundleDtos = ProductCatalog.GetBundlesByTypeOfServiceId(TypeOfServiceId).Select(x => x.ToCrmDto())
+//     BundleDtos = ProductCatalog.GetBundlesByTypeOfServiceId(TypeOfServiceId).Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetPartialBundles(GetPartialBundleRequest,out GetPartialBundlesResponse)
-    GetPartialBundlesResponse = ProductCatalog.GetPartialBundles(GetPartialBundleRequest)
+// procedure CrmPortalGetPartialBundles(GetPartialBundleRequest,out GetPartialBundlesResponse)
+//     GetPartialBundlesResponse = ProductCatalog.GetPartialBundles(GetPartialBundleRequest)
 
 
-procedure CrmPortalGetBundlesByProductTemplateId(ProductTemplateId, out BundleDtos)
+// procedure CrmPortalGetBundlesByProductTemplateId(ProductTemplateId, out BundleDtos)
 
-    BundleDtos = ProductCatalog.GetBundlesByProductTemplateId(ProductTemplateId).Select(x => x.ToCrmDto())
+//     BundleDtos = ProductCatalog.GetBundlesByProductTemplateId(ProductTemplateId).Select(x => x.ToCrmDto())
 
 
-procedure CrmPortalGetBundleById(BundleId, out BundleDto)
-    BundleDto = ProductCatalog.GetBundleById(BundleId).ToCrmDto()
+// procedure CrmPortalGetBundleById(BundleId, out BundleDto)
+//     BundleDto = ProductCatalog.GetBundleById(BundleId).ToCrmDto()
 
-procedure CrmPortalCreateProposition(PropositionCreationRequest, out PropositionId)
+// procedure CrmPortalCreateProposition(PropositionCreationRequest, out PropositionId)
 
-    PropositionId = ProductCatalog.CreateProposition(PropositionCreationRequest)
+//     PropositionId = ProductCatalog.CreateProposition(PropositionCreationRequest)
 
 
-procedure CrmPortalGetPropositionById(PropositionId, out PropositionDto)
+// procedure CrmPortalGetPropositionById(PropositionId, out PropositionDto)
 
-    PropositionDto = ProductCatalog.GetPropositionById(PropositionId).ToDto()
+//     PropositionDto = ProductCatalog.GetPropositionById(PropositionId).ToDto()
 
 
-procedure CrmPortalGetAllPropositions(out PropositionDtoCollection)
-    PropositionDtoCollection = ProductCatalog.GetAllPropositions().Select(x => x.ToDto())
-    PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
-    foreach PropositionDto in PropositionDtoCollection
-        if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
-            PropositionDto.activeForMonthlyTerminablePackages = true
-        else
-            PropositionDto.activeForMonthlyTerminablePackages = false
+// procedure CrmPortalGetAllPropositions(out PropositionDtoCollection)
+//     PropositionDtoCollection = ProductCatalog.GetAllPropositions().Select(x => x.ToDto())
+//     PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
+//     foreach PropositionDto in PropositionDtoCollection
+//         if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
+//             PropositionDto.activeForMonthlyTerminablePackages = true
+//         else
+//             PropositionDto.activeForMonthlyTerminablePackages = false
 
-procedure CrmPortalGetAllPagedPropositions(PageNumber, PerPage, out PagedPropositionsResponceDto)
-    PagedPropositionsResponceDto = ProductCatalog.GetAllPagedPropositions(PageNumber, PerPage).ToDto()
-    PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
-    foreach PropositionDto in PagedPropositionsResponceDto.dataRows
-        if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
-            PropositionDto.activeForMonthlyTerminablePackages = true
-        else
-            PropositionDto.activeForMonthlyTerminablePackages = false
+// procedure CrmPortalGetAllPagedPropositions(PageNumber, PerPage, out PagedPropositionsResponceDto)
+//     PagedPropositionsResponceDto = ProductCatalog.GetAllPagedPropositions(PageNumber, PerPage).ToDto()
+//     PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
+//     foreach PropositionDto in PagedPropositionsResponceDto.dataRows
+//         if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
+//             PropositionDto.activeForMonthlyTerminablePackages = true
+//         else
+//             PropositionDto.activeForMonthlyTerminablePackages = false
 
-procedure CrmPortalGetAllPagedAndFilteredPropositions(PageNumber, PerPage, CrmPortalPropositionFilterSortDto, out PagedPropositionsResponceDto)
-    call FillPropositionFiltersFromCrmPortalPropositionFilterDto(CrmPortalPropositionFilterSortDto, out FilterQueryCollection)
-    if IsEmpty(FilterQueryCollection) && IsEmpty(CrmPortalPropositionFilterSortDto.sorting)
-        PagedPropositionsResponceDto = ProductCatalog.GetAllPagedPropositions(PageNumber, PerPage).ToDto()
-    else
-        PagedPropositionsResponceDto = ProductCatalog.GetAllPagedAndFilteredPropositions(PageNumber, PerPage, CrmPortalPropositionFilterSortDto.sorting, FilterQueryCollection).ToDto()
-    PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
-    foreach PropositionDto in PagedPropositionsResponceDto.dataRows
-        if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
-            PropositionDto.activeForMonthlyTerminablePackages = true
-        else
-            PropositionDto.activeForMonthlyTerminablePackages = false
+// procedure CrmPortalGetAllPagedAndFilteredPropositions(PageNumber, PerPage, CrmPortalPropositionFilterSortDto, out PagedPropositionsResponceDto)
+//     call FillPropositionFiltersFromCrmPortalPropositionFilterDto(CrmPortalPropositionFilterSortDto, out FilterQueryCollection)
+//     if IsEmpty(FilterQueryCollection) && IsEmpty(CrmPortalPropositionFilterSortDto.sorting)
+//         PagedPropositionsResponceDto = ProductCatalog.GetAllPagedPropositions(PageNumber, PerPage).ToDto()
+//     else
+//         PagedPropositionsResponceDto = ProductCatalog.GetAllPagedAndFilteredPropositions(PageNumber, PerPage, CrmPortalPropositionFilterSortDto.sorting, FilterQueryCollection).ToDto()
+//     PropositionIdsActiveForMonthlyterminablePackages = ProductCatalog.GetProposiotionIdsActiveForMonthlyTerminablePackages()
+//     foreach PropositionDto in PagedPropositionsResponceDto.dataRows
+//         if PropositionIdsActiveForMonthlyterminablePackages[PropositionDto.serviceCategoryId] == PropositionDto.id
+//             PropositionDto.activeForMonthlyTerminablePackages = true
+//         else
+//             PropositionDto.activeForMonthlyTerminablePackages = false
 
-procedure CrmPortalGetFilteredPropositions(SalesOfferPropositionsFilter, out PropositionDtoCollection)
+// procedure CrmPortalGetFilteredPropositions(SalesOfferPropositionsFilter, out PropositionDtoCollection)
 
-    PropositionDtoCollection = ProductCatalog.GetFilteredPropositions(SalesOfferPropositionsFilter)
-        .Select(p => p.ToDto())
+//     PropositionDtoCollection = ProductCatalog.GetFilteredPropositions(SalesOfferPropositionsFilter)
+//         .Select(p => p.ToDto())
 
 
-procedure CrmPortalUpdateProposition(PropositionUpdateRequest)
+// procedure CrmPortalUpdateProposition(PropositionUpdateRequest)
 
-    ProductCatalog.UpdateProposition(PropositionUpdateRequest)
+//     ProductCatalog.UpdateProposition(PropositionUpdateRequest)
 
-procedure CrmPortalUpdatePropositions(PropositionsUpdateRequest)
-    foreach PropositionUpdateRequest in PropositionsUpdateRequest.requests
-        ProductCatalog.UpdateProposition(PropositionUpdateRequest)
+// procedure CrmPortalUpdatePropositions(PropositionsUpdateRequest)
+//     foreach PropositionUpdateRequest in PropositionsUpdateRequest.requests
+//         ProductCatalog.UpdateProposition(PropositionUpdateRequest)
 
-procedure CrmPortalDeleteProposition(PropositionId)
+// procedure CrmPortalDeleteProposition(PropositionId)
 
-    ProductCatalog.DeleteProposition(PropositionId)
+//     ProductCatalog.DeleteProposition(PropositionId)
 
 
-procedure CrmPortalCreateProductTemplate(ProductTemplateCreationRequest, out ProductTemplateId)
+// procedure CrmPortalCreateProductTemplate(ProductTemplateCreationRequest, out ProductTemplateId)
 
-    ProductTemplateId = ProductCatalog.CreateProductTemplate(ProductTemplateCreationRequest)
+//     ProductTemplateId = ProductCatalog.CreateProductTemplate(ProductTemplateCreationRequest)
 
 
-procedure CrmPortalGetProductTemplateById(ProductTemplateId, out CrmProductTemplateDto)
+// procedure CrmPortalGetProductTemplateById(ProductTemplateId, out CrmProductTemplateDto)
 
-    CrmProductTemplateDto = ProductCatalog.GetProductTemplateById(ProductTemplateId).ToDto()
+//     CrmProductTemplateDto = ProductCatalog.GetProductTemplateById(ProductTemplateId).ToDto()
 
-    CrmProductTemplateDto.IsIncludeProductTemplateInProducts = ProductCatalog.IsIncludeProductTemplateInProducts(CrmProductTemplateDto.id)
+//     CrmProductTemplateDto.IsIncludeProductTemplateInProducts = ProductCatalog.IsIncludeProductTemplateInProducts(CrmProductTemplateDto.id)
 
 
-procedure CrmPortalGetAllProductTemplates(out CrmProductTemplateDtoCollection)
+// procedure CrmPortalGetAllProductTemplates(out CrmProductTemplateDtoCollection)
 
-    CrmProductTemplateDtoCollection = ProductCatalog.GetAllProductTemplates().Select(x => x.ToDto())
+//     CrmProductTemplateDtoCollection = ProductCatalog.GetAllProductTemplates().Select(x => x.ToDto())
 
-procedure CrmPortalGetPagedProductTemplates(PageNumber, PerPage, out PagedProductTemplateDtos)
+// procedure CrmPortalGetPagedProductTemplates(PageNumber, PerPage, out PagedProductTemplateDtos)
 
-    PagedProductTemplates = ProductCatalog.GetPagedProductTemplates(PageNumber = PageNumber, PerPage = PerPage)
-    PagedProductTemplateDtos = new PagedProductTemplateDtos(
-        pageNumber = PagedProductTemplates.pageNumber,
-        totalProductTemplates = PagedProductTemplates.totalProductTemplates,
-        productTemplates = PagedProductTemplates.productTemplates.Select(pt => pt.ToPagedProductTemplateDto())
-        )
+//     PagedProductTemplates = ProductCatalog.GetPagedProductTemplates(PageNumber = PageNumber, PerPage = PerPage)
+//     PagedProductTemplateDtos = new PagedProductTemplateDtos(
+//         pageNumber = PagedProductTemplates.pageNumber,
+//         totalProductTemplates = PagedProductTemplates.totalProductTemplates,
+//         productTemplates = PagedProductTemplates.productTemplates.Select(pt => pt.ToPagedProductTemplateDto())
+//         )
 
-procedure CrmPortalUpdateProductTemplate(ProductTemplateUpdateRequest)
+// procedure CrmPortalUpdateProductTemplate(ProductTemplateUpdateRequest)
 
-    ProductCatalog.UpdateProductTemplate(ProductTemplateUpdateRequest)
+//     ProductCatalog.UpdateProductTemplate(ProductTemplateUpdateRequest)
 
 
-procedure CrmPortalDeleteProductTemplate(ProductTemplateId)
+// procedure CrmPortalDeleteProductTemplate(ProductTemplateId)
 
-    ProductCatalog.DeleteProductTemplate(ProductTemplateId)
+//     ProductCatalog.DeleteProductTemplate(ProductTemplateId)
 
 
-procedure CrmPortalGetPagedAndFilteredTaskList(CrmPortalTaskFilterDto, TasksPerPage, PageNumber, out CrmPortalGetFilteredAndPagedTasksResponse)
-    call FillTaskFiltersFromCrmPortalTaskFilterDto(CrmPortalTaskFilterDto, out TaskFilterList)
-    GetFilteredAndPagedTasksResponse = TaskManager.GetPagedAndFilteredTaskList(TaskFilterList, TasksPerPage, PageNumber)
-    CrmPortalGetFilteredAndPagedTasksResponse = GetFilteredAndPagedTasksResponse.ToCrmPortalGetFilteredAndPagedTasksResponse()
+// procedure CrmPortalGetPagedAndFilteredTaskList(CrmPortalTaskFilterDto, TasksPerPage, PageNumber, out CrmPortalGetFilteredAndPagedTasksResponse)
+//     call FillTaskFiltersFromCrmPortalTaskFilterDto(CrmPortalTaskFilterDto, out TaskFilterList)
+//     GetFilteredAndPagedTasksResponse = TaskManager.GetPagedAndFilteredTaskList(TaskFilterList, TasksPerPage, PageNumber)
+//     CrmPortalGetFilteredAndPagedTasksResponse = GetFilteredAndPagedTasksResponse.ToCrmPortalGetFilteredAndPagedTasksResponse()
 
-    CrmPortalGetFilteredAndPagedTasksResponse.totalTasksInTheSystem = TaskManager.GetTotalTasksCountInTheSystem()
+//     CrmPortalGetFilteredAndPagedTasksResponse.totalTasksInTheSystem = TaskManager.GetTotalTasksCountInTheSystem()
 
 
 
-procedure CrmPortalGetFilteredTaskList(CrmPortalTaskFilterDto, out TaskDtoList)
-    call FillTaskFiltersFromCrmPortalTaskFilterDto(CrmPortalTaskFilterDto, out TaskFilterList)
-    TaskDtoList = TaskManager.GetFilteredTaskList(TaskFilterList).Select(t => t.ToDto())
+// procedure CrmPortalGetFilteredTaskList(CrmPortalTaskFilterDto, out TaskDtoList)
+//     call FillTaskFiltersFromCrmPortalTaskFilterDto(CrmPortalTaskFilterDto, out TaskFilterList)
+//     TaskDtoList = TaskManager.GetFilteredTaskList(TaskFilterList).Select(t => t.ToDto())
 
-procedure CrmPortalGetAllPricePlans(out CrmPricePlanDtos)
+// procedure CrmPortalGetAllPricePlans(out CrmPricePlanDtos)
 
-    CrmPricePlanDtos = ProductCatalog.GetAllPricePlans().Select(x => x.ToCrmDto())
+//     CrmPricePlanDtos = ProductCatalog.GetAllPricePlans().Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetPricePlanById(PricePlanId, out CrmPricePlanDto)
+// procedure CrmPortalGetPricePlanById(PricePlanId, out CrmPricePlanDto)
 
-    CrmPricePlanDto = ProductCatalog.GetPricePlanById(PricePlanId).ToCrmDto()
+//     CrmPricePlanDto = ProductCatalog.GetPricePlanById(PricePlanId).ToCrmDto()
 
 
 
-procedure CrmPortalCreatePricePlan(PricePlanCreationRequest, out PricePlanId)
+// procedure CrmPortalCreatePricePlan(PricePlanCreationRequest, out PricePlanId)
 
-    PricePlanId = ProductCatalog.CreatePricePlan(PricePlanCreationRequest)
+//     PricePlanId = ProductCatalog.CreatePricePlan(PricePlanCreationRequest)
 
 
-procedure CrmPortalCreatePricePlanForProductTemplate(PricePlanForProductTemplateCreationRequest, out PricePlanId)
+// procedure CrmPortalCreatePricePlanForProductTemplate(PricePlanForProductTemplateCreationRequest, out PricePlanId)
 
-    PricePlanId = ProductCatalog.CreatePricePlanForProductTemplate(PricePlanForProductTemplateCreationRequest)
+//     PricePlanId = ProductCatalog.CreatePricePlanForProductTemplate(PricePlanForProductTemplateCreationRequest)
 
 
 
-procedure CrmPortalUpdatePricePlan(PricePlanUpdateRequest)
+// procedure CrmPortalUpdatePricePlan(PricePlanUpdateRequest)
 
-    ProductCatalog.UpdatePricePlan(PricePlanUpdateRequest)
+//     ProductCatalog.UpdatePricePlan(PricePlanUpdateRequest)
 
 
 
-procedure CrmPortalDeletePricePlan(PricePlanId)
+// procedure CrmPortalDeletePricePlan(PricePlanId)
 
-    ProductCatalog.DeletePricePlan(PricePlanId)
+//     ProductCatalog.DeletePricePlan(PricePlanId)
 
 
 
-procedure CrmPortalGetAllPriceItems(PricePlanId, out CrmPriceItemDtos)
+// procedure CrmPortalGetAllPriceItems(PricePlanId, out CrmPriceItemDtos)
 
-    CrmPriceItemDtos = ProductCatalog.GetAllPriceItems(PricePlanId).Select(x => x.ToCrmDto())
+//     CrmPriceItemDtos = ProductCatalog.GetAllPriceItems(PricePlanId).Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetLastPriceItems(PricePlanId, out CrmPriceItemDtos)
+// procedure CrmPortalGetLastPriceItems(PricePlanId, out CrmPriceItemDtos)
 
-    CrmPriceItemDtos = ProductCatalog.GetLastPriceItems(PricePlanId).Select(x => x.ToCrmDto())
+//     CrmPriceItemDtos = ProductCatalog.GetLastPriceItems(PricePlanId).Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetPriceItemsById(PricePlanId, BundleId, out CrmPriceItemDtos)
+// procedure CrmPortalGetPriceItemsById(PricePlanId, BundleId, out CrmPriceItemDtos)
 
-    CrmPriceItemDtos = ProductCatalog.GetPriceItemsById(PricePlanId, BundleId).Select(x => x.ToCrmDto())
+//     CrmPriceItemDtos = ProductCatalog.GetPriceItemsById(PricePlanId, BundleId).Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalCreatePriceItem(PriceItemCreationRequest, out PriceItemId)
+// procedure CrmPortalCreatePriceItem(PriceItemCreationRequest, out PriceItemId)
 
-    PriceItemId = ProductCatalog.CreatePriceItem(PriceItemCreationRequest)
+//     PriceItemId = ProductCatalog.CreatePriceItem(PriceItemCreationRequest)
 
 
 
-procedure CrmPortalDeletePriceItems(PriceItemDeletionRequest)
+// procedure CrmPortalDeletePriceItems(PriceItemDeletionRequest)
 
-    ProductCatalog.DeletePriceItems(PriceItemDeletionRequest)
+//     ProductCatalog.DeletePriceItems(PriceItemDeletionRequest)
 
-procedure CrmPortalUpdatePriceItem(PriceItemUpdateRequest)
+// procedure CrmPortalUpdatePriceItem(PriceItemUpdateRequest)
 
-    ProductCatalog.UpdatePriceItem(PriceItemUpdateRequest)
+//     ProductCatalog.UpdatePriceItem(PriceItemUpdateRequest)
 
 
-procedure CrmPortalGetAllDiscounts(PricePlanId, out CrmDiscountDtos)
+// procedure CrmPortalGetAllDiscounts(PricePlanId, out CrmDiscountDtos)
 
-    CrmDiscountDtos = ProductCatalog.GetAllDiscounts(PricePlanId).Select(x => x.ToCrmDto())
+//     CrmDiscountDtos = ProductCatalog.GetAllDiscounts(PricePlanId).Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetDiscountById(PricePlanId, BundleId, out CrmDiscountDto)
+// procedure CrmPortalGetDiscountById(PricePlanId, BundleId, out CrmDiscountDto)
 
-    CrmDiscountDto = ProductCatalog.GetDiscountById(PricePlanId, BundleId).ToCrmDto()
+//     CrmDiscountDto = ProductCatalog.GetDiscountById(PricePlanId, BundleId).ToCrmDto()
 
 
 
-procedure CrmPortalCreateDiscount(DiscountCreationRequest, out DiscountId)
+// procedure CrmPortalCreateDiscount(DiscountCreationRequest, out DiscountId)
 
-    DiscountId = ProductCatalog.CreateDiscount(DiscountCreationRequest)
+//     DiscountId = ProductCatalog.CreateDiscount(DiscountCreationRequest)
 
 
 
-procedure CrmPortalUpdateDiscount(DiscountUpdateRequest)
+// procedure CrmPortalUpdateDiscount(DiscountUpdateRequest)
 
-    ProductCatalog.UpdateDiscount(DiscountUpdateRequest)
+//     ProductCatalog.UpdateDiscount(DiscountUpdateRequest)
 
 
 
-procedure CrmPortalDeleteDiscount(DiscountDeletionRequest)
+// procedure CrmPortalDeleteDiscount(DiscountDeletionRequest)
 
-    ProductCatalog.DeleteDiscount(DiscountDeletionRequest)
+//     ProductCatalog.DeleteDiscount(DiscountDeletionRequest)
 
 
 
-procedure CrmPortalGetProductById(ProductId, out CrmProductDto)
+// procedure CrmPortalGetProductById(ProductId, out CrmProductDto)
 
-    CrmProductDto = ProductCatalog.GetProductById(ProductId).ToCrmDto()
+//     CrmProductDto = ProductCatalog.GetProductById(ProductId).ToCrmDto()
 
 
 
-procedure CrmPortalGetAllProducts(out CrmProductDtos)
+// procedure CrmPortalGetAllProducts(out CrmProductDtos)
 
-    CrmProductDtos = ProductCatalog.GetAllProducts().Select(x => x.ToCrmDto())
+//     CrmProductDtos = ProductCatalog.GetAllProducts().Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetAllExtendedProducts(out CrmExtendedProductDtos)
+// procedure CrmPortalGetAllExtendedProducts(out CrmExtendedProductDtos)
 
-    CrmExtendedProductDtos = ProductCatalog.GetAllExtendedProducts().Select(x => x.ToCrmDto())
+//     CrmExtendedProductDtos = ProductCatalog.GetAllExtendedProducts().Select(x => x.ToCrmDto())
 
 
 
-procedure CrmPortalGetPartialProducts(PartialDataRequest, out CrmPartialProductsDto)
+// procedure CrmPortalGetPartialProducts(PartialDataRequest, out CrmPartialProductsDto)
 
-    CrmPartialProductsDto = ProductCatalog.GetPartialProducts(PartialDataRequest).ToCrmDto()
+//     CrmPartialProductsDto = ProductCatalog.GetPartialProducts(PartialDataRequest).ToCrmDto()
 
 
 
-procedure CrmPortalCreateProduct(ProductCreationRequest, out ProductId)
+// procedure CrmPortalCreateProduct(ProductCreationRequest, out ProductId)
 
-    ProductId = ProductCatalog.CreateProduct(ProductCreationRequest)
+//     ProductId = ProductCatalog.CreateProduct(ProductCreationRequest)
 
 
 
-procedure CrmPortalUpdateProduct(ProductUpdateRequest)
+// procedure CrmPortalUpdateProduct(ProductUpdateRequest)
 
-    ProductCatalog.UpdateProduct(ProductUpdateRequest)
+//     ProductCatalog.UpdateProduct(ProductUpdateRequest)
 
 
 
-procedure CrmPortalDeleteProduct(ProductId)
+// procedure CrmPortalDeleteProduct(ProductId)
 
-    ProductCatalog.DeleteProduct(ProductId)
+//     ProductCatalog.DeleteProduct(ProductId)
 
 
-procedure CrmPortalCreateTaskRule(CrmPortalTaskRuleCreationRequest, out TaskRuleId)
-    TaskRuleId = TaskManager.CreateTaskRule(CrmPortalTaskRuleCreationRequest.ToTaskManagerCreationRequest())
+// procedure CrmPortalCreateTaskRule(CrmPortalTaskRuleCreationRequest, out TaskRuleId)
+//     TaskRuleId = TaskManager.CreateTaskRule(CrmPortalTaskRuleCreationRequest.ToTaskManagerCreationRequest())
 
 
-procedure CrmPortalDeleteTaskRuleById(TaskRuleId)
-    TaskManager.DeleteTaskRuleById(TaskRuleId)
+// procedure CrmPortalDeleteTaskRuleById(TaskRuleId)
+//     TaskManager.DeleteTaskRuleById(TaskRuleId)
 
 
-procedure CrmPortalGetPagedTaskRuleList(PageNumber, TaskRulesPerPage, out CrmPortalPagedTaskRulesResponse)
-    CrmPortalPagedTaskRulesResponse = TaskManager.GetPagedTaskRuleList(PageNumber, TaskRulesPerPage).ToDto()
+// procedure CrmPortalGetPagedTaskRuleList(PageNumber, TaskRulesPerPage, out CrmPortalPagedTaskRulesResponse)
+//     CrmPortalPagedTaskRulesResponse = TaskManager.GetPagedTaskRuleList(PageNumber, TaskRulesPerPage).ToDto()
 
 
-procedure CrmPortalGetTaskSkillList(out TaskSkillList)
-    TaskSkillList = TaskManager.GetTaskSkillList()
+// procedure CrmPortalGetTaskSkillList(out TaskSkillList)
+//     TaskSkillList = TaskManager.GetTaskSkillList()
 
-procedure CrmPortalGetTaskSkillListByAccountId(AccountId, out TaskSkillList)
-    TaskSkillList = TaskManager.GetTaskSkillListByAccountId(AccountId)
+// procedure CrmPortalGetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+//     TaskSkillList = TaskManager.GetTaskSkillListByAccountId(AccountId)
 
-procedure CrmPortalGetTaskUrgencyList(out TaskUrgencyLabelList)
-    TaskUrgencyLabelList = TaskManager.GetTaskUrgencyList().Select(tu => tu.urgencyLabel)
+// procedure CrmPortalGetTaskUrgencyList(out TaskUrgencyLabelList)
+//     TaskUrgencyLabelList = TaskManager.GetTaskUrgencyList().Select(tu => tu.urgencyLabel)
 
 
-procedure CrmPortalGetTaskImportanceList(out TaskImportanceLabelList)
-    TaskImportanceLabelList = TaskManager.GetTaskImportanceList().Select(ti => ti.importanceLabel)
+// procedure CrmPortalGetTaskImportanceList(out TaskImportanceLabelList)
+//     TaskImportanceLabelList = TaskManager.GetTaskImportanceList().Select(ti => ti.importanceLabel)
 
 
-procedure CrmPortalGetTaskComponentList(out TaskComponentList)
-    TaskComponentList = TaskManager.GetTaskComponentList()
+// procedure CrmPortalGetTaskComponentList(out TaskComponentList)
+//     TaskComponentList = TaskManager.GetTaskComponentList()
 
 
-procedure CrmPortalGetTaskSubcomponentList(out TaskSubcomponentList)
-    TaskSubcomponentList = TaskManager.GetTaskSubcomponentList()
+// procedure CrmPortalGetTaskSubcomponentList(out TaskSubcomponentList)
+//     TaskSubcomponentList = TaskManager.GetTaskSubcomponentList()
 
 
-procedure CrmPortalGetTaskRelatedServiceList(out TaskRelatedServiceList)
-    TaskRelatedServiceList = TaskManager.GetTaskRelatedServiceList()
+// procedure CrmPortalGetTaskRelatedServiceList(out TaskRelatedServiceList)
+//     TaskRelatedServiceList = TaskManager.GetTaskRelatedServiceList()
 
 
-procedure CrmPortalGetTaskTypeList(out TaskTypeList)
-    TaskTypeList = TaskManager.GetTaskTypeList()
+// procedure CrmPortalGetTaskTypeList(out TaskTypeList)
+//     TaskTypeList = TaskManager.GetTaskTypeList()
 
-procedure CrmPortalGetCategoriesList(out CategoriesList)
-    CategoriesList = TaskManager.GetCategoriesList()
+// procedure CrmPortalGetCategoriesList(out CategoriesList)
+//     CategoriesList = TaskManager.GetCategoriesList()
 
-procedure CrmPortalGetLastOpenTaskWithoutRulesList(TasksPerPage, PageNumber, out CrmPortalGetLastOpenTaskWithoutRulesListResponse)
-    CrmPortalGetLastOpenTaskWithoutRulesListResponse = TaskManager.GetLastOpenTaskWithoutRulesList(TasksPerPage, PageNumber).ToDto()
+// procedure CrmPortalGetLastOpenTaskWithoutRulesList(TasksPerPage, PageNumber, out CrmPortalGetLastOpenTaskWithoutRulesListResponse)
+//     CrmPortalGetLastOpenTaskWithoutRulesListResponse = TaskManager.GetLastOpenTaskWithoutRulesList(TasksPerPage, PageNumber).ToDto()
 
-procedure CrmPortalGetGroupedTaskWithoutRulesCountList(RecordsPerPage, PageNumber, out CrmPortalGetGroupedTaskWithoutRulesCountListReponse)
-    CrmPortalGetGroupedTaskWithoutRulesCountListReponse = TaskManager.GetGroupedTaskWithoutRulesCountList(RecordsPerPage, PageNumber).ToDto()
+// procedure CrmPortalGetGroupedTaskWithoutRulesCountList(RecordsPerPage, PageNumber, out CrmPortalGetGroupedTaskWithoutRulesCountListReponse)
+//     CrmPortalGetGroupedTaskWithoutRulesCountListReponse = TaskManager.GetGroupedTaskWithoutRulesCountList(RecordsPerPage, PageNumber).ToDto()
 
 
-procedure CrmPortalGetProductsByPropositionId(PropositionId, out CrmProductDtos)
+// procedure CrmPortalGetProductsByPropositionId(PropositionId, out CrmProductDtos)
 
-    CrmProductDtos = ProductCatalog.GetProductsByPropositionId(PropositionId).Select(p => p.ToCrmDto())
+//     CrmProductDtos = ProductCatalog.GetProductsByPropositionId(PropositionId).Select(p => p.ToCrmDto())
 
 
-procedure CrmPortalSetProcessBlockingTaskList(BlockingTaskTypesList)
-    Fulfillment.SetProcessBlockingTaskList(BlockingTaskTypesList)
+// procedure CrmPortalSetProcessBlockingTaskList(BlockingTaskTypesList)
+//     Fulfillment.SetProcessBlockingTaskList(BlockingTaskTypesList)
 
-procedure CrmPortalGetProcessBlockingTaskList(out BlockingTaskTypesList)
-    BlockingTaskTypesList = Fulfillment.GetProcessBlockingTaskList()
+// procedure CrmPortalGetProcessBlockingTaskList(out BlockingTaskTypesList)
+//     BlockingTaskTypesList = Fulfillment.GetProcessBlockingTaskList()
 
-procedure CrmPortalGetAvailablePropositionsByZipCode(Zip, HouseNumber, Extension, out GetAvailablePropositionsResponse)
-    GetAvailablePropositionsRequest = new GetAvailablePropositionsRequest(
-        postalCode = Zip,
-        houseNumber = HouseNumber,
-        houseNumberAddition = Extension
-        )
-    GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCode(GetAvailablePropositionsRequest)
+// procedure CrmPortalGetAvailablePropositionsByZipCode(Zip, HouseNumber, Extension, out GetAvailablePropositionsResponse)
+//     GetAvailablePropositionsRequest = new GetAvailablePropositionsRequest(
+//         postalCode = Zip,
+//         houseNumber = HouseNumber,
+//         houseNumberAddition = Extension
+//         )
+//     GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCode(GetAvailablePropositionsRequest)
 
-procedure CrmPortalGetAvailablePropositionsByZipCodeAndSalesOffice(GetAvailablePropositionsRequest, out GetAvailablePropositionsResponse)
+// procedure CrmPortalGetAvailablePropositionsByZipCodeAndSalesOffice(GetAvailablePropositionsRequest, out GetAvailablePropositionsResponse)
 
-    // GetAvailablePropositionsRequest = new GetAvailablePropositionsRequest(
-    //     postalCode = Zip,
-    //     houseNumber = HouseNumber,
-    //     houseNumberAddition = Extension
-    //     )
+//     // GetAvailablePropositionsRequest = new GetAvailablePropositionsRequest(
+//     //     postalCode = Zip,
+//     //     houseNumber = HouseNumber,
+//     //     houseNumberAddition = Extension
+//     //     )
 
-    GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCodeAndSalesOffice(GetAvailablePropositionsRequest)
+//     GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCodeAndSalesOffice(GetAvailablePropositionsRequest)
 
-procedure CrmPortalGetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest, out GetAvailablePropositionsResponse)
-    GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest)
+// procedure CrmPortalGetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest, out GetAvailablePropositionsResponse)
+//     GetAvailablePropositionsResponse = Fulfillment.GetAvailablePropositionsByZipCodeAndSalesOfficeAndDate(GetAvailablePropositionsBySalesOfficeIdAndDateOfSaleRequest)
 
-procedure CrmPortalGetAllCashbacksForPricePlan(PricePlanId, out CrmCashbackDtoList)
-    CrmCashbackDtoList = ProductCatalog.GetAllCashbacksForPricePlan(PricePlanId).Select(p => p.ToCrmDto())
+// procedure CrmPortalGetAllCashbacksForPricePlan(PricePlanId, out CrmCashbackDtoList)
+//     CrmCashbackDtoList = ProductCatalog.GetAllCashbacksForPricePlan(PricePlanId).Select(p => p.ToCrmDto())
 
-procedure CrmPortalGetCashbackById(PricePlanId, CashbackId, out CrmCashbackDto)
-    CrmCashbackDto = ProductCatalog.GetCashbackByIdForPricePlan(PricePlanId, CashbackId).ToCrmDto()
+// procedure CrmPortalGetCashbackById(PricePlanId, CashbackId, out CrmCashbackDto)
+//     CrmCashbackDto = ProductCatalog.GetCashbackByIdForPricePlan(PricePlanId, CashbackId).ToCrmDto()
 
 
-procedure CrmPortalGetTaskDetailsByEmployeeIdResponse(AccountId, out CrmPortalGetTaskDetailsByEmployeeIdResponse)
-    BaseTask = TaskManager.GetTaskForEmployee(AccountId)
-    CrmPortalGetTaskDetailsByEmployeeIdResponse = new
-    if !IsEmpty(BaseTask.id)
-        call GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
-        CrmPortalGetTaskDetailsByEmployeeIdResponse = BaseTask.ToCrmPortalGetTaskDetailsByEmployeeIdResponse(TaskList, AccountList)
-        call FillAdditionalTaskInformation(BaseTask, out AdditionalTaskInformationItemList)
-        CrmPortalGetTaskDetailsByEmployeeIdResponse.additionalInformation = AdditionalTaskInformationItemList
+// procedure CrmPortalGetTaskDetailsByEmployeeIdResponse(AccountId, out CrmPortalGetTaskDetailsByEmployeeIdResponse)
+//     BaseTask = TaskManager.GetTaskForEmployee(AccountId)
+//     CrmPortalGetTaskDetailsByEmployeeIdResponse = new
+//     if !IsEmpty(BaseTask.id)
+//         call GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
+//         CrmPortalGetTaskDetailsByEmployeeIdResponse = BaseTask.ToCrmPortalGetTaskDetailsByEmployeeIdResponse(TaskList, AccountList)
+//         call FillAdditionalTaskInformation(BaseTask, out AdditionalTaskInformationItemList)
+//         CrmPortalGetTaskDetailsByEmployeeIdResponse.additionalInformation = AdditionalTaskInformationItemList
 
-procedure CrmPortalAssignTaskToEmployee(TaskId, AccountId, out CrmPortalGetTaskDetailsByEmployeeIdResponse)
-    BaseTask = TaskManager.AssignTaskToEmployee(TaskId, AccountId)
-    CrmPortalGetTaskDetailsByEmployeeIdResponse = new
-    if !IsEmpty(BaseTask.id)
-        call GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
-        CrmPortalGetTaskDetailsByEmployeeIdResponse = BaseTask.ToCrmPortalGetTaskDetailsByEmployeeIdResponse(TaskList, AccountList)
-        call FillAdditionalTaskInformation(BaseTask, out AdditionalTaskInformationItemList)
-        CrmPortalGetTaskDetailsByEmployeeIdResponse.additionalInformation = AdditionalTaskInformationItemList
+// procedure CrmPortalAssignTaskToEmployee(TaskId, AccountId, out CrmPortalGetTaskDetailsByEmployeeIdResponse)
+//     BaseTask = TaskManager.AssignTaskToEmployee(TaskId, AccountId)
+//     CrmPortalGetTaskDetailsByEmployeeIdResponse = new
+//     if !IsEmpty(BaseTask.id)
+//         call GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
+//         CrmPortalGetTaskDetailsByEmployeeIdResponse = BaseTask.ToCrmPortalGetTaskDetailsByEmployeeIdResponse(TaskList, AccountList)
+//         call FillAdditionalTaskInformation(BaseTask, out AdditionalTaskInformationItemList)
+//         CrmPortalGetTaskDetailsByEmployeeIdResponse.additionalInformation = AdditionalTaskInformationItemList
 
-procedure GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
-    TaskList = TaskManager.GetRelatedTaskListByTaskId(BaseTask.id)
-    AccountIds = BaseTask.log.Where(te => !IsEmpty(te.raisedBy) && te.raisedBy != "System").Select(te => te.raisedBy)
-    let TempRelatedTaskIdList = TaskList.SelectMany(t => t.log).Where(te => !IsEmpty(te.raisedBy) && te.raisedBy != "System").Select(te => te.raisedBy)
+// procedure GetRelatedAccountIdListForTask(BaseTask, out TaskList, out AccountList)
+//     TaskList = TaskManager.GetRelatedTaskListByTaskId(BaseTask.id)
+//     AccountIds = BaseTask.log.Where(te => !IsEmpty(te.raisedBy) && te.raisedBy != "System").Select(te => te.raisedBy)
+//     let TempRelatedTaskIdList = TaskList.SelectMany(t => t.log).Where(te => !IsEmpty(te.raisedBy) && te.raisedBy != "System").Select(te => te.raisedBy)
 
-    foreach AccountId in TempRelatedTaskIdList
-        AccountIds ++= AccountId
+//     foreach AccountId in TempRelatedTaskIdList
+//         AccountIds ++= AccountId
 
-    AccountIds = AccountIds.Distinct()
-    AccountList = CrmBackend.GetEmployeeListByIdList(AccountIds)
+//     AccountIds = AccountIds.Distinct()
+//     AccountList = CrmBackend.GetEmployeeListByIdList(AccountIds)
 
-procedure CrmPortalIsEmployeeHaveTask(AccountId, out Boolean)
-    Boolean = TaskManager.IsEmployeeHaveTask(AccountId)
+// procedure CrmPortalIsEmployeeHaveTask(AccountId, out Boolean)
+//     Boolean = TaskManager.IsEmployeeHaveTask(AccountId)
 
-procedure CrmPortalIsTaskAssignedToEmployee(TaskId, out Boolean)
-    Boolean = TaskManager.IsTaskAssignedToEmployee(TaskId)
+// procedure CrmPortalIsTaskAssignedToEmployee(TaskId, out Boolean)
+//     Boolean = TaskManager.IsTaskAssignedToEmployee(TaskId)
 
-procedure CrmPortalCloseTaskById(CloseTaskRequest)
-    TaskManager.CloseTaskById(CloseTaskRequest.accountId, CloseTaskRequest.taskId, CloseTaskRequest.relatedTaskIdList, CloseTaskRequest.comment)
+// procedure CrmPortalCloseTaskById(CloseTaskRequest)
+//     TaskManager.CloseTaskById(CloseTaskRequest.accountId, CloseTaskRequest.taskId, CloseTaskRequest.relatedTaskIdList, CloseTaskRequest.comment)
 
 
-procedure CrmPortalPostponeTaskById(PostponeTaskRequest)
-    TaskManager.PostponeTaskById(PostponeTaskRequest.accountId, PostponeTaskRequest.taskId, PostponeTaskRequest.delayValue, PostponeTaskRequest.comment)
+// procedure CrmPortalPostponeTaskById(PostponeTaskRequest)
+//     TaskManager.PostponeTaskById(PostponeTaskRequest.accountId, PostponeTaskRequest.taskId, PostponeTaskRequest.delayValue, PostponeTaskRequest.comment)
 
-procedure CrmPortalPostponeTaskPerUser(AccountId, TaskId)
-    TaskManager.PostponeTaskPerUser(AccountId, TaskId)
+// procedure CrmPortalPostponeTaskPerUser(AccountId, TaskId)
+//     TaskManager.PostponeTaskPerUser(AccountId, TaskId)
 
-procedure CrmPortalReassignTaskById(ReassignTaskRequest)
-    TaskManager.ReassignTaskById(ReassignTaskRequest.accountId, ReassignTaskRequest.taskId, ReassignTaskRequest.taskSkill, ReassignTaskRequest.comment)
+// procedure CrmPortalReassignTaskById(ReassignTaskRequest)
+//     TaskManager.ReassignTaskById(ReassignTaskRequest.accountId, ReassignTaskRequest.taskId, ReassignTaskRequest.taskSkill, ReassignTaskRequest.comment)
 
-procedure CrmPortalCreateManulaTask(BaseTaskCreationRequestDto, out TaskId)
-    ManualTaskCreationRequest = new ManualTaskCreationRequest (
-        sourceDescription = BaseTaskCreationRequestDto.sourceDescription,
-        createdBy = BaseTaskCreationRequestDto.createdBy,
-        createdByComponent = Component.Crm,
-        customerId = BaseTaskCreationRequestDto.customerId,
-        desiredDueDate = BaseTaskCreationRequestDto.desiredDueDate,
-        comment = BaseTaskCreationRequestDto.comment,
-        taskSkill = BaseTaskCreationRequestDto.taskSkill
-        )
-    TaskId = TaskManager.CreateTask(ManualTaskCreationRequest)
+// procedure CrmPortalCreateManulaTask(BaseTaskCreationRequestDto, out TaskId)
+//     ManualTaskCreationRequest = new ManualTaskCreationRequest (
+//         sourceDescription = BaseTaskCreationRequestDto.sourceDescription,
+//         createdBy = BaseTaskCreationRequestDto.createdBy,
+//         createdByComponent = Component.Crm,
+//         customerId = BaseTaskCreationRequestDto.customerId,
+//         desiredDueDate = BaseTaskCreationRequestDto.desiredDueDate,
+//         comment = BaseTaskCreationRequestDto.comment,
+//         taskSkill = BaseTaskCreationRequestDto.taskSkill
+//         )
+//     TaskId = TaskManager.CreateTask(ManualTaskCreationRequest)
 
-procedure CrmPortalAddCommentToTask(AddCommentToTaskRequest)
-    TaskManager.AddCommentToTask(AddCommentToTaskRequest.accountId, AddCommentToTaskRequest.taskId, AddCommentToTaskRequest.comment)
+// procedure CrmPortalAddCommentToTask(AddCommentToTaskRequest)
+//     TaskManager.AddCommentToTask(AddCommentToTaskRequest.accountId, AddCommentToTaskRequest.taskId, AddCommentToTaskRequest.comment)
 
-procedure CrmPortalCreateCashback(CashbackCreationRequest, out CashbackId)
-    CashbackId = ProductCatalog.CreateCashback(CashbackCreationRequest)
+// procedure CrmPortalCreateCashback(CashbackCreationRequest, out CashbackId)
+//     CashbackId = ProductCatalog.CreateCashback(CashbackCreationRequest)
 
-procedure CrmPortalUpdateCashback(CashbackUpdateRequest)
-    ProductCatalog.UpdateCashback(CashbackUpdateRequest)
+// procedure CrmPortalUpdateCashback(CashbackUpdateRequest)
+//     ProductCatalog.UpdateCashback(CashbackUpdateRequest)
 
-procedure CrmPortalDeleteCashback(CashbackDeletionRequest)
-    ProductCatalog.DeleteCashback(CashbackDeletionRequest)
+// procedure CrmPortalDeleteCashback(CashbackDeletionRequest)
+//     ProductCatalog.DeleteCashback(CashbackDeletionRequest)
 
-procedure CrmPortalSendResetPasswordEmailForLogin(Login)
-    IdentityServer.ResetPasswordEmailForLogin(Login)
+// procedure CrmPortalSendResetPasswordEmailForLogin(Login)
+//     IdentityServer.ResetPasswordEmailForLogin(Login)
 
-procedure CrmPortalStartOrderFromSpecificOrderStateByOrderIdAndOrderStateId(AccountId, OrderId, OrderStateId)
-    Fulfillment.StartOrderFromSpecificOrderStateByOrderIdAndOrderStateId(AccountId, OrderId, OrderStateId)
+// procedure CrmPortalStartOrderFromSpecificOrderStateByOrderIdAndOrderStateId(AccountId, OrderId, OrderStateId)
+//     Fulfillment.StartOrderFromSpecificOrderStateByOrderIdAndOrderStateId(AccountId, OrderId, OrderStateId)
 
-procedure CrmPortalGetInitialInvoiceByServiceAccountId(AccountId, ServiceAccountId, out CrmPortalInvoiceDto)
-    //BillingEngine.EnsureServiceAccountExists(AccountId, ServiceAccountId)
-    CrmPortalInvoiceDto = InvoiceGenerator.GetInitialInvoiceByServiceAccountId(ServiceAccountId).ToCrmPortalInvoiceDto()
+// procedure CrmPortalGetInitialInvoiceByServiceAccountId(AccountId, ServiceAccountId, out CrmPortalInvoiceDto)
+//     //BillingEngine.EnsureServiceAccountExists(AccountId, ServiceAccountId)
+//     CrmPortalInvoiceDto = InvoiceGenerator.GetInitialInvoiceByServiceAccountId(ServiceAccountId).ToCrmPortalInvoiceDto()
 
-procedure CrmPortalDashboardGetOrderOpenProcessCheckInfo(OrderId, out DashboardOpenProcessCheckDto)
-    call GetOrderOpenProcessCheckInfoInternal(OrderId, out DashboardOpenProcessCheckDto)
+// procedure CrmPortalDashboardGetOrderOpenProcessCheckInfo(OrderId, out DashboardOpenProcessCheckDto)
+//     call GetOrderOpenProcessCheckInfoInternal(OrderId, out DashboardOpenProcessCheckDto)
 
-procedure CrmPortalResolveOrderBlock(OrderId)
-    Fulfillment.ResolveBlock(OrderId)
+// procedure CrmPortalResolveOrderBlock(OrderId)
+//     Fulfillment.ResolveBlock(OrderId)
 
-procedure CrmPortalCancelOrder(OrderId, AccountId)
-    Fulfillment.CancelOrder(OrderId, AccountId)
+// procedure CrmPortalCancelOrder(OrderId, AccountId)
+//     Fulfillment.CancelOrder(OrderId, AccountId)
 
-procedure CrmPortalGetDuplicateOrdersForOrder(OrderId, out DuplicateCheckInfoForOrder)
-    DuplicateCheckInfoForOrder = Fulfillment.GetDuplicateCheckInfoForOrder(OrderId)
+// procedure CrmPortalGetDuplicateOrdersForOrder(OrderId, out DuplicateCheckInfoForOrder)
+//     DuplicateCheckInfoForOrder = Fulfillment.GetDuplicateCheckInfoForOrder(OrderId)
 
-procedure CrmPortalGetDuplicateOrderRelatedTaskId(OrderId, out TaskId)
-    TaskId = Fulfillment.GetDuplicateOrderRelatedTaskId(OrderId)
+// procedure CrmPortalGetDuplicateOrderRelatedTaskId(OrderId, out TaskId)
+//     TaskId = Fulfillment.GetDuplicateOrderRelatedTaskId(OrderId)
 
-procedure CrmPortalGetBlackListDetailsForOrder(OrderId, out BlackListCheckInfo)
-    BlackListCheckFulfillmentInfo = Fulfillment.GetBlackListDetailsForOrder(OrderId)
+// procedure CrmPortalGetBlackListDetailsForOrder(OrderId, out BlackListCheckInfo)
+//     BlackListCheckFulfillmentInfo = Fulfillment.GetBlackListDetailsForOrder(OrderId)
 
-    BlackListCheckInfo = BlackListCheckFulfillmentInfo.blackListCheckInfo
-    IsBlackListed = BlackListCheckFulfillmentInfo.isBlackListed
-    AccountId = BlackListCheckFulfillmentInfo.customerId
+//     BlackListCheckInfo = BlackListCheckFulfillmentInfo.blackListCheckInfo
+//     IsBlackListed = BlackListCheckFulfillmentInfo.isBlackListed
+//     AccountId = BlackListCheckFulfillmentInfo.customerId
 
-    if IsBlackListed
-        BlackListCheckInfo.invoiceOverviews = BlackListService.GetBlackListAccountInvoiceOverviews(AccountId).Select(i => i.ToDto())
+//     if IsBlackListed
+//         BlackListCheckInfo.invoiceOverviews = BlackListService.GetBlackListAccountInvoiceOverviews(AccountId).Select(i => i.ToDto())
 
-procedure CrmPortalGetActiveSupplyCheckInfoForOrder(OrderId, out ActiveSupplyCheckInfo)
-    ActiveSupplyCheckInfo = Fulfillment.GetActiveSupplyCheckInfo(OrderId)
+// procedure CrmPortalGetActiveSupplyCheckInfoForOrder(OrderId, out ActiveSupplyCheckInfo)
+//     ActiveSupplyCheckInfo = Fulfillment.GetActiveSupplyCheckInfo(OrderId)
 
-procedure CrmPortalCreateEventRateClass(EventRateClassCreationRequest, out RateClassId)
-    RateClassId = ProductCatalog.CreateEventRateClass(EventRateClassCreationRequest)
+// procedure CrmPortalCreateEventRateClass(EventRateClassCreationRequest, out RateClassId)
+//     RateClassId = ProductCatalog.CreateEventRateClass(EventRateClassCreationRequest)
 
-procedure CrmPortalUpdateEventRateClass(EventRateClassUpdateRequest)
-    ProductCatalog.UpdateEventRateClass(EventRateClassUpdateRequest)
+// procedure CrmPortalUpdateEventRateClass(EventRateClassUpdateRequest)
+//     ProductCatalog.UpdateEventRateClass(EventRateClassUpdateRequest)
 
-procedure CrmPortalDeleteEventRateClass(RateClassId)
-    ProductCatalog.DeleteEventRateClass(RateClassId)
+// procedure CrmPortalDeleteEventRateClass(RateClassId)
+//     ProductCatalog.DeleteEventRateClass(RateClassId)
 
-procedure CrmPortalGetAllEventRateClasses(out RateClassDtos)
-    RateClassDtos = ProductCatalog.GetAllEventRateClasses().Select(r => r.ToCrmDto())
+// procedure CrmPortalGetAllEventRateClasses(out RateClassDtos)
+//     RateClassDtos = ProductCatalog.GetAllEventRateClasses().Select(r => r.ToCrmDto())
 
-procedure CrmPortalCreatePhoneCode(CreatePhoneCodeRequest)
-    Cdr.CreatePhoneCode(CreatePhoneCodeRequest)
+// procedure CrmPortalCreatePhoneCode(CreatePhoneCodeRequest)
+//     Cdr.CreatePhoneCode(CreatePhoneCodeRequest)
 
-procedure CrmPortalUpdatePhoneCode(UpdatePhoneCodeRequest)
-    Cdr.UpdatePhoneCode(UpdatePhoneCodeRequest)
+// procedure CrmPortalUpdatePhoneCode(UpdatePhoneCodeRequest)
+//     Cdr.UpdatePhoneCode(UpdatePhoneCodeRequest)
 
-procedure CrmPortalDeletePhoneCode(RegionCode)
-    Cdr.DeletePhoneCode(RegionCode)
+// procedure CrmPortalDeletePhoneCode(RegionCode)
+//     Cdr.DeletePhoneCode(RegionCode)
 
-procedure CrmPortalGetPartialPhoneCodeData(GetPartialPhoneCodeRequest, out GetPartialPhoneCodesResponse)
-    GetPartialPhoneCodesResponse = Cdr.GetPartialPhoneCodeData(GetPartialPhoneCodeRequest)
+// procedure CrmPortalGetPartialPhoneCodeData(GetPartialPhoneCodeRequest, out GetPartialPhoneCodesResponse)
+//     GetPartialPhoneCodesResponse = Cdr.GetPartialPhoneCodeData(GetPartialPhoneCodeRequest)
 
-procedure CrmPortalGetPhoneCodeByRegionCode(RegionCode, out PhoneCodeDto)
-    PhoneCode = Cdr.GetPhoneCodeByRegionCode(RegionCode)
-    PhoneCodeDto = PhoneCode.ToCrmDto()
+// procedure CrmPortalGetPhoneCodeByRegionCode(RegionCode, out PhoneCodeDto)
+//     PhoneCode = Cdr.GetPhoneCodeByRegionCode(RegionCode)
+//     PhoneCodeDto = PhoneCode.ToCrmDto()
 
-procedure CrmPortalSetOrderInstallationDate(SetOrderInstallationDateRequest)
-    OrderId = SetOrderInstallationDateRequest.orderId
-    InstallationDate = SetOrderInstallationDateRequest.installationDate
-    Fulfillment.SetOrderInstallationDate(OrderId, InstallationDate)
+// procedure CrmPortalSetOrderInstallationDate(SetOrderInstallationDateRequest)
+//     OrderId = SetOrderInstallationDateRequest.orderId
+//     InstallationDate = SetOrderInstallationDateRequest.installationDate
+//     Fulfillment.SetOrderInstallationDate(OrderId, InstallationDate)
 
-procedure CrmPortalResolveBlockedOrderAndMoveToCompletedState(OrderId)
-    Fulfillment.ResolveBlockedOrderAndMoveToCompletedState(OrderId)
+// procedure CrmPortalResolveBlockedOrderAndMoveToCompletedState(OrderId)
+//     Fulfillment.ResolveBlockedOrderAndMoveToCompletedState(OrderId)
 
 
-procedure CrmPortalGetActiveSupplyAddressesByCustomerId(CustomerId, FullAddress, out SupplyAddressWithServiceAccountIdList)
-    CustomerIdList = List(CustomerId)
-    ServiceInformationItemList = BillingEngine.GetActiveOrClosedServiceInformationItemListByCustomerIdList(CustomerIdList)
+// procedure CrmPortalGetActiveSupplyAddressesByCustomerId(CustomerId, FullAddress, out SupplyAddressWithServiceAccountIdList)
+//     CustomerIdList = List(CustomerId)
+//     ServiceInformationItemList = BillingEngine.GetActiveOrClosedServiceInformationItemListByCustomerIdList(CustomerIdList)
 
-    ServiceInformationItem = ServiceInformationItemList.FirstOrDefault(a => a.address.fullAddress.Contains(FullAddress), empty)
+//     ServiceInformationItem = ServiceInformationItemList.FirstOrDefault(a => a.address.fullAddress.Contains(FullAddress), empty)
 
-    if !IsEmpty(ServiceInformationItem)
-        let TempServiceInformationItem = ServiceInformationItemList[0]
-        ServiceInformationItemList[0] = ServiceInformationItem
-        ServiceInformationItemList ++= TempServiceInformationItem
+//     if !IsEmpty(ServiceInformationItem)
+//         let TempServiceInformationItem = ServiceInformationItemList[0]
+//         ServiceInformationItemList[0] = ServiceInformationItem
+//         ServiceInformationItemList ++= TempServiceInformationItem
 
-    SupplyAddressWithServiceAccountIdList = ServiceInformationItemList.GroupBy(a => a.address.fullAddress).Select(a => a.First().ToSupplyAddressWithServiceAccountId())
+//     SupplyAddressWithServiceAccountIdList = ServiceInformationItemList.GroupBy(a => a.address.fullAddress).Select(a => a.First().ToSupplyAddressWithServiceAccountId())
 
-procedure CrmPortalGetCobsDslOrderById(OrderId, out CobsCrmPortalDslOrderDto)
-    CobsDslOrder = Fulfillment.CobsGetDslOrderByTriplePlayOrderId(OrderId)
-    CobsExternalBundleInfos = ProductCatalog.GetCobsExternalBundleInfos()
-    CobsCrmPortalDslOrderDto = CobsDslOrder.ToCrmPortalDto(CobsExternalBundleInfos)
+// procedure CrmPortalGetCobsDslOrderById(OrderId, out CobsCrmPortalDslOrderDto)
+//     CobsDslOrder = Fulfillment.CobsGetDslOrderByTriplePlayOrderId(OrderId)
+//     CobsExternalBundleInfos = ProductCatalog.GetCobsExternalBundleInfos()
+//     CobsCrmPortalDslOrderDto = CobsDslOrder.ToCrmPortalDto(CobsExternalBundleInfos)
 
-    AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
-    if !IsEmpty(AdjustingOrder)
-        CobsCrmPortalDslOrderDto.adjustingOrderState = AdjustingOrder.state
+//     AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
+//     if !IsEmpty(AdjustingOrder)
+//         CobsCrmPortalDslOrderDto.adjustingOrderState = AdjustingOrder.state
 
-procedure CrmPortalGetCobsTvOrderById(OrderId, out CobsCrmPortalTvOrderDto)
-    CobsTvOrder = Fulfillment.GetCobsTvOrderByTriplePlayOrderId(OrderId)
-    Name = ProductCatalog.GetCobsExternalProductNameByExternalCode(CobsTvOrder.productTypeCode.ToString())
-    CobsCrmPortalTvOrderDto = CobsTvOrder.ToCrmPortalDto(Name)
+// procedure CrmPortalGetCobsTvOrderById(OrderId, out CobsCrmPortalTvOrderDto)
+//     CobsTvOrder = Fulfillment.GetCobsTvOrderByTriplePlayOrderId(OrderId)
+//     Name = ProductCatalog.GetCobsExternalProductNameByExternalCode(CobsTvOrder.productTypeCode.ToString())
+//     CobsCrmPortalTvOrderDto = CobsTvOrder.ToCrmPortalDto(Name)
 
-    AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
-    if !IsEmpty(AdjustingOrder)
-        CobsCrmPortalTvOrderDto.adjustingOrderState = AdjustingOrder.state
+//     AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
+//     if !IsEmpty(AdjustingOrder)
+//         CobsCrmPortalTvOrderDto.adjustingOrderState = AdjustingOrder.state
 
-procedure CrmPortalGetCobsVoipOrderById(OrderId, out CobsCrmPortalVoipOrderDto)
-    CobsVoipOrder = Fulfillment.CobsGetVoipOrderByTriplePlayOrderId(OrderId)
-    Name = ProductCatalog.GetCobsExternalProductNameByExternalCode(CobsVoipOrder.voipData.voipProductTypeCode.ToString())
-    CobsCrmPortalVoipOrderDto = CobsVoipOrder.ToCrmPortalDto(Name)
+// procedure CrmPortalGetCobsVoipOrderById(OrderId, out CobsCrmPortalVoipOrderDto)
+//     CobsVoipOrder = Fulfillment.CobsGetVoipOrderByTriplePlayOrderId(OrderId)
+//     Name = ProductCatalog.GetCobsExternalProductNameByExternalCode(CobsVoipOrder.voipData.voipProductTypeCode.ToString())
+//     CobsCrmPortalVoipOrderDto = CobsVoipOrder.ToCrmPortalDto(Name)
 
-    AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
-    if !IsEmpty(AdjustingOrder)
-        CobsCrmPortalVoipOrderDto.adjustingOrderState = AdjustingOrder.state
+//     AdjustingOrder = Fulfillment.TryGetAdjustingOrderById(OrderId)
+//     if !IsEmpty(AdjustingOrder)
+//         CobsCrmPortalVoipOrderDto.adjustingOrderState = AdjustingOrder.state
 
 
-procedure CrmPortalRunDeepCheckForFailedRequestManuallyByOrderId(OrderId)
-    Fulfillment.RunDeepCheckForFailedRequestManuallyByOrderId(OrderId)
+// procedure CrmPortalRunDeepCheckForFailedRequestManuallyByOrderId(OrderId)
+//     Fulfillment.RunDeepCheckForFailedRequestManuallyByOrderId(OrderId)
 
-procedure CrmPortalCobsResendDslProvide(CobsDslUpdateProvideRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsResendDslProvide(CobsDslUpdateProvideRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateProvideRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsResendDslProvide(CobsDslUpdateProvideRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsResendDslProvide(CobsDslUpdateProvideRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateProvideRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsResendDslTakeOver(CobsDslUpdateTakeOverRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsResendDslTakeOver(CobsDslUpdateTakeOverRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateTakeOverRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsResendDslTakeOver(CobsDslUpdateTakeOverRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsResendDslTakeOver(CobsDslUpdateTakeOverRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateTakeOverRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsSendDslProvideWithoutDeepCheck(CobsDslUpdateProvideRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsSendDslProvideWithoutDeepCheck(CobsDslUpdateProvideRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateProvideRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsSendDslProvideWithoutDeepCheck(CobsDslUpdateProvideRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsSendDslProvideWithoutDeepCheck(CobsDslUpdateProvideRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateProvideRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsSendDslTakeOverWithoutDeepCheck(CobsDslUpdateTakeOverRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsSendDslTakeOverWithoutDeepCheck(CobsDslUpdateTakeOverRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateTakeOverRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsSendDslTakeOverWithoutDeepCheck(CobsDslUpdateTakeOverRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsSendDslTakeOverWithoutDeepCheck(CobsDslUpdateTakeOverRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateTakeOverRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsResendDslChange(CobsDslUpdateChangeRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsResendDslChange(CobsDslUpdateChangeRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateChangeRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsResendDslChange(CobsDslUpdateChangeRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsResendDslChange(CobsDslUpdateChangeRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateChangeRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsResendDslCease(CobsDslUpdateCeaseRequest, out CobsCrmPortalDslOrderDto)
-    Fulfillment.CobsResendDslCease(CobsDslUpdateCeaseRequest)
-    call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateCeaseRequest.orderId, out CobsCrmPortalDslOrderDto)
+// procedure CrmPortalCobsResendDslCease(CobsDslUpdateCeaseRequest, out CobsCrmPortalDslOrderDto)
+//     Fulfillment.CobsResendDslCease(CobsDslUpdateCeaseRequest)
+//     call CrmPortalGetCobsDslOrderById(OrderId = CobsDslUpdateCeaseRequest.orderId, out CobsCrmPortalDslOrderDto)
 
-procedure CrmPortalCobsResendTvProvide(CobsTvUpdateProvideRequest, out CobsCrmPortalTvOrderDto)
-    Fulfillment.CobsResendTvProvide(CobsTvUpdateProvideRequest)
-    call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateProvideRequest.orderId, out CobsCrmPortalTvOrderDto)
+// procedure CrmPortalCobsResendTvProvide(CobsTvUpdateProvideRequest, out CobsCrmPortalTvOrderDto)
+//     Fulfillment.CobsResendTvProvide(CobsTvUpdateProvideRequest)
+//     call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateProvideRequest.orderId, out CobsCrmPortalTvOrderDto)
 
-procedure CrmPortalCobsResendTvChange(CobsTvUpdateChangeRequest, out CobsCrmPortalTvOrderDto)
-    Fulfillment.CobsResendTvChange(CobsTvUpdateChangeRequest)
-    call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateChangeRequest.orderId, out CobsCrmPortalTvOrderDto)
+// procedure CrmPortalCobsResendTvChange(CobsTvUpdateChangeRequest, out CobsCrmPortalTvOrderDto)
+//     Fulfillment.CobsResendTvChange(CobsTvUpdateChangeRequest)
+//     call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateChangeRequest.orderId, out CobsCrmPortalTvOrderDto)
 
-procedure CrmPortalCobsResendTvCease(CobsTvUpdateCeaseRequest, out CobsCrmPortalTvOrderDto)
-    Fulfillment.CobsResendTvCease(CobsTvUpdateCeaseRequest)
-    call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateCeaseRequest.orderId, out CobsCrmPortalTvOrderDto)
+// procedure CrmPortalCobsResendTvCease(CobsTvUpdateCeaseRequest, out CobsCrmPortalTvOrderDto)
+//     Fulfillment.CobsResendTvCease(CobsTvUpdateCeaseRequest)
+//     call CrmPortalGetCobsTvOrderById(OrderId = CobsTvUpdateCeaseRequest.orderId, out CobsCrmPortalTvOrderDto)
 
-procedure CrmPortalCobsResendVoipProvide(CobsVoipUpdateProvideRequest, out CobsCrmPortalVoipOrderDto)
-    Fulfillment.CobsResendVoipProvide(CobsVoipUpdateProvideRequest)
-    call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateProvideRequest.orderId, out CobsCrmPortalVoipOrderDto)
+// procedure CrmPortalCobsResendVoipProvide(CobsVoipUpdateProvideRequest, out CobsCrmPortalVoipOrderDto)
+//     Fulfillment.CobsResendVoipProvide(CobsVoipUpdateProvideRequest)
+//     call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateProvideRequest.orderId, out CobsCrmPortalVoipOrderDto)
 
-procedure CrmPortalCobsResendVoipChange(CobsVoipUpdateChangeRequest, out CobsCrmPortalVoipOrderDto)
-    Fulfillment.CobsResendVoipChange(CobsVoipUpdateChangeRequest)
-    call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateChangeRequest.orderId, out CobsCrmPortalVoipOrderDto)
+// procedure CrmPortalCobsResendVoipChange(CobsVoipUpdateChangeRequest, out CobsCrmPortalVoipOrderDto)
+//     Fulfillment.CobsResendVoipChange(CobsVoipUpdateChangeRequest)
+//     call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateChangeRequest.orderId, out CobsCrmPortalVoipOrderDto)
 
-procedure CrmPortalCobsResendVoipCease(CobsVoipUpdateCeaseRequest, out CobsCrmPortalVoipOrderDto)
-    Fulfillment.CobsResendVoipCease(CobsVoipUpdateCeaseRequest)
-    call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateCeaseRequest.orderId, out CobsCrmPortalVoipOrderDto)
+// procedure CrmPortalCobsResendVoipCease(CobsVoipUpdateCeaseRequest, out CobsCrmPortalVoipOrderDto)
+//     Fulfillment.CobsResendVoipCease(CobsVoipUpdateCeaseRequest)
+//     call CrmPortalGetCobsVoipOrderById(OrderId = CobsVoipUpdateCeaseRequest.orderId, out CobsCrmPortalVoipOrderDto)
 
-procedure CrmPortalCobsResendMoveDslOrder(CobsUpdateMoveDslRequest)
-    Fulfillment.CobsResendMoveDslOrder(CobsUpdateMoveDslRequest)
+// procedure CrmPortalCobsResendMoveDslOrder(CobsUpdateMoveDslRequest)
+//     Fulfillment.CobsResendMoveDslOrder(CobsUpdateMoveDslRequest)
 
-procedure CrmPortalGetInstallationOrderByEntityId(EntityId, out InstallationOrderDto)
-    InstallationOrderDto = PlanningstoolService.GetInstallationOrderDtoByEntityId(EntityId)
+// procedure CrmPortalGetInstallationOrderByEntityId(EntityId, out InstallationOrderDto)
+//     InstallationOrderDto = PlanningstoolService.GetInstallationOrderDtoByEntityId(EntityId)
 
-procedure CrmPortalGetTriplePlayOrderToCobsOrdersMapByOrderId(OrderId, out TriplePlayCobsIdsMapDto)
-    TriplePlayCobsIdsMapDto = Fulfillment.GetTriplePlayOrderToCobsOrdersMapByOrderId(OrderId).ToCrmPortalDto()
+// procedure CrmPortalGetTriplePlayOrderToCobsOrdersMapByOrderId(OrderId, out TriplePlayCobsIdsMapDto)
+//     TriplePlayCobsIdsMapDto = Fulfillment.GetTriplePlayOrderToCobsOrdersMapByOrderId(OrderId).ToCrmPortalDto()
 
-procedure CrmPortalGetPackagesByOrderId(OrderId, out PackageAccountInfo)
-    PackageAccountInfo = Fulfillment.GetPackagesByOrderId(OrderId)
+// procedure CrmPortalGetPackagesByOrderId(OrderId, out PackageAccountInfo)
+//     PackageAccountInfo = Fulfillment.GetPackagesByOrderId(OrderId)
 
-procedure CrmPortalGetTvPackages(AccountId, ServiceAccountId, out PackageAccountInfo)
-    PackageAccountInfo = Fulfillment.GetPackages(AccountId, ServiceAccountId, TvTypeOfServiceId)
+// procedure CrmPortalGetTvPackages(AccountId, ServiceAccountId, out PackageAccountInfo)
+//     PackageAccountInfo = Fulfillment.GetPackages(AccountId, ServiceAccountId, TvTypeOfServiceId)
 
-procedure CrmPortalSwitchTvPackages(CreatedBy, PackageChangeRequest, DateConfiguration)
-    PackageChangeRequest.scheduledDate = Date(
-        DateConfiguration.year,
-        DateConfiguration.month,
-        DateConfiguration.day
-        )
-    Fulfillment.SwitchTvPackages(CreatedBy, PackageChangeRequest)
+// procedure CrmPortalSwitchTvPackages(CreatedBy, PackageChangeRequest, DateConfiguration)
+//     PackageChangeRequest.scheduledDate = Date(
+//         DateConfiguration.year,
+//         DateConfiguration.month,
+//         DateConfiguration.day
+//         )
+//     Fulfillment.SwitchTvPackages(CreatedBy, PackageChangeRequest)
 
-procedure CrmPortalGetVoipSettingsId(AccountId, ServiceAccountId, out VoipSettingsId)
-    VoipSettingsId = Fulfillment.GetVoipSettingsId(AccountId, ServiceAccountId)
+// procedure CrmPortalGetVoipSettingsId(AccountId, ServiceAccountId, out VoipSettingsId)
+//     VoipSettingsId = Fulfillment.GetVoipSettingsId(AccountId, ServiceAccountId)
 
-procedure CrmPortalGetVoipSettings(AccountId, ServiceAccountId, VoipSettingsId, out GetSubscriberSettingsResponse)
-    GetSubscriberSettingsResponse = Fulfillment.GetVoipSettings(AccountId, ServiceAccountId, VoipSettingsId)
+// procedure CrmPortalGetVoipSettings(AccountId, ServiceAccountId, VoipSettingsId, out GetSubscriberSettingsResponse)
+//     GetSubscriberSettingsResponse = Fulfillment.GetVoipSettings(AccountId, ServiceAccountId, VoipSettingsId)
 
-procedure CrmPortalSetVoipSettings(SubscriberSettingsDto, AccountId, ServiceAccountId)
-    Fulfillment.SetVoipSettings(SubscriberSettingsDto, AccountId, ServiceAccountId)
+// procedure CrmPortalSetVoipSettings(SubscriberSettingsDto, AccountId, ServiceAccountId)
+//     Fulfillment.SetVoipSettings(SubscriberSettingsDto, AccountId, ServiceAccountId)
 
-procedure CrmPortalGetVoipAccountStatus(AccountId, ServiceAccountId, out GetVoipAccountStatusResponse)
-    GetVoipAccountStatusResponse = Fulfillment.GetVoipAccountStatus(AccountId, ServiceAccountId)
+// procedure CrmPortalGetVoipAccountStatus(AccountId, ServiceAccountId, out GetVoipAccountStatusResponse)
+//     GetVoipAccountStatusResponse = Fulfillment.GetVoipAccountStatus(AccountId, ServiceAccountId)
 
-procedure CrmPortalSetVoipAccountStatus(AccountId, ServiceAccountId, VoipStateStatus, Voip_refLockedBy)
-    Fulfillment.SetVoipAccountStatus(AccountId, ServiceAccountId, VoipStateStatus, Voip_refLockedBy)
+// procedure CrmPortalSetVoipAccountStatus(AccountId, ServiceAccountId, VoipStateStatus, Voip_refLockedBy)
+//     Fulfillment.SetVoipAccountStatus(AccountId, ServiceAccountId, VoipStateStatus, Voip_refLockedBy)
 
-procedure CrmPortalSetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
-    Fulfillment.SetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
+// procedure CrmPortalSetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
+//     Fulfillment.SetTvAccountState(AccountId, ServiceAccountId, TVStateStatus)
 
-procedure CrmPortalSetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
-    Fulfillment.SetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
+// procedure CrmPortalSetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
+//     Fulfillment.SetLineState(AccountId, ServiceAccountId, LineStatus, PageText)
 
-procedure CrmPortalGetPhonebookEntry(AccountId, ServiceAccountId, out GetPhonebookEntryResponse)
-    GetPhonebookEntryResponse = Fulfillment.GetPhonebookEntry(AccountId, ServiceAccountId)
+// procedure CrmPortalGetPhonebookEntry(AccountId, ServiceAccountId, out GetPhonebookEntryResponse)
+//     GetPhonebookEntryResponse = Fulfillment.GetPhonebookEntry(AccountId, ServiceAccountId)
 
-procedure CrmPortalSetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
-    Fulfillment.SetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
+// procedure CrmPortalSetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
+//     Fulfillment.SetPhonebookEntry(PhonebookEntryDto, AccountId, ServiceAccountId)
 
-procedure CrmPortalGetVoipBundles(AccountId, ServiceAccountId, out PackageAccountInfo)
-    PackageAccountInfo = Fulfillment.GetPackages(AccountId, ServiceAccountId, VoipTypeOfServiceId)
+// procedure CrmPortalGetVoipBundles(AccountId, ServiceAccountId, out PackageAccountInfo)
+//     PackageAccountInfo = Fulfillment.GetPackages(AccountId, ServiceAccountId, VoipTypeOfServiceId)
 
-procedure CrmPortalSwitchVoipPackages(CreatedBy, PackageChangeRequest, DateConfiguration)
-    PackageChangeRequest.scheduledDate = Date(
-        DateConfiguration.year,
-        DateConfiguration.month,
-        DateConfiguration.day
-        )
-    Fulfillment.SwitchVoipPackages(CreatedBy, PackageChangeRequest)
+// procedure CrmPortalSwitchVoipPackages(CreatedBy, PackageChangeRequest, DateConfiguration)
+//     PackageChangeRequest.scheduledDate = Date(
+//         DateConfiguration.year,
+//         DateConfiguration.month,
+//         DateConfiguration.day
+//         )
+//     Fulfillment.SwitchVoipPackages(CreatedBy, PackageChangeRequest)
 
-procedure CrmPortalCreateAdjustingOrder(EmployeeId, CrmPortalCreateAdjustingOrderRequest, out OrderId)
-    OrderId = Fulfillment.CreateAdjustingOrder(EmployeeId, CrmPortalCreateAdjustingOrderRequest.CrmPortalToCreateAdjustingOrderRequest())
+// procedure CrmPortalCreateAdjustingOrder(EmployeeId, CrmPortalCreateAdjustingOrderRequest, out OrderId)
+//     OrderId = Fulfillment.CreateAdjustingOrder(EmployeeId, CrmPortalCreateAdjustingOrderRequest.CrmPortalToCreateAdjustingOrderRequest())
 
-procedure CrmPortalGetLastTvAdjustingOrder(AccountId, ServiceAccountId, out OrderId)
-    OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
+// procedure CrmPortalGetLastTvAdjustingOrder(AccountId, ServiceAccountId, out OrderId)
+//     OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
 
-procedure CrmPortalGetLastVoipAdjustingOrder(AccountId, ServiceAccountId, out OrderId)
-    OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
+// procedure CrmPortalGetLastVoipAdjustingOrder(AccountId, ServiceAccountId, out OrderId)
+//     OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
 
-procedure CrmPortalGetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId, out OrderId)
-    OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
+// procedure CrmPortalGetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId, out OrderId)
+//     OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
 
-procedure CrmPortalSendEmailWithContractToCustomer(CrmPortalSendEmailWithContractToCustomerRequest)
-    CustomerInfo = CrmBackend.GetCustomerInfoForEmail(CrmPortalSendEmailWithContractToCustomerRequest.accountId, CrmPortalSendEmailWithContractToCustomerRequest.serviceAccountId)
-    DateTime = Fulfillment.GetWishDateByOrderId(CrmPortalSendEmailWithContractToCustomerRequest.orderId)
-    SendgridServiceAsync.SendEmailWithContractToCustomer(CustomerInfo, CrmPortalSendEmailWithContractToCustomerRequest.contractId, CrmPortalSendEmailWithContractToCustomerRequest.orderId, DateTime)
+// procedure CrmPortalSendEmailWithContractToCustomer(CrmPortalSendEmailWithContractToCustomerRequest)
+//     CustomerInfo = CrmBackend.GetCustomerInfoForEmail(CrmPortalSendEmailWithContractToCustomerRequest.accountId, CrmPortalSendEmailWithContractToCustomerRequest.serviceAccountId)
+//     DateTime = Fulfillment.GetWishDateByOrderId(CrmPortalSendEmailWithContractToCustomerRequest.orderId)
+//     SendgridServiceAsync.SendEmailWithContractToCustomer(CustomerInfo, CrmPortalSendEmailWithContractToCustomerRequest.contractId, CrmPortalSendEmailWithContractToCustomerRequest.orderId, DateTime)
 
-procedure StopAnnaServiceAccount(StopAnnaServiceAccountRequest)
-    BillingEngine.StopAnnaServiceAccount(StopAnnaServiceAccountRequest)
+// procedure StopAnnaServiceAccount(StopAnnaServiceAccountRequest)
+//     BillingEngine.StopAnnaServiceAccount(StopAnnaServiceAccountRequest)
 
-procedure CrmPortalGetCustomerContractAccessLink(CrmPortalGetCustomerContractAccessLinkRequest, out AwsStorageFileLink)
-    AwsStorageFileLink = FileStorageComponent.GetCustomerContractAccessLink(CrmPortalGetCustomerContractAccessLinkRequest.accountId, CrmPortalGetCustomerContractAccessLinkRequest.contractId)
+// procedure CrmPortalGetCustomerContractAccessLink(CrmPortalGetCustomerContractAccessLinkRequest, out AwsStorageFileLink)
+//     AwsStorageFileLink = FileStorageComponent.GetCustomerContractAccessLink(CrmPortalGetCustomerContractAccessLinkRequest.accountId, CrmPortalGetCustomerContractAccessLinkRequest.contractId)
 
-procedure CrmPortalGetInvoicePdfAccessLink(InvoiceId, out AwsStorageFileLink)
-    AwsStorageFileLink = FileStorageComponent.GetInvoicePdfAccessLink(InvoiceId)
+// procedure CrmPortalGetInvoicePdfAccessLink(InvoiceId, out AwsStorageFileLink)
+//     AwsStorageFileLink = FileStorageComponent.GetInvoicePdfAccessLink(InvoiceId)
 
-procedure CrmPortalGetEmailAttachmentAccessLink(CrmPortalGetEmailAttachmentLinkRequest, out AwsStorageFileLink)
-    AwsStorageFileLink = FileStorageComponent.GetEmailAttachmentAccessLink(CrmPortalGetEmailAttachmentLinkRequest.storageFileId)
+// procedure CrmPortalGetEmailAttachmentAccessLink(CrmPortalGetEmailAttachmentLinkRequest, out AwsStorageFileLink)
+//     AwsStorageFileLink = FileStorageComponent.GetEmailAttachmentAccessLink(CrmPortalGetEmailAttachmentLinkRequest.storageFileId)
 
-procedure CrmPortalUpdateCustomerAccount(UpdateCustomerAccountRequest)
-    CrmBackend.UpdateCustomerAccount(UpdateCustomerAccountRequest)
+// procedure CrmPortalUpdateCustomerAccount(UpdateCustomerAccountRequest)
+//     CrmBackend.UpdateCustomerAccount(UpdateCustomerAccountRequest)
 
-procedure CrmPortalGetInstallationProcess(AccountId, ProcessId, out InstallationProcess)
-    InstallationProcess = PlanningstoolService.GetInstallationProcess(AccountId, ProcessId)
+// procedure CrmPortalGetInstallationProcess(AccountId, ProcessId, out InstallationProcess)
+//     InstallationProcess = PlanningstoolService.GetInstallationProcess(AccountId, ProcessId)
 
-procedure CrmPortalInitiateOrderCancellation(OrderId, AccountId, CancellationReason, CancellationFeeType)
-    Fulfillment.InitiateOrderCancellation(OrderId, AccountId, CancellationReason, CancellationFeeType)
+// procedure CrmPortalInitiateOrderCancellation(OrderId, AccountId, CancellationReason, CancellationFeeType)
+//     Fulfillment.InitiateOrderCancellation(OrderId, AccountId, CancellationReason, CancellationFeeType)
 
-procedure CrmPortalSwitchPropositionMonthlyTerminableState(SwitchPropositionMonthlyTerminableStateRequest)
-    ProductCatalog.SwitchPropositionMonthlyTerminableState(SwitchPropositionMonthlyTerminableStateRequest)
+// procedure CrmPortalSwitchPropositionMonthlyTerminableState(SwitchPropositionMonthlyTerminableStateRequest)
+//     ProductCatalog.SwitchPropositionMonthlyTerminableState(SwitchPropositionMonthlyTerminableStateRequest)
 
-procedure CrmPortalSwitchPropositionOrderTypeProlongate(SwitchPropositionOrderTypeProlongateRequest)
-    ProductCatalog.SwitchPropositionOrderTypeProlongate(SwitchPropositionOrderTypeProlongateRequest)
+// procedure CrmPortalSwitchPropositionOrderTypeProlongate(SwitchPropositionOrderTypeProlongateRequest)
+//     ProductCatalog.SwitchPropositionOrderTypeProlongate(SwitchPropositionOrderTypeProlongateRequest)
 
-procedure CrmPortalSwitchPropositionOrderTypeNew(SwitchPropositionOrderTypeNewRequest)
-    ProductCatalog.SwitchPropositionOrderTypeNew(SwitchPropositionOrderTypeNewRequest)
+// procedure CrmPortalSwitchPropositionOrderTypeNew(SwitchPropositionOrderTypeNewRequest)
+//     ProductCatalog.SwitchPropositionOrderTypeNew(SwitchPropositionOrderTypeNewRequest)
 
-procedure CrmPortalGetTvSubscriptionInfo(AccountId, ServiceAccountId, out SubscriptionInfo)
-    call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, out SubscriptionInfo)
+// procedure CrmPortalGetTvSubscriptionInfo(AccountId, ServiceAccountId, out SubscriptionInfo)
+//     call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, out SubscriptionInfo)
 
-procedure CrmPortalGetServiceAccountSubscriptionsInfo(AccountId, ServiceAccountId, out ServiceAccountSubscriptionsInfo)
-    ServiceAccountSubscriptionsInfo = new
-    ServiceAccount = BillingEngine.GetServiceAccountById(AccountId, ServiceAccountId)
-    ServiceAccountSubscriptionsInfo.serviceAccountStatus = ServiceAccount.getStatus(now)
+// procedure CrmPortalGetServiceAccountSubscriptionsInfo(AccountId, ServiceAccountId, out ServiceAccountSubscriptionsInfo)
+//     ServiceAccountSubscriptionsInfo = new
+//     ServiceAccount = BillingEngine.GetServiceAccountById(AccountId, ServiceAccountId)
+//     ServiceAccountSubscriptionsInfo.serviceAccountStatus = ServiceAccount.getStatus(now)
 
-    if ServiceAccountSubscriptionsInfo.serviceAccountStatus == ServiceAccountStatus.Active
-        call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, out SubscriptionInfo)
-        let TvInfo = SubscriptionInfo
+//     if ServiceAccountSubscriptionsInfo.serviceAccountStatus == ServiceAccountStatus.Active
+//         call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, out SubscriptionInfo)
+//         let TvInfo = SubscriptionInfo
 
-        call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, out SubscriptionInfo)
-        let VoipInfo = SubscriptionInfo
+//         call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, out SubscriptionInfo)
+//         let VoipInfo = SubscriptionInfo
 
-        DslConnectionInfo = Fulfillment.GetDslConnectionInfo(AccountId, ServiceAccountId)
+//         DslConnectionInfo = Fulfillment.GetDslConnectionInfo(AccountId, ServiceAccountId)
 
-        ServiceAccountSubscriptionsInfo.dslConnectionInfo = DslConnectionInfo
-        ServiceAccountSubscriptionsInfo.tvSubscriptionInfo = TvInfo
-        ServiceAccountSubscriptionsInfo.voipSubscriptionInfo = VoipInfo
+//         ServiceAccountSubscriptionsInfo.dslConnectionInfo = DslConnectionInfo
+//         ServiceAccountSubscriptionsInfo.tvSubscriptionInfo = TvInfo
+//         ServiceAccountSubscriptionsInfo.voipSubscriptionInfo = VoipInfo
 
-        ServiceAccountPendingAdjustingOrdersInfo = Fulfillment.GetInfoAboutPendingAdjustingOrdersForServiceAccount(ServiceAccountId)
-        ServiceAccountSubscriptionsInfo.adjustingOrdersInfo = ServiceAccountPendingAdjustingOrdersInfo
+//         ServiceAccountPendingAdjustingOrdersInfo = Fulfillment.GetInfoAboutPendingAdjustingOrdersForServiceAccount(ServiceAccountId)
+//         ServiceAccountSubscriptionsInfo.adjustingOrdersInfo = ServiceAccountPendingAdjustingOrdersInfo
 
-        EndOn = ServiceAccount.endOn
-        if !(EndOn.AddDays(-ContractEndOnGap).Date() > today) || IsEmpty(EndOn)
-            ServiceAccountSubscriptionsInfo.serviceAccountExpiresSoon = true
+//         EndOn = ServiceAccount.endOn
+//         if !(EndOn.AddDays(-ContractEndOnGap).Date() > today) || IsEmpty(EndOn)
+//             ServiceAccountSubscriptionsInfo.serviceAccountExpiresSoon = true
 
-procedure CrmPortalGetVoipSubscriptionInfo(AccountId, ServiceAccountId, out SubscriptionInfo)
-    call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, out SubscriptionInfo)
+// procedure CrmPortalGetVoipSubscriptionInfo(AccountId, ServiceAccountId, out SubscriptionInfo)
+//     call GetSubscriptionInfoInternal(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, out SubscriptionInfo)
 
-procedure CrmPortalGetStartSupplyInfo(OrderId, out StartSupplyInfoDto)
-    StartSupplyInfoDto = Fulfillment.GetStartSupplyInfo(OrderId).ToDto()
+// procedure CrmPortalGetStartSupplyInfo(OrderId, out StartSupplyInfoDto)
+//     StartSupplyInfoDto = Fulfillment.GetStartSupplyInfo(OrderId).ToDto()
 
-procedure CrmPortalGetStartSupplyTypeByOrderId(OrderId, out StartSupplyType)
-    StartSupplyType = Fulfillment.GetStartSupplyTypeByOrderId(OrderId)
+// procedure CrmPortalGetStartSupplyTypeByOrderId(OrderId, out StartSupplyType)
+//     StartSupplyType = Fulfillment.GetStartSupplyTypeByOrderId(OrderId)
 
-procedure CrmPortalGetAllStartSupplyInfos(AccountId, ServiceAccountId, out StartSupplyInfosDto)
-    StartSupplyInfosDto = Fulfillment.GetAllStartSupplyInfo(AccountId, ServiceAccountId).Select(x => x.ToDto())
+// procedure CrmPortalGetAllStartSupplyInfos(AccountId, ServiceAccountId, out StartSupplyInfosDto)
+//     StartSupplyInfosDto = Fulfillment.GetAllStartSupplyInfo(AccountId, ServiceAccountId).Select(x => x.ToDto())
 
-procedure CrmPortalGetAdjustingOrderProcessByOrderId(OrderId, out Process)
-    Process = Fulfillment.GetAdjustingOrderProcessByOrderId(OrderId)
+// procedure CrmPortalGetAdjustingOrderProcessByOrderId(OrderId, out Process)
+//     Process = Fulfillment.GetAdjustingOrderProcessByOrderId(OrderId)
 
-procedure CrmPortalGetTvAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventType)
-    OrderEventType = OrderEventType.BlockedByBlackListCheck
+// procedure CrmPortalGetTvAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventType)
+//     OrderEventType = OrderEventType.BlockedByBlackListCheck
 
-    OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        OrderEventType = Fulfillment.GetAdjustingOrderById(OrderId).state.type
+//     OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         OrderEventType = Fulfillment.GetAdjustingOrderById(OrderId).state.type
 
-procedure CrmPortalGetVoipAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventTypeString)
-    OrderEventTypeString = ""
-    OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        OrderEventTypeString = Fulfillment.GetAdjustingOrderById(OrderId).state.type + ""
+// procedure CrmPortalGetVoipAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventTypeString)
+//     OrderEventTypeString = ""
+//     OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         OrderEventTypeString = Fulfillment.GetAdjustingOrderById(OrderId).state.type + ""
 
-procedure CrmPortalGetUpgradeDslpAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventTypeString)
-    OrderEventTypeString = ""
-    OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        OrderEventTypeString = Fulfillment.GetAdjustingOrderById(OrderId).state.type + ""
+// procedure CrmPortalGetUpgradeDslpAdjustingOrderEventType(AccountId, ServiceAccountId, out OrderEventTypeString)
+//     OrderEventTypeString = ""
+//     OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         OrderEventTypeString = Fulfillment.GetAdjustingOrderById(OrderId).state.type + ""
 
-procedure CrmPortalGetFirstTypeOfServiceIdByAdjustingOrderId(AdjustingOrderId, out TypeOfServiceId)
-    TypeOfServiceId = Fulfillment.GetFirstTypeOfServiceIdByAdjustingOrderId(AdjustingOrderId)
+// procedure CrmPortalGetFirstTypeOfServiceIdByAdjustingOrderId(AdjustingOrderId, out TypeOfServiceId)
+//     TypeOfServiceId = Fulfillment.GetFirstTypeOfServiceIdByAdjustingOrderId(AdjustingOrderId)
 
-procedure CrmPortalGetPropositionInfoByAdjustingOrderId(AdjustingOrderId, out PropositionInfo)
-    PropositionInfo = Fulfillment.GetPropositionInfoByAdjustingOrderId(AdjustingOrderId)
+// procedure CrmPortalGetPropositionInfoByAdjustingOrderId(AdjustingOrderId, out PropositionInfo)
+//     PropositionInfo = Fulfillment.GetPropositionInfoByAdjustingOrderId(AdjustingOrderId)
 
-procedure CrmPortalGetTvPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
-    PropositionInfo = new
-    OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, OrderId, out PropositionInfo)
+// procedure CrmPortalGetTvPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
+//     PropositionInfo = new
+//     OrderId = Fulfillment.GetLastTvAdjustingOrder(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = TvTypeOfServiceId, OrderId, out PropositionInfo)
 
-procedure CrmPortalGetVoipPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
-    PropositionInfo = new
-    OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, OrderId, out PropositionInfo)
+// procedure CrmPortalGetVoipPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
+//     PropositionInfo = new
+//     OrderId = Fulfillment.GetLastVoipAdjustingOrder(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = VoipTypeOfServiceId, OrderId, out PropositionInfo)
 
-procedure CrmPortalGetDslPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
-    PropositionInfo = new
-    OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
-    if not IsEmpty(OrderId)
-        call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = InternetTypeOfServiceId, OrderId, out PropositionInfo)
+// procedure CrmPortalGetDslPropositionInfo(AccountId, ServiceAccountId, out PropositionInfo)
+//     PropositionInfo = new
+//     OrderId = Fulfillment.GetLastUpgradeDslAdjustingOrderId(AccountId, ServiceAccountId)
+//     if not IsEmpty(OrderId)
+//         call GeneratePropositionInfo(AccountId, ServiceAccountId, TypeOfServiceId = InternetTypeOfServiceId, OrderId, out PropositionInfo)
 
 
-procedure CrmPortalGetOverstappenDossierByOrderId(OrderId, out OverstappenDossierDto)
+// procedure CrmPortalGetOverstappenDossierByOrderId(OrderId, out OverstappenDossierDto)
 
-    OverstappenDossierDto = Fulfillment.GetOverstappenDossierDtoByOrderId(OrderId)
+//     OverstappenDossierDto = Fulfillment.GetOverstappenDossierDtoByOrderId(OrderId)
 
 
-procedure CrmPortalGetOverstappenDonorProcessByOrderId(OrderId, out OverstappenDossierDto)
+// procedure CrmPortalGetOverstappenDonorProcessByOrderId(OrderId, out OverstappenDossierDto)
 
-    OverstappenDossier = Fulfillment.GetOverstappenDonorProcessByOrderId(OrderId)
+//     OverstappenDossier = Fulfillment.GetOverstappenDonorProcessByOrderId(OrderId)
 
-    OverstappenStatesCollection = new
-    OverstappenStatesCollection ++= OverstappenDossier.states
+//     OverstappenStatesCollection = new
+//     OverstappenStatesCollection ++= OverstappenDossier.states
 
-    OverstappenDossierDto = OverstappenDossier.ToOverstappenDossierDto(OverstappenStatesCollection)
-    OverstappenDossierDto.note = OverstappenDossier.externalNote
+//     OverstappenDossierDto = OverstappenDossier.ToOverstappenDossierDto(OverstappenStatesCollection)
+//     OverstappenDossierDto.note = OverstappenDossier.externalNote
 
-procedure CrmPortalSendOverstappenRetryRequest(OverstappenRetryRequest)
-    Fulfillment.RetryOverstappenRequest(OverstappenRetryRequest)
+// procedure CrmPortalSendOverstappenRetryRequest(OverstappenRetryRequest)
+//     Fulfillment.RetryOverstappenRequest(OverstappenRetryRequest)
 
-procedure CrmPortalGetCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
-    call FiloutCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
+// procedure CrmPortalGetCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
+//     call FiloutCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
 
 
-procedure CrmPortalGetCustomerAccountDetailsByOrderId(OrderId, out CrmCustomerAccountDetails)
-    AssignedOrderInfo = Fulfillment.GetAssignedOrderInfo(OrderId)
-    AccountId = AssignedOrderInfo.customerId
+// procedure CrmPortalGetCustomerAccountDetailsByOrderId(OrderId, out CrmCustomerAccountDetails)
+//     AssignedOrderInfo = Fulfillment.GetAssignedOrderInfo(OrderId)
+//     AccountId = AssignedOrderInfo.customerId
 
-    call FiloutCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
+//     call FiloutCustomerAccountDetails(AccountId, out CrmCustomerAccountDetails)
 
 
-procedure AddWarning(WarningMessage, AccountId, CreatedBy)
-    CrmBackend.AddWarning(WarningMessage, AccountId, CreatedBy)
+// procedure AddWarning(WarningMessage, AccountId, CreatedBy)
+//     CrmBackend.AddWarning(WarningMessage, AccountId, CreatedBy)
 
 
-procedure RemoveWarning(AccountId, CreatedBy)
-    CrmBackend.RemoveWarning(AccountId, CreatedBy)
+// procedure RemoveWarning(AccountId, CreatedBy)
+//     CrmBackend.RemoveWarning(AccountId, CreatedBy)
 
 
-procedure CrmPortalGetDslConnectionInfo(AccountId, ServiceAccountId, out DslConnectionInfo)
-    DslConnectionInfo = Fulfillment.GetDslConnectionInfo(AccountId, ServiceAccountId)
+// procedure CrmPortalGetDslConnectionInfo(AccountId, ServiceAccountId, out DslConnectionInfo)
+//     DslConnectionInfo = Fulfillment.GetDslConnectionInfo(AccountId, ServiceAccountId)
 
-procedure CrmPortalGetDslConnectionInfoByProcessId(OrderId, out DslConnectionInfo)
-    DslConnectionInfo = Fulfillment.GetDslConnectionInfoByProcessId(OrderId)
+// procedure CrmPortalGetDslConnectionInfoByProcessId(OrderId, out DslConnectionInfo)
+//     DslConnectionInfo = Fulfillment.GetDslConnectionInfoByProcessId(OrderId)
 
-procedure CrmPortalSendTokenDetails(TokenDetails)
-    MailStorage.SendTokenDetails(TokenDetails)
+// procedure CrmPortalSendTokenDetails(TokenDetails)
+//     MailStorage.SendTokenDetails(TokenDetails)
 
 
-procedure CrmPortalChangeIban(ChangeIbanRequest)
-    BankComponent.ChangeIban(ChangeIbanRequest)
+// procedure CrmPortalChangeIban(ChangeIbanRequest)
+//     BankComponent.ChangeIban(ChangeIbanRequest)
 
 
-procedure CrmPortalValidateIban(MemberIban, out ValidationResult)
-    ValidationResult = Fulfillment.ValidateIban(MemberIban)
+// procedure CrmPortalValidateIban(MemberIban, out ValidationResult)
+//     ValidationResult = Fulfillment.ValidateIban(MemberIban)
 
 
-procedure CrmPortalGetInvoicePartialCollection(GetInvoicePartialCollectionRequest,out GetInvoicePartialCollectionForCrmPortalResponse)
-    AccountId = GetInvoicePartialCollectionRequest.accountId
-    ServiceAccountId = GetInvoicePartialCollectionRequest.serviceAccountId
-    GetInvoicePartialCollectionResponse = InvoiceGenerator.GetInvoicePartialCollectionByServiceAccountId(GetInvoicePartialCollectionRequest)
-    GetInvoicePartialCollectionForCrmPortalResponse = new
-    GetInvoicePartialCollectionForCrmPortalResponse.invoices = new
-    GetInvoicePartialCollectionForCrmPortalResponse.entityCount = GetInvoicePartialCollectionResponse.entityCount
-    foreach Invoice in GetInvoicePartialCollectionResponse.invoices
-        InvoiceItems = Invoice.invoiceItems
-        let SavedAmount = Invoice.amount
-        let SavedLeftToPay = Invoice.leftToPay
-        if Invoice.isLegacy
-            call PrepareInvoiceItemsForGui(Invoice, out InvoiceItems)
-        GetInvoicePartialCollectionForCrmPortalResponse.invoices ++= Invoice.ToCrmPortalInvoiceDto(SavedAmount, SavedLeftToPay, InvoiceItems)
-    InvoiceIds = GetInvoicePartialCollectionForCrmPortalResponse.invoices.Select(i => i.id)
-    if InvoiceIds.Count() > 0
-        ClearanceBlockStatusCollection = BillingEngine.GetClearanceBlockStatusForInvoices(InvoiceIds)
-        InvoiceDunningBlockStateCollection = DunningService.GetDunningBlockStateCollectionForInvoices(AccountId, ServiceAccountId, InvoiceIds)
-        DirectDebitStatusForInvoiceCollection = InvoiceGenerator.GetDirectDebitBlockStatusForInvoices(InvoiceIds)
-        PaylinkDtoByInvoiceId = MailToPay.GetPaylinksForInvoices(InvoiceIds)
-        foreach CrmPortalInvoiceDto in GetInvoicePartialCollectionForCrmPortalResponse.invoices
-            CrmPortalInvoiceDto.hasClearingBlock = ClearanceBlockStatusCollection[CrmPortalInvoiceDto.id]
-            CrmPortalInvoiceDto.hasDunningBlock = InvoiceDunningBlockStateCollection[CrmPortalInvoiceDto.id]
-            CrmPortalInvoiceDto.hasDirectDebitBlock = DirectDebitStatusForInvoiceCollection[CrmPortalInvoiceDto.id]
-            CrmPortalInvoiceDto.dunningLevel = if(CrmPortalInvoiceDto.status == InvoiceStatus.Dunning, DunningService.GetDunningLevelForInvoice(AccountId, ServiceAccountId, CrmPortalInvoiceDto.id), -1)
-            if PaylinkDtoByInvoiceId.ContainsKey(CrmPortalInvoiceDto.id)
-                CrmPortalInvoiceDto.paylink = PaylinkDtoByInvoiceId[CrmPortalInvoiceDto.id]
-    CrmPortalInvoiceItemDtoCollection = GetInvoicePartialCollectionForCrmPortalResponse.invoices.SelectMany(i => i.invoiceItems).Where(ii => ii.virtualBalanceRecordId is not empty)
-    GetVirtualBalanceRecordDetailsRequest = new GetVirtualBalanceRecordDetailsRequest(
-        serviceAccountId = GetInvoicePartialCollectionRequest.serviceAccountId,
-        allVirtualbalanceRecordIds = CrmPortalInvoiceItemDtoCollection.Select(ii => ii.virtualBalanceRecordId),
-        discountVirtualBalanceRecordIds = if (CrmPortalInvoiceItemDtoCollection.Any(x => x.recordType == RecordType.Discount), CrmPortalInvoiceItemDtoCollection.Where(ii => ii.recordType == RecordType.Discount).Select(ii => ii.virtualBalanceRecordId), empty))
-    GetVirtualBalanceRecordDetailsResponse = BillingEngine.GetVirtualBalanceRecordDetails(GetVirtualBalanceRecordDetailsRequest)
-    GetInvoicePartialCollectionForCrmPortalResponse.relatedToBundleVirtualBalalanceRecordIds = GetVirtualBalanceRecordDetailsResponse.relatedToBundleVirtualBalalanceRecordIds
-    foreach CrmPortalInvoiceItemDtoCollection
-        CrmPortalInvoiceItemDto.isReverted = GetVirtualBalanceRecordDetailsResponse.virtualbalanceRecordReversionStatuses[CrmPortalInvoiceItemDto.virtualBalanceRecordId]
+// procedure CrmPortalGetInvoicePartialCollection(GetInvoicePartialCollectionRequest,out GetInvoicePartialCollectionForCrmPortalResponse)
+//     AccountId = GetInvoicePartialCollectionRequest.accountId
+//     ServiceAccountId = GetInvoicePartialCollectionRequest.serviceAccountId
+//     GetInvoicePartialCollectionResponse = InvoiceGenerator.GetInvoicePartialCollectionByServiceAccountId(GetInvoicePartialCollectionRequest)
+//     GetInvoicePartialCollectionForCrmPortalResponse = new
+//     GetInvoicePartialCollectionForCrmPortalResponse.invoices = new
+//     GetInvoicePartialCollectionForCrmPortalResponse.entityCount = GetInvoicePartialCollectionResponse.entityCount
+//     foreach Invoice in GetInvoicePartialCollectionResponse.invoices
+//         InvoiceItems = Invoice.invoiceItems
+//         let SavedAmount = Invoice.amount
+//         let SavedLeftToPay = Invoice.leftToPay
+//         if Invoice.isLegacy
+//             call PrepareInvoiceItemsForGui(Invoice, out InvoiceItems)
+//         GetInvoicePartialCollectionForCrmPortalResponse.invoices ++= Invoice.ToCrmPortalInvoiceDto(SavedAmount, SavedLeftToPay, InvoiceItems)
+//     InvoiceIds = GetInvoicePartialCollectionForCrmPortalResponse.invoices.Select(i => i.id)
+//     if InvoiceIds.Count() > 0
+//         ClearanceBlockStatusCollection = BillingEngine.GetClearanceBlockStatusForInvoices(InvoiceIds)
+//         InvoiceDunningBlockStateCollection = DunningService.GetDunningBlockStateCollectionForInvoices(AccountId, ServiceAccountId, InvoiceIds)
+//         DirectDebitStatusForInvoiceCollection = InvoiceGenerator.GetDirectDebitBlockStatusForInvoices(InvoiceIds)
+//         PaylinkDtoByInvoiceId = MailToPay.GetPaylinksForInvoices(InvoiceIds)
+//         foreach CrmPortalInvoiceDto in GetInvoicePartialCollectionForCrmPortalResponse.invoices
+//             CrmPortalInvoiceDto.hasClearingBlock = ClearanceBlockStatusCollection[CrmPortalInvoiceDto.id]
+//             CrmPortalInvoiceDto.hasDunningBlock = InvoiceDunningBlockStateCollection[CrmPortalInvoiceDto.id]
+//             CrmPortalInvoiceDto.hasDirectDebitBlock = DirectDebitStatusForInvoiceCollection[CrmPortalInvoiceDto.id]
+//             CrmPortalInvoiceDto.dunningLevel = if(CrmPortalInvoiceDto.status == InvoiceStatus.Dunning, DunningService.GetDunningLevelForInvoice(AccountId, ServiceAccountId, CrmPortalInvoiceDto.id), -1)
+//             if PaylinkDtoByInvoiceId.ContainsKey(CrmPortalInvoiceDto.id)
+//                 CrmPortalInvoiceDto.paylink = PaylinkDtoByInvoiceId[CrmPortalInvoiceDto.id]
+//     CrmPortalInvoiceItemDtoCollection = GetInvoicePartialCollectionForCrmPortalResponse.invoices.SelectMany(i => i.invoiceItems).Where(ii => ii.virtualBalanceRecordId is not empty)
+//     GetVirtualBalanceRecordDetailsRequest = new GetVirtualBalanceRecordDetailsRequest(
+//         serviceAccountId = GetInvoicePartialCollectionRequest.serviceAccountId,
+//         allVirtualbalanceRecordIds = CrmPortalInvoiceItemDtoCollection.Select(ii => ii.virtualBalanceRecordId),
+//         discountVirtualBalanceRecordIds = if (CrmPortalInvoiceItemDtoCollection.Any(x => x.recordType == RecordType.Discount), CrmPortalInvoiceItemDtoCollection.Where(ii => ii.recordType == RecordType.Discount).Select(ii => ii.virtualBalanceRecordId), empty))
+//     GetVirtualBalanceRecordDetailsResponse = BillingEngine.GetVirtualBalanceRecordDetails(GetVirtualBalanceRecordDetailsRequest)
+//     GetInvoicePartialCollectionForCrmPortalResponse.relatedToBundleVirtualBalalanceRecordIds = GetVirtualBalanceRecordDetailsResponse.relatedToBundleVirtualBalalanceRecordIds
+//     foreach CrmPortalInvoiceItemDtoCollection
+//         CrmPortalInvoiceItemDto.isReverted = GetVirtualBalanceRecordDetailsResponse.virtualbalanceRecordReversionStatuses[CrmPortalInvoiceItemDto.virtualBalanceRecordId]
 
-procedure CrmPortalGetDunningBlockReasons(out FinancialBlockReasonDtos)
-    FinancialBlockReasonDtos = DunningService.GetDunningBlockReasons().Select(fbr => fbr.ToCrmDto())
+// procedure CrmPortalGetDunningBlockReasons(out FinancialBlockReasonDtos)
+//     FinancialBlockReasonDtos = DunningService.GetDunningBlockReasons().Select(fbr => fbr.ToCrmDto())
 
-procedure CrmPortalAddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
-    DunningServiceAsync.AddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
+// procedure CrmPortalAddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
+//     DunningServiceAsync.AddDunningBlockToInvoices(AddDunningBlockToInvoicesRequest)
 
-procedure CrmPortalAddDunningBlockToServiceAccount(AccountId, ServiceAccountId, DunningBlockCreationRequest)
-    DunningServiceAsync.AddDunningBlockToServiceAccount(AccountId = AccountId, ServiceAccountId = ServiceAccountId, DunningBlockCreationRequest = DunningBlockCreationRequest)
+// procedure CrmPortalAddDunningBlockToServiceAccount(AccountId, ServiceAccountId, DunningBlockCreationRequest)
+//     DunningServiceAsync.AddDunningBlockToServiceAccount(AccountId = AccountId, ServiceAccountId = ServiceAccountId, DunningBlockCreationRequest = DunningBlockCreationRequest)
 
-procedure CrmPortalGetInvoiceById(InvoiceId,out CrmPortalInvoiceDto)
-    CrmPortalInvoiceDto = InvoiceGenerator.GetInvoice(InvoiceId).ToCrmPortalInvoiceDto()
+// procedure CrmPortalGetInvoiceById(InvoiceId,out CrmPortalInvoiceDto)
+//     CrmPortalInvoiceDto = InvoiceGenerator.GetInvoice(InvoiceId).ToCrmPortalInvoiceDto()
 
-procedure CrmPortalSendContractTerminationCancelRequest(OrderId, Note)
-    Fulfillment.CancelOverstappenRecipientProcess(OrderId, Note)
+// procedure CrmPortalSendContractTerminationCancelRequest(OrderId, Note)
+//     Fulfillment.CancelOverstappenRecipientProcess(OrderId, Note)
 
-procedure CrmPortalGetServiceAccountPaymentMethod(AccountId, ServiceAccountId, out PaymentMethod)
-    ServiceAccount = BillingEngine.GetServiceAccountById(AccountId, ServiceAccountId)
-    PaymentMethod = ServiceAccount.paymentMethod
+// procedure CrmPortalGetServiceAccountPaymentMethod(AccountId, ServiceAccountId, out PaymentMethod)
+//     ServiceAccount = BillingEngine.GetServiceAccountById(AccountId, ServiceAccountId)
+//     PaymentMethod = ServiceAccount.paymentMethod
 
-procedure CrmPortalGetServiceAccountMandate(ServiceAccountId, out Mandate)
-    Mandate = BankComponent.GetServiceAccountMandate(ServiceAccountId)
+// procedure CrmPortalGetServiceAccountMandate(ServiceAccountId, out Mandate)
+//     Mandate = BankComponent.GetServiceAccountMandate(ServiceAccountId)
 
-procedure CrmPortalGetPaymentsViewEntries(ServiceAccountId, PerPage, PageNumber, out GetPaymentsViewEntriesResponse)
+// procedure CrmPortalGetPaymentsViewEntries(ServiceAccountId, PerPage, PageNumber, out GetPaymentsViewEntriesResponse)
 
-    GetPaymentsViewEntriesResponse = BankComponent.GetPaymentsViewEntries(ServiceAccountId, PerPage, PageNumber)
+//     GetPaymentsViewEntriesResponse = BankComponent.GetPaymentsViewEntries(ServiceAccountId, PerPage, PageNumber)
 
-    foreach GetPaymentsViewEntriesResponse.paymentsViewEntries
+//     foreach GetPaymentsViewEntriesResponse.paymentsViewEntries
 
-        if PaymentsViewEntry.details is PaymentsViewEntryServiceAccountDetails
+//         if PaymentsViewEntry.details is PaymentsViewEntryServiceAccountDetails
 
-            PaymentsViewEntryServiceAccountDetails = PaymentsViewEntry.details as PaymentsViewEntryServiceAccountDetails
+//             PaymentsViewEntryServiceAccountDetails = PaymentsViewEntry.details as PaymentsViewEntryServiceAccountDetails
 
-            PaymentsViewEntryServiceAccountDetails.invoiceEntries = PaymentsViewEntryServiceAccountDetails.invoiceEntries.Select(InvoiceGenerator.GetPaymentsViewEntryServiceAccountDetailsInvoiceEntry(id))
+//             PaymentsViewEntryServiceAccountDetails.invoiceEntries = PaymentsViewEntryServiceAccountDetails.invoiceEntries.Select(InvoiceGenerator.GetPaymentsViewEntryServiceAccountDetailsInvoiceEntry(id))
 
-procedure CrmPortalGetPaymentsViewEntriesByInvoiceId(GetPaymentsViewEntriesByInvoiceIdRequest, out PaymentsViewEntries)
-    PaymentsViewEntries = BankComponent.GetPaymentsViewEntriesByInvoiceId(GetPaymentsViewEntriesByInvoiceIdRequest)
+// procedure CrmPortalGetPaymentsViewEntriesByInvoiceId(GetPaymentsViewEntriesByInvoiceIdRequest, out PaymentsViewEntries)
+//     PaymentsViewEntries = BankComponent.GetPaymentsViewEntriesByInvoiceId(GetPaymentsViewEntriesByInvoiceIdRequest)
 
-procedure CrmPortalUnmatchTransaction(BankTransactionId, ChangedBy)
-    BankComponent.UnmatchTransaction(BankTransactionId, ChangedBy)
+// procedure CrmPortalUnmatchTransaction(BankTransactionId, ChangedBy)
+//     BankComponent.UnmatchTransaction(BankTransactionId, ChangedBy)
 
 
-// Plannings tool
-procedure CrmPortalCreateRegion(RegionName, CodesRanges)
-    PlanningstoolService.AddRegion(RegionName, CodesRanges)
+// // Plannings tool
+// procedure CrmPortalCreateRegion(RegionName, CodesRanges)
+//     PlanningstoolService.AddRegion(RegionName, CodesRanges)
 
-procedure CrmPortalGetRegions(out RegionsDto)
-    RegionsDto = PlanningstoolService.GetAllRegions().Select(x => x.ToDto())
+// procedure CrmPortalGetRegions(out RegionsDto)
+//     RegionsDto = PlanningstoolService.GetAllRegions().Select(x => x.ToDto())
 
-procedure CrmPortalGetRegion(RegionName, out RegionDto)
-    RegionDto = PlanningstoolService.GetRegionByName(RegionName).ToDto()
+// procedure CrmPortalGetRegion(RegionName, out RegionDto)
+//     RegionDto = PlanningstoolService.GetRegionByName(RegionName).ToDto()
 
-procedure CrmPortalUpdateRegion(RegionName, CodesRanges)
-    PlanningstoolService.UpdateRegion(RegionName, CodesRanges)
+// procedure CrmPortalUpdateRegion(RegionName, CodesRanges)
+//     PlanningstoolService.UpdateRegion(RegionName, CodesRanges)
 
-procedure CrmPortalDeleteRegion(RegionName)
-    PlanningstoolService.DeleteRegion(RegionName)
+// procedure CrmPortalDeleteRegion(RegionName)
+//     PlanningstoolService.DeleteRegion(RegionName)
 
-procedure CrmPortalUpdateCodeRange(RegionName, CodesRange)
-    PlanningstoolService.UpdateCodeRange(RegionName, CodesRange)
+// procedure CrmPortalUpdateCodeRange(RegionName, CodesRange)
+//     PlanningstoolService.UpdateCodeRange(RegionName, CodesRange)
 
-procedure CrmPortalDeleteCodesRange(RegionName, CodesRangeId)
-    PlanningstoolService.DeleteCodesRange(RegionName, CodesRangeId)
+// procedure CrmPortalDeleteCodesRange(RegionName, CodesRangeId)
+//     PlanningstoolService.DeleteCodesRange(RegionName, CodesRangeId)
 
-procedure CrmPortalGetPlanningsToolConfigurationById(PlanningsToolConfigurationId, out PlanningsToolConfiguration)
-    PlanningsToolConfiguration = PlanningstoolService.GetPlanningsToolConfigurationById(PlanningsToolConfigurationId)
+// procedure CrmPortalGetPlanningsToolConfigurationById(PlanningsToolConfigurationId, out PlanningsToolConfiguration)
+//     PlanningsToolConfiguration = PlanningstoolService.GetPlanningsToolConfigurationById(PlanningsToolConfigurationId)
 
-procedure CrmPortalCreatePlanningsToolConfiguration(PlanningsToolConfiguration)
-    PlanningstoolService.CreatePlanningsToolConfiguration(PlanningsToolConfiguration)
+// procedure CrmPortalCreatePlanningsToolConfiguration(PlanningsToolConfiguration)
+//     PlanningstoolService.CreatePlanningsToolConfiguration(PlanningsToolConfiguration)
 
-procedure CrmPortalGetAllPlanningsToolConfigurationsByType(ConfigurationJobType, out PlanningsToolConfigurations)
-    PlanningsToolConfigurations = PlanningstoolService.GetAllPlanningsToolConfigurationsByType(ConfigurationJobType)
+// procedure CrmPortalGetAllPlanningsToolConfigurationsByType(ConfigurationJobType, out PlanningsToolConfigurations)
+//     PlanningsToolConfigurations = PlanningstoolService.GetAllPlanningsToolConfigurationsByType(ConfigurationJobType)
 
-procedure CrmPortalUpdatePlanningsToolConfiguration(PlanningsToolConfiguration)
-    PlanningstoolService.UpdatePlanningsToolConfiguration(PlanningsToolConfiguration)
+// procedure CrmPortalUpdatePlanningsToolConfiguration(PlanningsToolConfiguration)
+//     PlanningstoolService.UpdatePlanningsToolConfiguration(PlanningsToolConfiguration)
 
-procedure CrmPortalDeletePlanningsToolConfigurationById(PlanningsToolConfigurationId)
-    PlanningstoolService.DeletePlanningsToolConfigurationById(PlanningsToolConfigurationId)
+// procedure CrmPortalDeletePlanningsToolConfigurationById(PlanningsToolConfigurationId)
+//     PlanningstoolService.DeletePlanningsToolConfigurationById(PlanningsToolConfigurationId)
 
-procedure CrmPortalGetCrossedInstallationBookItems(PlanningsToolConfiguration, out InstallationBookItemsDto)
-    InstallationBookItemsDto = PlanningstoolService.GetCrossedInstallationBookItems(PlanningsToolConfiguration)
+// procedure CrmPortalGetCrossedInstallationBookItems(PlanningsToolConfiguration, out InstallationBookItemsDto)
+//     InstallationBookItemsDto = PlanningstoolService.GetCrossedInstallationBookItems(PlanningsToolConfiguration)
 
-procedure CrmPortalGetDefaultPlanningsToolConfigurationByType(ConfigurationJobType, out PlanningsToolConfiguration)
-    PlanningsToolConfiguration = PlanningstoolService.GetDefaultPlanningsToolConfigurationByType(ConfigurationJobType)
+// procedure CrmPortalGetDefaultPlanningsToolConfigurationByType(ConfigurationJobType, out PlanningsToolConfiguration)
+//     PlanningsToolConfiguration = PlanningstoolService.GetDefaultPlanningsToolConfigurationByType(ConfigurationJobType)
 
-procedure CrmPortalGetPagedPlanningsToolConfigurationsByType(PageNumber, ConfigurationsPerPage, PlanningsToolConfigurationState, ConfigurationJobType, out PagedPlanningsToolConfigurationsDto)
-    PagedPlanningsToolConfigurationsDto = PlanningstoolService.GetPagedPlanningsToolConfigurationsByType(PageNumber, ConfigurationsPerPage, PlanningsToolConfigurationState, ConfigurationJobType).ToDto()
+// procedure CrmPortalGetPagedPlanningsToolConfigurationsByType(PageNumber, ConfigurationsPerPage, PlanningsToolConfigurationState, ConfigurationJobType, out PagedPlanningsToolConfigurationsDto)
+//     PagedPlanningsToolConfigurationsDto = PlanningstoolService.GetPagedPlanningsToolConfigurationsByType(PageNumber, ConfigurationsPerPage, PlanningsToolConfigurationState, ConfigurationJobType).ToDto()
 
-procedure CrmPortalGetCurrentPlanningsToolConfigurationByType(ConfigurationJobType, out PlanningsToolConfiguration)
-    PlanningsToolConfiguration = PlanningstoolService.GetCurrentPlanningsToolConfigurationByType(ConfigurationJobType)
+// procedure CrmPortalGetCurrentPlanningsToolConfigurationByType(ConfigurationJobType, out PlanningsToolConfiguration)
+//     PlanningsToolConfiguration = PlanningstoolService.GetCurrentPlanningsToolConfigurationByType(ConfigurationJobType)
 
-// Plannings tool end
+// // Plannings tool end
 
-procedure CrmPortalGetFilteredUsagesCallDataRecords(ServiceAccountId, CrmPortalVirtualBalanceRecordFilterDto, PerPage, PageNumber, out CrmPortalGetFilteredUsagesCallDataRecordsResponse)
-    call FillVirtualBalanceRecordFilters(CrmPortalVirtualBalanceRecordFilterDto, out VirtualBalanceRecordFilterList)
-    call GetFilteredUsagesCallDataRecords(ServiceAccountId, VirtualBalanceRecordFilterList, PerPage, PageNumber, out GetFilteredUsagesCallDataRecordsResponse)
-    CrmPortalGetFilteredUsagesCallDataRecordsResponse = GetFilteredUsagesCallDataRecordsResponse.ToCrmPortal()
+// procedure CrmPortalGetFilteredUsagesCallDataRecords(ServiceAccountId, CrmPortalVirtualBalanceRecordFilterDto, PerPage, PageNumber, out CrmPortalGetFilteredUsagesCallDataRecordsResponse)
+//     call FillVirtualBalanceRecordFilters(CrmPortalVirtualBalanceRecordFilterDto, out VirtualBalanceRecordFilterList)
+//     call GetFilteredUsagesCallDataRecords(ServiceAccountId, VirtualBalanceRecordFilterList, PerPage, PageNumber, out GetFilteredUsagesCallDataRecordsResponse)
+//     CrmPortalGetFilteredUsagesCallDataRecordsResponse = GetFilteredUsagesCallDataRecordsResponse.ToCrmPortal()
 
-procedure CrmPortalGetUsagesVideoOnDemands(ServiceAccountId, PerPage, PageNumber, out CrmPortalGetUsagesVideoOnDemandsResponse)
-    call GetUsagesVideoOnDemands(ServiceAccountId, PerPage, PageNumber, out GetUsagesVideoOnDemandsResponse)
-    CrmPortalGetUsagesVideoOnDemandsResponse = GetUsagesVideoOnDemandsResponse.ToCrmPortal()
+// procedure CrmPortalGetUsagesVideoOnDemands(ServiceAccountId, PerPage, PageNumber, out CrmPortalGetUsagesVideoOnDemandsResponse)
+//     call GetUsagesVideoOnDemands(ServiceAccountId, PerPage, PageNumber, out GetUsagesVideoOnDemandsResponse)
+//     CrmPortalGetUsagesVideoOnDemandsResponse = GetUsagesVideoOnDemandsResponse.ToCrmPortal()
 
-procedure CrmPortalGetUsagesVideoOnDemandsByVirtualBalanceRecordId(VirtualBalanceRecordId, PerPage, PageNumber, out CrmPortalGetUsagesVideoOnDemandsResponse)
-    GetUsagesVideoOnDemandsResponse = VideoOnDemand.GetUsagesVideoOnDemands(VirtualBalanceRecordId, PerPage, PageNumber)
-    CrmPortalGetUsagesVideoOnDemandsResponse = GetUsagesVideoOnDemandsResponse.ToCrmPortal()
+// procedure CrmPortalGetUsagesVideoOnDemandsByVirtualBalanceRecordId(VirtualBalanceRecordId, PerPage, PageNumber, out CrmPortalGetUsagesVideoOnDemandsResponse)
+//     GetUsagesVideoOnDemandsResponse = VideoOnDemand.GetUsagesVideoOnDemands(VirtualBalanceRecordId, PerPage, PageNumber)
+//     CrmPortalGetUsagesVideoOnDemandsResponse = GetUsagesVideoOnDemandsResponse.ToCrmPortal()
 
-procedure CrmPortalCancelAdjustingOrder(AdjustingOrderId, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
-    Fulfillment.CancelAdjustingOrder(AdjustingOrderId, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+// procedure CrmPortalCancelAdjustingOrder(AdjustingOrderId, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+//     Fulfillment.CancelAdjustingOrder(AdjustingOrderId, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
 
-procedure GetInProgressAdjustingOrdersByServiceAccountId(ServiceAccountId, out AdjustingOrderInfoCollection)
-    AdjustingOrderInfoCollection = Fulfillment.GetInProgressAdjustingOrdersByServiceAccountId(ServiceAccountId)
+// procedure GetInProgressAdjustingOrdersByServiceAccountId(ServiceAccountId, out AdjustingOrderInfoCollection)
+//     AdjustingOrderInfoCollection = Fulfillment.GetInProgressAdjustingOrdersByServiceAccountId(ServiceAccountId)
 
-procedure CrmPortalGetAdjustingOrderInfoByOrderId(OrderId, out AdjustingOrderInfo)
-    AdjustingOrderInfo = Fulfillment.GetAdjustingOrderInfoByOrderId(OrderId)
+// procedure CrmPortalGetAdjustingOrderInfoByOrderId(OrderId, out AdjustingOrderInfo)
+//     AdjustingOrderInfo = Fulfillment.GetAdjustingOrderInfoByOrderId(OrderId)
 
-procedure CrmPortalCancelAdjustingOrderByDslOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
-    Fulfillment.CancelAdjustingOrderByDslOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+// procedure CrmPortalCancelAdjustingOrderByDslOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+//     Fulfillment.CancelAdjustingOrderByDslOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
 
-procedure CrmPortalCancelAdjustingOrderByTvOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
-    Fulfillment.CancelAdjustingOrderByTvOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+// procedure CrmPortalCancelAdjustingOrderByTvOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+//     Fulfillment.CancelAdjustingOrderByTvOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
 
-procedure CrmPortalCancelAdjustingOrderByVoipOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
-    Fulfillment.CancelAdjustingOrderByVoipOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+// procedure CrmPortalCancelAdjustingOrderByVoipOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
+//     Fulfillment.CancelAdjustingOrderByVoipOrderNr(OrderNrReseller, AccountId, CancellationReason, CancellationFeeType, SendCancelationEmailIfNeeded)
 
-procedure CrmPortalIsSwitchServiceNeeded(OrderId, out Boolean)
-    Boolean = Fulfillment.IsSwitchServiceNeeded(OrderId)
+// procedure CrmPortalIsSwitchServiceNeeded(OrderId, out Boolean)
+//     Boolean = Fulfillment.IsSwitchServiceNeeded(OrderId)
 
-procedure CrmPortalMakeInvoiceUncollectable(UncollectableInvoiceClearanceCreationRequest, out FinancialActionRequestId)
-    FinancialActionRequestId = BillingEngine.MakeInvoiceUncollectable(UncollectableInvoiceClearanceCreationRequest)
+// procedure CrmPortalMakeInvoiceUncollectable(UncollectableInvoiceClearanceCreationRequest, out FinancialActionRequestId)
+//     FinancialActionRequestId = BillingEngine.MakeInvoiceUncollectable(UncollectableInvoiceClearanceCreationRequest)
 
-procedure CrmPortalMakeInvoiceCollectable(UncollectableInvoiceClearanceCounterRequest, out FinancialActionRequestId)
-    FinancialActionRequestId = BillingEngine.MakeInvoiceCollectable(UncollectableInvoiceClearanceCounterRequest)
+// procedure CrmPortalMakeInvoiceCollectable(UncollectableInvoiceClearanceCounterRequest, out FinancialActionRequestId)
+//     FinancialActionRequestId = BillingEngine.MakeInvoiceCollectable(UncollectableInvoiceClearanceCounterRequest)
 
-procedure CrmPortalRecreateInvoice(InvoiceRecreationRequest)
-    InvoiceGenerator.InitiateInvoiceRecreation(InvoiceRecreationRequest.virtualBalanceRecordRevertionRequestCollection,
-                                               InvoiceRecreationRequest.shouldIncludeUninvoicedVirtualBalanceRecords)
+// procedure CrmPortalRecreateInvoice(InvoiceRecreationRequest)
+//     InvoiceGenerator.InitiateInvoiceRecreation(InvoiceRecreationRequest.virtualBalanceRecordRevertionRequestCollection,
+//                                                InvoiceRecreationRequest.shouldIncludeUninvoicedVirtualBalanceRecords)
 
-procedure CrmPortalReverseInvoiceItems(ReverseInvoiceItemsRequest)
-    if ReverseInvoiceItemsRequest.reverseWithInvoiceRecreation
-        ShouldIncludeUninvoicedVirtualBalanceRecords = false
-        VirtualBalanceRecordIdCollection = ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection.SelectMany(r =>r.virtualBalanceRecordIdCollection)
-        InvoiceGenerator.InitiateInvoiceRecreation(ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection,
-                                                   ShouldIncludeUninvoicedVirtualBalanceRecords)
-    else
-        BillingEngine.ManuallyRevertInvoicedVirtualBalanceRecord(ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection)
+// procedure CrmPortalReverseInvoiceItems(ReverseInvoiceItemsRequest)
+//     if ReverseInvoiceItemsRequest.reverseWithInvoiceRecreation
+//         ShouldIncludeUninvoicedVirtualBalanceRecords = false
+//         VirtualBalanceRecordIdCollection = ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection.SelectMany(r =>r.virtualBalanceRecordIdCollection)
+//         InvoiceGenerator.InitiateInvoiceRecreation(ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection,
+//                                                    ShouldIncludeUninvoicedVirtualBalanceRecords)
+//     else
+//         BillingEngine.ManuallyRevertInvoicedVirtualBalanceRecord(ReverseInvoiceItemsRequest.virtualBalanceRecordRevertionRequestCollection)
 
-procedure CrmPortalGetPagedSearchForCustomerAccounts(PageNumber, PerPage, CustomerAccountSearchRequest, out PagedSearchResultResponse)
-    PagedSearchResultResponse = CrmBackend.GetPagedSearchForCustomerAccounts(PageNumber, PerPage, CustomerAccountSearchRequest)
+// procedure CrmPortalGetPagedSearchForCustomerAccounts(PageNumber, PerPage, CustomerAccountSearchRequest, out PagedSearchResultResponse)
+//     PagedSearchResultResponse = CrmBackend.GetPagedSearchForCustomerAccounts(PageNumber, PerPage, CustomerAccountSearchRequest)
 
-procedure CrmPortalGetCustomerDashboardAccountDetails(AccountId, out CustomerDashboardAccountDetailsDto)
-    CustomerAccount = CrmBackend.GetCustomerAccountById(AccountId)
-    ServiceAccountsList = BillingEngine.GetServiceAccounts(AccountId)
+// procedure CrmPortalGetCustomerDashboardAccountDetails(AccountId, out CustomerDashboardAccountDetailsDto)
+//     CustomerAccount = CrmBackend.GetCustomerAccountById(AccountId)
+//     ServiceAccountsList = BillingEngine.GetServiceAccounts(AccountId)
 
-    CustomerDashboardAccountDetailsDto = new
-    foreach ServiceAccount in ServiceAccountsList
-        CustomerAccountDetailsServiceAccountDto = ServiceAccount.ToCustomerAccountDetailsServiceAccountDto()
-        CustomerAccountDetailsServiceAccountDto.virtualBalance = BillingEngine.GetServiceAccountBalance(ServiceAccount.id)
-        ServiceAccountId = ServiceAccount.id
-        CustomerAccountDetailsServiceAccountDto.serviceAccountPendingAdjustingOrdersInfo = Fulfillment.GetInfoAboutPendingAdjustingOrdersForServiceAccount(ServiceAccountId)
+//     CustomerDashboardAccountDetailsDto = new
+//     foreach ServiceAccount in ServiceAccountsList
+//         CustomerAccountDetailsServiceAccountDto = ServiceAccount.ToCustomerAccountDetailsServiceAccountDto()
+//         CustomerAccountDetailsServiceAccountDto.virtualBalance = BillingEngine.GetServiceAccountBalance(ServiceAccount.id)
+//         ServiceAccountId = ServiceAccount.id
+//         CustomerAccountDetailsServiceAccountDto.serviceAccountPendingAdjustingOrdersInfo = Fulfillment.GetInfoAboutPendingAdjustingOrdersForServiceAccount(ServiceAccountId)
 
 
 
-        CustomerDashboardAccountDetailsDto.serviceAccounts ++= CustomerAccountDetailsServiceAccountDto
+//         CustomerDashboardAccountDetailsDto.serviceAccounts ++= CustomerAccountDetailsServiceAccountDto
 
-        Mandate = BankComponent.GetServiceAccountMandate(ServiceAccount.id)
-        if !IsEmpty(Mandate)
-            let MandateDto = Mandate.ToDto()
-            MandateDto.serviceAccountId = ServiceAccount.id
-            CustomerDashboardAccountDetailsDto.mandates ++= MandateDto
+//         Mandate = BankComponent.GetServiceAccountMandate(ServiceAccount.id)
+//         if !IsEmpty(Mandate)
+//             let MandateDto = Mandate.ToDto()
+//             MandateDto.serviceAccountId = ServiceAccount.id
+//             CustomerDashboardAccountDetailsDto.mandates ++= MandateDto
 
-    CustomerDashboardAccountDetailsDto.customerDetails = CustomerAccount.ToCustomerDetailsDto()
-    CustomerDashboardAccountDetailsDto.customerDetails.login = IdentityServer.GetAccountLogin(AccountId)
-    call FilloutServiceAccountDtosWithProlongationExits(CustomerDashboardAccountDetailsDto)
+//     CustomerDashboardAccountDetailsDto.customerDetails = CustomerAccount.ToCustomerDetailsDto()
+//     CustomerDashboardAccountDetailsDto.customerDetails.login = IdentityServer.GetAccountLogin(AccountId)
+//     call FilloutServiceAccountDtosWithProlongationExits(CustomerDashboardAccountDetailsDto)
 
-    PagedPendingProcessesDto = new
-    call GetPagedPendingProcessesByCustomerAccount(AccountId, PerPage = 10, PageNumber = 1, out PagedPendingProcessesDto)
-    CustomerDashboardAccountDetailsDto.pendingProcessInfo = PagedPendingProcessesDto
+//     PagedPendingProcessesDto = new
+//     call GetPagedPendingProcessesByCustomerAccount(AccountId, PerPage = 10, PageNumber = 1, out PagedPendingProcessesDto)
+//     CustomerDashboardAccountDetailsDto.pendingProcessInfo = PagedPendingProcessesDto
 
-    PagedClosedProcessesDto = new
-    call GetPagedClosedProcessesByCustomerAccount(AccountId, PerPage = 10, PageNumber = 1, out PagedClosedProcessesDto)
-    CustomerDashboardAccountDetailsDto.closedProcessInfo = PagedClosedProcessesDto
+//     PagedClosedProcessesDto = new
+//     call GetPagedClosedProcessesByCustomerAccount(AccountId, PerPage = 10, PageNumber = 1, out PagedClosedProcessesDto)
+//     CustomerDashboardAccountDetailsDto.closedProcessInfo = PagedClosedProcessesDto
 
-procedure CrmPortalCreatePaymentArragement(InitPaymentArrangementRequest, out PaymentArrangementId)
-    PaymentArrangementId = BillingEngine.InitPaymentArrangement(InitPaymentArrangementRequest)
+// procedure CrmPortalCreatePaymentArragement(InitPaymentArrangementRequest, out PaymentArrangementId)
+//     PaymentArrangementId = BillingEngine.InitPaymentArrangement(InitPaymentArrangementRequest)
 
-procedure CrmPortalGetMinimumCollectionDateForPaymentArragement(MinimumCollectionDateRequest, out MinimumCollectionDate)
-    MinimumCollectionDate = BillingEngine.GetMinimumCollectionDateForPaymentArragement(MinimumCollectionDateRequest)
+// procedure CrmPortalGetMinimumCollectionDateForPaymentArragement(MinimumCollectionDateRequest, out MinimumCollectionDate)
+//     MinimumCollectionDate = BillingEngine.GetMinimumCollectionDateForPaymentArragement(MinimumCollectionDateRequest)
 
-procedure CrmPortalAddClearanceBlockToMultipleInvoices(InvoiceClearanceBlockCreationRequestCollection, CreatedBy)
-    BillingEngine.ProcessMultipleClearanceBlockCreation(InvoiceClearanceBlockCreationRequestCollection, CreatedBy)
+// procedure CrmPortalAddClearanceBlockToMultipleInvoices(InvoiceClearanceBlockCreationRequestCollection, CreatedBy)
+//     BillingEngine.ProcessMultipleClearanceBlockCreation(InvoiceClearanceBlockCreationRequestCollection, CreatedBy)
 
-procedure CrmPortalGetClearanceBlockReasons(out FinancialBlockReasonDtos)
-    FinancialBlockReasonDtos = BillingEngine.GetClearanceBlockReasons().Select(r => r.ToCrmDto())
+// procedure CrmPortalGetClearanceBlockReasons(out FinancialBlockReasonDtos)
+//     FinancialBlockReasonDtos = BillingEngine.GetClearanceBlockReasons().Select(r => r.ToCrmDto())
 
-procedure CrmPortalGetServiceCategoryBankPartByServiceCategoryId(ServiceCategoryId, out ServiceCategoryBankPart)
-    ServiceCategoryBankPart = BankComponent.GetServiceCategoryBankPartByServiceCategoryId(ServiceCategoryId)
+// procedure CrmPortalGetServiceCategoryBankPartByServiceCategoryId(ServiceCategoryId, out ServiceCategoryBankPart)
+//     ServiceCategoryBankPart = BankComponent.GetServiceCategoryBankPartByServiceCategoryId(ServiceCategoryId)
 
-procedure CrmPortalCreateExcassoForServiceAccount(CreateExcassoRequest, out FinancialActionRequestId)
-    FinancialActionRequestId = BillingEngine.CreateExcassoForServiceAccount(CreateExcassoRequest)
+// procedure CrmPortalCreateExcassoForServiceAccount(CreateExcassoRequest, out FinancialActionRequestId)
+//     FinancialActionRequestId = BillingEngine.CreateExcassoForServiceAccount(CreateExcassoRequest)
 
-procedure CrmPortalGetProcessesByAccountId(AccountId, out Processes)
-    call GetProcessesByAccountId(AccountId, out Processes)
+// procedure CrmPortalGetProcessesByAccountId(AccountId, out Processes)
+//     call GetProcessesByAccountId(AccountId, out Processes)
 
-procedure CrmPortalGetEndOfDeliveryProcessReasonCodeList(out ReasonCodeDtoList)
-    ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.EndOfDeliveryProcess).Select(rc => rc.ToDto())
+// procedure CrmPortalGetEndOfDeliveryProcessReasonCodeList(out ReasonCodeDtoList)
+//     ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.EndOfDeliveryProcess).Select(rc => rc.ToDto())
 
-procedure CrmPortalGetManualExcassoReasonCodeList(out ReasonCodeDtoList)
-    ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.ManualExcasso).Select(rc => rc.ToDto())
+// procedure CrmPortalGetManualExcassoReasonCodeList(out ReasonCodeDtoList)
+//     ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.ManualExcasso).Select(rc => rc.ToDto())
 
-procedure CrmPortalGetUncollectableReasonCodeList(out ReasonCodeDtoList)
-    ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.Uncollectable).Select(rc => rc.ToDto())
+// procedure CrmPortalGetUncollectableReasonCodeList(out ReasonCodeDtoList)
+//     ReasonCodeDtoList = BillingEngine.GetReasonCodeList(ReasonCodeType.Uncollectable).Select(rc => rc.ToDto())
 
-procedure CrmPortalGetBalanceAdjustmentReasons(out ReasonDtos)
-    ReasonDtos = BillingEngine.GetBalanceAdjustmentReasons().Select(r => r.ToCrmDto())
+// procedure CrmPortalGetBalanceAdjustmentReasons(out ReasonDtos)
+//     ReasonDtos = BillingEngine.GetBalanceAdjustmentReasons().Select(r => r.ToCrmDto())
 
-procedure CrmPortalBalansAdjustment(ManualBalanceCorrectionCreationRequest, out FinancialActionRequestId)
-    FinancialActionRequestId = BillingEngine.CreateManualBalanceCorrection(ManualBalanceCorrectionCreationRequest)
+// procedure CrmPortalBalansAdjustment(ManualBalanceCorrectionCreationRequest, out FinancialActionRequestId)
+//     FinancialActionRequestId = BillingEngine.CreateManualBalanceCorrection(ManualBalanceCorrectionCreationRequest)
 
-procedure CrmPortalGetPagedCustomerContacts(AccountId, PageNumber, PerPage, DisableOutgoingEmailRetrieval, out PagedCustomerContactsDto)
-    PagedCustomerContacts = CrmBackend.GetPagedCustomerContacts(AccountId = AccountId, PageNumber = PageNumber, PerPage = PerPage, DisableOutgoingEmailRetrieval)
-    PagedCustomerContactsDto = new PagedCustomerContactsDto(
-        pageNumber = PagedCustomerContacts.pageNumber,
-        totalPages = PagedCustomerContacts.totalContacts
-        )
+// procedure CrmPortalGetPagedCustomerContacts(AccountId, PageNumber, PerPage, DisableOutgoingEmailRetrieval, out PagedCustomerContactsDto)
+//     PagedCustomerContacts = CrmBackend.GetPagedCustomerContacts(AccountId = AccountId, PageNumber = PageNumber, PerPage = PerPage, DisableOutgoingEmailRetrieval)
+//     PagedCustomerContactsDto = new PagedCustomerContactsDto(
+//         pageNumber = PagedCustomerContacts.pageNumber,
+//         totalPages = PagedCustomerContacts.totalContacts
+//         )
 
-    PagedCustomerContactsDto.customerContacts = new
+//     PagedCustomerContactsDto.customerContacts = new
 
-    PagedCustomerContactsDto.customerContacts.callContacts = PagedCustomerContacts.customerContacts
-        .Where(cc => cc is CustomerCall)
-        .Select(cc => (cc as CustomerCall).ToCrmDto())
+//     PagedCustomerContactsDto.customerContacts.callContacts = PagedCustomerContacts.customerContacts
+//         .Where(cc => cc is CustomerCall)
+//         .Select(cc => (cc as CustomerCall).ToCrmDto())
 
-    PagedCustomerContactsDto.customerContacts.emailContacts = PagedCustomerContacts.customerContacts
-        .Where(cc => cc is CustomerEmail)
-        .Select(cc => (cc as CustomerEmail).ToCrmDto())
+//     PagedCustomerContactsDto.customerContacts.emailContacts = PagedCustomerContacts.customerContacts
+//         .Where(cc => cc is CustomerEmail)
+//         .Select(cc => (cc as CustomerEmail).ToCrmDto())
 
-procedure CrmPortalAddCustomerCall(CreateCustomerCallRequest)
-    CustomerContact = new CustomerCall(
-        createdBy = CreateCustomerCallRequest.customerCall.createdBy,
-        createdOn = now,
-        remark = CreateCustomerCallRequest.customerCall.remark,
-        category = CreateCustomerCallRequest.customerCall.category,
-        subcategory = CreateCustomerCallRequest.customerCall.subcategory,
-        type = CreateCustomerCallRequest.customerCall.type
-        )
+// procedure CrmPortalAddCustomerCall(CreateCustomerCallRequest)
+//     CustomerContact = new CustomerCall(
+//         createdBy = CreateCustomerCallRequest.customerCall.createdBy,
+//         createdOn = now,
+//         remark = CreateCustomerCallRequest.customerCall.remark,
+//         category = CreateCustomerCallRequest.customerCall.category,
+//         subcategory = CreateCustomerCallRequest.customerCall.subcategory,
+//         type = CreateCustomerCallRequest.customerCall.type
+//         )
 
-    AccountId = CreateCustomerCallRequest.accountId
+//     AccountId = CreateCustomerCallRequest.accountId
 
-    CrmBackend.AddCustomerAccountContact(AccountId, CustomerContact)
+//     CrmBackend.AddCustomerAccountContact(AccountId, CustomerContact)
 
-procedure CrmPortalGetPagedPendingProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedPendingProcessesDto)
-    call GetPagedPendingProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedPendingProcessesDto)
+// procedure CrmPortalGetPagedPendingProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedPendingProcessesDto)
+//     call GetPagedPendingProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedPendingProcessesDto)
 
-procedure CrmPortalGetPagedClosedProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedClosedProcessesDto)
-    call GetPagedClosedProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedClosedProcessesDto)
+// procedure CrmPortalGetPagedClosedProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedClosedProcessesDto)
+//     call GetPagedClosedProcessesByCustomerAccount(AccountId, PerPage, PageNumber, out PagedClosedProcessesDto)
 
 
-procedure CrmPortalGetServiceAccountDetails(AccountId, ServiceAccountId, out ServiceAccountDetailsDto)
-    ServiceAccount = BillingEngine.GetServiceAccountById(AccountId = AccountId, ServiceAccountId = ServiceAccountId)
-    CustomerAccount = CrmBackend.GetCustomerAccountById(AccountId)
+// procedure CrmPortalGetServiceAccountDetails(AccountId, ServiceAccountId, out ServiceAccountDetailsDto)
+//     ServiceAccount = BillingEngine.GetServiceAccountById(AccountId = AccountId, ServiceAccountId = ServiceAccountId)
+//     CustomerAccount = CrmBackend.GetCustomerAccountById(AccountId)
 
-    ServiceAccountDetailsDto = ServiceAccount.ToServiceAccountDetailsDto()
-    ServiceAccountDetailsDto.totalVirtualBalance = BillingEngine.GetServiceAccountBalance(ServiceAccount.id)
-    Mandate = BankComponent.GetMandate(ServiceAccountId = ServiceAccountId)
-    ServiceAccountDetailsDto.mandateIban = Mandate.ToDto()
-    ServiceAccountDetailsDto.billingAddress = CustomerAccount.billingAddress.ToDto()
-    ServiceAccountBillInfo = BillingEngine.GetServiceAccountBillInfo(ServiceAccount.accountId, ServiceAccount.id)
+//     ServiceAccountDetailsDto = ServiceAccount.ToServiceAccountDetailsDto()
+//     ServiceAccountDetailsDto.totalVirtualBalance = BillingEngine.GetServiceAccountBalance(ServiceAccount.id)
+//     Mandate = BankComponent.GetMandate(ServiceAccountId = ServiceAccountId)
+//     ServiceAccountDetailsDto.mandateIban = Mandate.ToDto()
+//     ServiceAccountDetailsDto.billingAddress = CustomerAccount.billingAddress.ToDto()
+//     ServiceAccountBillInfo = BillingEngine.GetServiceAccountBillInfo(ServiceAccount.accountId, ServiceAccount.id)
 
-    ServiceAccountDetailsDto.saState = ServiceAccountDetailsDto.currentBillingStatus
+//     ServiceAccountDetailsDto.saState = ServiceAccountDetailsDto.currentBillingStatus
 
-    ServiceAccountDetailsDto.billDate = ServiceAccountBillInfo.currentBillDate
-    ServiceAccountDetailsDto.lastBilledDate = ServiceAccountBillInfo.lastBilledDate
-    ServiceAccountDetailsDto.nextBillingDate = ServiceAccountBillInfo.nextBillingDate
+//     ServiceAccountDetailsDto.billDate = ServiceAccountBillInfo.currentBillDate
+//     ServiceAccountDetailsDto.lastBilledDate = ServiceAccountBillInfo.lastBilledDate
+//     ServiceAccountDetailsDto.nextBillingDate = ServiceAccountBillInfo.nextBillingDate
 
-    let Email = CustomerAccount.contactInfo.email
+//     let Email = CustomerAccount.contactInfo.email
 
-    if Email is not empty
-        ServiceAccountDetailsDto.email = Email
+//     if Email is not empty
+//         ServiceAccountDetailsDto.email = Email
 
-    ServiceAccountDetailsDto.isProlongationOfferExists = BillingEngine.IsProlongationOfferExists(ServiceAccountId)
+//     ServiceAccountDetailsDto.isProlongationOfferExists = BillingEngine.IsProlongationOfferExists(ServiceAccountId)
 
-    call CrmPortalIsAnyInstallationProcessExistByAccountIdServiceAccountId(AccountId, ServiceAccountId, out IsExist)
-    ServiceAccountDetailsDto.isPendingInstalationJob = IsExist
+//     call CrmPortalIsAnyInstallationProcessExistByAccountIdServiceAccountId(AccountId, ServiceAccountId, out IsExist)
+//     ServiceAccountDetailsDto.isPendingInstalationJob = IsExist
 
-    TriplePlayServiceAccountCobsData = Fulfillment.TryGetServiceAccountCobsDataMap(ServiceAccountId)
-    if !IsEmpty(TriplePlayServiceAccountCobsData)
-        ServiceAccountDetailsDto.dslProductInstanceNumber = TriplePlayServiceAccountCobsData.dslProductInstanceNumber
+//     TriplePlayServiceAccountCobsData = Fulfillment.TryGetServiceAccountCobsDataMap(ServiceAccountId)
+//     if !IsEmpty(TriplePlayServiceAccountCobsData)
+//         ServiceAccountDetailsDto.dslProductInstanceNumber = TriplePlayServiceAccountCobsData.dslProductInstanceNumber
 
 
 
-procedure CrmPortalGetPagedServiceAccountSubscriptions(AccountId, ServiceAccountId, PageNumber, PerPage, out PagedServiceAccountSubscriptionsDto)
-    PagedServiceAccountSubscriptions = BillingEngine.GetPagedServiceAccountSubscriptions(AccountId = AccountId, ServiceAccountId = ServiceAccountId, PageNumber = PageNumber, PerPage = PerPage)
-    PagedServiceAccountSubscriptionsDto = new PagedServiceAccountSubscriptionsDto(
-        pageNumber = PagedServiceAccountSubscriptions.pageNumber,
-        totalPages = PagedServiceAccountSubscriptions.totalSubscriptions
-       )
+// procedure CrmPortalGetPagedServiceAccountSubscriptions(AccountId, ServiceAccountId, PageNumber, PerPage, out PagedServiceAccountSubscriptionsDto)
+//     PagedServiceAccountSubscriptions = BillingEngine.GetPagedServiceAccountSubscriptions(AccountId = AccountId, ServiceAccountId = ServiceAccountId, PageNumber = PageNumber, PerPage = PerPage)
+//     PagedServiceAccountSubscriptionsDto = new PagedServiceAccountSubscriptionsDto(
+//         pageNumber = PagedServiceAccountSubscriptions.pageNumber,
+//         totalPages = PagedServiceAccountSubscriptions.totalSubscriptions
+//        )
 
-    ServiceAccountSubscriptionDtos = new
+//     ServiceAccountSubscriptionDtos = new
 
-    foreach Subscription in PagedServiceAccountSubscriptions.subscriptions
-        ServiceAccountSubscriptionDto = Subscription.ToDto()
-        ServiceAccountSubscriptionDto.pendingStatus = if(Subscription.getStatus(now) in List(SubscriptionStatus.Closed, SubscriptionStatus.Canceled), Subscription.getStatus(now), Subscription.subscriptionStateHistory.Last().status)
-        ProductId = Subscription.productId
-        Product = ProductCatalog.GetProductById(ProductId = ProductId)
-        ServiceAccountSubscriptionDto.productName = Product.name
-        ServiceAccountSubscriptionDtos ++= ServiceAccountSubscriptionDto
+//     foreach Subscription in PagedServiceAccountSubscriptions.subscriptions
+//         ServiceAccountSubscriptionDto = Subscription.ToDto()
+//         ServiceAccountSubscriptionDto.pendingStatus = if(Subscription.getStatus(now) in List(SubscriptionStatus.Closed, SubscriptionStatus.Canceled), Subscription.getStatus(now), Subscription.subscriptionStateHistory.Last().status)
+//         ProductId = Subscription.productId
+//         Product = ProductCatalog.GetProductById(ProductId = ProductId)
+//         ServiceAccountSubscriptionDto.productName = Product.name
+//         ServiceAccountSubscriptionDtos ++= ServiceAccountSubscriptionDto
 
-    PagedServiceAccountSubscriptionsDto.subscriptions = ServiceAccountSubscriptionDtos
+//     PagedServiceAccountSubscriptionsDto.subscriptions = ServiceAccountSubscriptionDtos

@@ -12,8 +12,10 @@ import { CommonUtils } from './utils/common.utils';
 import { ReferenceFactoryMethods } from './factories/reference.factory';
 import { DeclarationFactoryMethods } from './factories/declaration.factory';
 import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
-import { CompletionHandler } from './handlers/complition.handler';
+import { CompletionHandler } from './handlers/completion.handler';
 import { LSPCompletionRegistry } from './registry/completion-registry.ts/lsp-completion-registry';
+import { ImplementationRequest } from 'vscode-languageserver';
+import { SignatureHelpHandler } from './handlers/singnature-help.handler';
 
 
 /**
@@ -67,7 +69,11 @@ export default class BellaServer {
 			const { uri } = change.document
 			// this.diagnosticsHandler.validateTextDocument(change.document);
 			this.analyzer.analyze(change.document);
+			this.analyzer.scanForCompletions(change.document);
 		})
+		// this.documents.onDidOpen((change: LSP.TextDocumentChangeEvent) => {
+		// 	this.analyzer.scanForCompletions(change.document);
+		// })
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))
 		connection.onDefinition(this.onDefinition.bind(this));
@@ -80,8 +86,10 @@ export default class BellaServer {
 		connection.onNotification("core/goToDeclaration", this.onLazyDeclaration.bind(this));
 		connection.onCodeLens(this.onCodeLens.bind(this));
 		connection.onCodeLensResolve(this.onCodeLensResolve.bind(this));
-		connection.onCompletion(this.onCompletion.bind(this))
-		connection.onCompletionResolve(this.onCompletionResolve.bind(this))
+		connection.onCompletion(this.onCompletion.bind(this));
+		connection.onSignatureHelp(this.onSignatureHelp.bind(this));
+		connection.onCompletionResolve(this.onCompletionResolve.bind(this));
+
 	}
 
 	/**
@@ -93,7 +101,11 @@ export default class BellaServer {
 			// for partial updates.
 			textDocumentSync: this.documents.syncKind,
 			completionProvider: {
-				resolveProvider: true,
+				resolveProvider: false,
+				// triggerCharacters: ['call ']
+			},
+			signatureHelpProvider: {
+				triggerCharacters: ['(']
 			},
 			// hoverProvider: true,
 			// documentHighlightProvider: true,
@@ -168,13 +180,24 @@ export default class BellaServer {
 		this.connection.sendNotification("core/goToDeclarationCallback", referencesResult);
 	}
 
-	private onCompletion(payload: LSP.CompletionParams): LSP.CompletionItem[]  {
-		let handler = new CompletionHandler(this.analyzer.declarationCache, new LSPCompletionRegistry());
+	private onCompletion(payload: LSP.CompletionParams): LSP.CompletionItem[] {
+		let handler = new CompletionHandler(
+			this.analyzer.declarationCache,
+			this.analyzer.completionCache
+		);
 		return handler.complete(payload);
 	}
 
+	private onSignatureHelp(payload: LSP.TextDocumentPositionParams): LSP.SignatureHelp | undefined{
+		let handler = new SignatureHelpHandler(
+			this.analyzer.declarationCache,
+			this.analyzer.completionCache);
+		return handler.getSignature(payload);
+	}
+
 	private onCompletionResolve(item: LSP.CompletionItem): LSP.CompletionItem {
-		throw new Error('Not implemented exception');
+		return item;
+		// item.detail
 	}
 
 	private static initializeParser() {
