@@ -169,7 +169,24 @@ export class SnapshotHandler extends BaseHandler {
                 active: true
             }
         });
-        const result = this.groupDeclarationByScope([...declarations, ...persistentObjects]);
+
+        let enums = declarationRegistry.getDeclarationsForQuery({
+            uriFilter: {
+                active: false
+            },
+            namespaceFilter: {
+                active: false,
+                namespace: CommonUtils.SHARED_NAMESPACE_NAME
+            },
+            typeFilter: {
+                active: true,
+                type: DeclarationType.Enum
+            },
+            descendantsFilter: {
+                active: false
+            }
+        });
+        const result = this.groupDeclarationByScope([...declarations, ...persistentObjects, ...enums]);
         const destPath = path.join(this.folder, "objects.json");
         return writeFile(destPath, JSON.stringify(result, null, 2));
     }
