@@ -12,6 +12,8 @@ import { CommonUtils } from './utils/common.utils';
 import { ReferenceFactoryMethods } from './factories/reference.factory';
 import { DeclarationFactoryMethods } from './factories/declaration.factory';
 import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
+import { CompletionHandler } from './handlers/complition.handler';
+import { LSPCompletionRegistry } from './registry/completion-registry.ts/lsp-completion-registry';
 
 
 /**
@@ -78,8 +80,8 @@ export default class BellaServer {
 		connection.onNotification("core/goToDeclaration", this.onLazyDeclaration.bind(this));
 		connection.onCodeLens(this.onCodeLens.bind(this));
 		connection.onCodeLensResolve(this.onCodeLensResolve.bind(this));
-		// connection.onCompletion(this.onCompletion.bind(this))
-		// connection.onCompletionResolve(this.onCompletionResolve.bind(this))
+		connection.onCompletion(this.onCompletion.bind(this))
+		connection.onCompletionResolve(this.onCompletionResolve.bind(this))
 	}
 
 	/**
@@ -90,9 +92,9 @@ export default class BellaServer {
 			// For now we're using full-sync even though tree-sitter has great support
 			// for partial updates.
 			textDocumentSync: this.documents.syncKind,
-			// completionProvider: {
-			// 	resolveProvider: true,
-			// },
+			completionProvider: {
+				resolveProvider: true,
+			},
 			// hoverProvider: true,
 			// documentHighlightProvider: true,
 			definitionProvider: true,
@@ -164,6 +166,15 @@ export default class BellaServer {
 			[DeclarationFactoryMethods.toLSPLocation((declaration as KeyedDeclaration))]
 		]
 		this.connection.sendNotification("core/goToDeclarationCallback", referencesResult);
+	}
+
+	private onCompletion(payload: LSP.CompletionParams): LSP.CompletionItem[]  {
+		let handler = new CompletionHandler(this.analyzer.declarationCache, new LSPCompletionRegistry());
+		return handler.complete(payload);
+	}
+
+	private onCompletionResolve(item: LSP.CompletionItem): LSP.CompletionItem {
+		throw new Error('Not implemented exception');
 	}
 
 	private static initializeParser() {
