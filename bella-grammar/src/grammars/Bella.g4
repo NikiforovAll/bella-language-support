@@ -266,9 +266,10 @@ localVariableDeclarationStatement
     ;
 
 localVariableDeclaration
-    :   type ASSIGN invocationStatement
+    :   (type | expression) ASSIGN New? expression?
+    |   type ASSIGN invocationStatement
     |   type ASSIGN (New | EmptyLiteral)
-    |   (type | expression) ASSIGN New? expression?
+    // |   (type | expression) ASSIGN New? expression?
     |    ASSIGN expression
     ;
 

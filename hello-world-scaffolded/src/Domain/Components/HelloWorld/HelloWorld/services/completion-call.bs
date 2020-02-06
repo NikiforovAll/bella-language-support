@@ -7,3 +7,13 @@ object Params2
 
 procedure Test2(Param)
     call Test()
+    let T = new Params2(
+
+
+    )
+procedure Test(Params2, out Account)
+
+    let Account = new Params2(
+        Test = Ac,
+        Test
+    )

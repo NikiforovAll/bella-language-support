@@ -34,6 +34,10 @@ export class SignatureHelpHandler extends BaseHandler {
             nameFilter: {
                 active: true,
                 name: CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context)
+            },
+            namespaceFilter: {
+                active: true,
+                namespace: CommonUtils.getNamespaceFromURI(docUri)
             }
         });
         const isNoParams = !!completionToken.completionBase.context.match(/\(\s*\)/g);

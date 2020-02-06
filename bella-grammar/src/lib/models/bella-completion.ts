@@ -9,5 +9,10 @@ export interface BellaCompletionTrigger {
 
 export interface DeclarationIdentifier {
     context: string;
-    declaration?: BaseDeclaration[]
+    completionSource?: CompletionIdentifier[]
+}
+
+export interface CompletionIdentifier {
+    name: string;
+    type: DeclarationType;
 }

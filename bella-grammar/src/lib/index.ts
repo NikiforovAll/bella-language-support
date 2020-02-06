@@ -15,7 +15,6 @@ import { BellaErrorStrategy } from './bella-error-strategy';
 import { BellaReferenceVisitor } from './bella-reference.visitor';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaCompletionVisitor } from './bella-completion.visitor';
-// export { CompletionVisitor } from './completion.visitor';
 
 export {
     BaseDeclaration,
@@ -42,9 +41,7 @@ export { BellaReference, BellaReferenceType } from './models/bella-reference';
 export { BellaNestedReference } from './models/bella-nested-reference';
 export { BellaAmbiguousReference } from './models/bella-ambiguous-reference';
 
-export { BellaCompletionTrigger } from './models/bella-completion';
-export {}
-
+export { BellaCompletionTrigger, CompletionIdentifier } from './models/bella-completion';
 export class BellaLanguageSupport {
     public static tokenize(expr: string): Token[] {
         return this.generateLexer(expr)

@@ -24,6 +24,6 @@
 
 //InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
 
-generic procedure UpdateOrderInfo(UpdateOrderRequest, out BaseOrderResponse)
-    BaseOrderResponse = new
-    error [GenericObjectPassed] "You've passed generic UpdateOrderRequest object. Try specific one (UpdateOrderCustomerDataRequest, etc.)"
+let Account = new Params2(
+        T = 1
+    )
