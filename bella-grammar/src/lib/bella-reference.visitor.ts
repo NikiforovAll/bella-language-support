@@ -16,7 +16,8 @@ import {
     ServiceDeclarationContext,
     ServicePrefixContext,
     ProcedureDeclarationContext,
-    ObjectExtensionContext
+    ObjectExtensionContext,
+    BellaParser
 } from '../grammars/.antlr4/BellaParser';
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaReference, BellaReferenceType, ReferenceIdentifier } from './models/bella-reference';
@@ -81,6 +82,16 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
 
     visitCallStatement(context: CallStatementContext): BellaReference[] {
         let result = this.visitIdentifierLocal(context.explicitGenericInvocation().Identifier(), DeclarationType.Procedure);
+        const params = context.explicitGenericInvocation()
+            .arguments()
+            .expressionList()
+            ?.expression()
+            .map(e => e.getTokens(BellaParser.Identifier))
+            .reduce((acc, val) => acc.concat(val), [])
+            .map(t => this.visitIdentifierLocal(t, DeclarationType.Object)[0]) || [];
+        result.push(
+            ...params
+        );
         // result.forEach(r => { r.container = this.inferProcedureDeclaration(context); })
         return this.accumulateResult(result);
     }
@@ -88,7 +99,7 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     // TODO: this implementation doesn't not include formulas calculated on expressions TBD
     visitInvocationStatement(context: InvocationStatementContext): BellaReference[] {
         let typeContext = context.type();
-        if(!typeContext) {
+        if (!typeContext) {
             return [];
         }
         const baseContainer = this.visitTypeLocal(typeContext)[0];
