@@ -3,18 +3,18 @@ import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../../utils/common.utils';
 import { CompletionProvider } from './completion-provider';
-class ServiceEntryCompletionProvider implements CompletionProvider {
-    constructor(private cache: LSPDeclarationRegistry, private docUri: string, private objectName: string) { }
+export class ServiceEntryCompletionProvider implements CompletionProvider {
+    constructor(private cache: LSPDeclarationRegistry, private docUri: string, private sourceName: string) { }
     getCompletions(): CompletionItem[] {
         const declarations = this.cache.getDeclarationsForQuery({
             uriFilter: { active: false },
             nameFilter: {
                 active: true,
-                name: this.objectName
+                name: this.sourceName
             },
             typeFilter: {
                 active: true,
-                type: DeclarationType.Object
+                type: DeclarationType.Service
             },
             namespaceFilter: {
                 active: true,
@@ -28,13 +28,13 @@ class ServiceEntryCompletionProvider implements CompletionProvider {
         return declarations.map(this.toCompletionItem);
     }
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
-        const objectFieldName = declaration.name;
+        const serviceEntryName = CommonUtils.getProcedureTruncatedName(declaration.name);
         const sortingPrefix = '0';
         return {
-            label: objectFieldName,
+            label: serviceEntryName,
             detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            kind: CompletionItemKind.Property,
-            sortText: sortingPrefix + objectFieldName
+            kind: CompletionItemKind.Method,
+            sortText: sortingPrefix + serviceEntryName
         };
     }
 }

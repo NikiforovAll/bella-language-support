@@ -23,7 +23,6 @@ export class ProcedureCompletionProvider implements CompletionProvider {
         return {
             label: CommonUtils.getProcedureTruncatedName(declaration.name),
             detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            // detail: 'test',
             kind: CompletionItemKind.Method
         };
     }

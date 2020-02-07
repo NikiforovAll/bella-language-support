@@ -1,0 +1,8 @@
+service HelloWorld2
+    Test2(P1, P2)
+    Test3(Params2)
+    Test4()
+
+procedure Test3(Params2)
+procedure Test4()
+

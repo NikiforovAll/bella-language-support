@@ -1,4 +1,4 @@
-import { DeclarationType, BellaCompletionTrigger} from 'bella-grammar';
+import { DeclarationType, BellaCompletionTrigger } from 'bella-grammar';
 import { DeclarationIdentifier } from 'bella-grammar/dist/lib/models/bella-completion';
 import { CompletionItem, CompletionParams } from 'vscode-languageserver';
 
@@ -13,6 +13,7 @@ import { ProcedureCompletionProvider } from './completion-providers/procedure-co
 import { ObjectCompletionProvider } from './completion-providers/object-completion-provider';
 import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
 import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
+import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -43,7 +44,8 @@ export class CompletionHandler extends BaseHandler {
         } else {
             providers = this.createProviders(completionToken);
         }
-        return new MultipleSourceCompletionProvider(...providers).getCompletions();
+        return new MultipleSourceCompletionProvider(...providers)
+            .getCompletions();
     }
 
     private createProviders(context: BellaCompletionTrigger): CompletionProvider[] {
@@ -51,28 +53,37 @@ export class CompletionHandler extends BaseHandler {
     }
 
     private createProvider(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger,
-        ): CompletionProvider {
+    ): CompletionProvider {
+        const sourceName = this.extractCompletionSourceName(context);
         switch (expectedCompletionType) {
             case DeclarationType.Procedure:
                 return new ProcedureCompletionProvider(this.cache, this.docUri);
-                break;
             case DeclarationType.Object:
                 return new ObjectCompletionProvider(this.cache, this.docUri);
             case DeclarationType.PersistentObject:
                 return new PersistentObjectCompletionProvider(this.cache, this.docUri);
             case DeclarationType.ObjectField:
-                const completionSource = context?.completionBase?.completionSource?.pop();
-                const completionSourceName = completionSource?.name;
-                if(!completionSourceName || completionSource?.type !== DeclarationType.Object){
-                    throw new Error('Completion source could not be resolved, please provide correct one');
-                }
-                return new ObjectFieldCompletionProvider(this.cache, this.docUri, completionSourceName);
+                return new ObjectFieldCompletionProvider(this.cache, this.docUri, sourceName);
             case DeclarationType.Service:
                 return new ServiceCompletionProvider(this.cache, this.docUri);
+            case DeclarationType.ServiceEntry:
+                return new ServiceEntryCompletionProvider(this.cache, this.docUri, sourceName);
             default:
                 throw new Error('Completion provider could not be resolved');
-                break;
         }
+    }
+
+    private extractCompletionSourceName(context?: BellaCompletionTrigger): string {
+        if (!!context) {
+            const completionSource = context?.completionBase?.completionSource;
+            if (!completionSource) {
+                // throw new Error('Completion source could not be resolved, please provide correct one');
+                return '<empty source>';
+            }
+            const completionSourceName = completionSource[0].name;
+            return completionSourceName;
+        }
+        return '<source name is not specified>';
     }
 }
 

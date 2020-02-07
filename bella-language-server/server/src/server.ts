@@ -102,7 +102,7 @@ export default class BellaServer {
 			textDocumentSync: this.documents.syncKind,
 			completionProvider: {
 				resolveProvider: false,
-				// triggerCharacters: ['call ']
+				triggerCharacters: ['.']
 			},
 			signatureHelpProvider: {
 				triggerCharacters: ['(']

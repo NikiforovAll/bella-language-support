@@ -2,13 +2,14 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaCompletionTrigger } from './models/bella-completion';
-import { CallStatementContext, NewStatementContext, LocalVariableDeclarationContext, ExpressionContext, LocalVariableDeclarationStatementContext, BellaParser, ProcedureParamContext, GeneralSignatureContext, InvocationStatementContext, ExplicitGenericInvocationContext, InvocationExpressionContext } from '../grammars/.antlr4/BellaParser';
+import { CallStatementContext, NewStatementContext, LocalVariableDeclarationContext, ExpressionContext, LocalVariableDeclarationStatementContext, BellaParser, ProcedureParamContext, GeneralSignatureContext, InvocationStatementContext, ExplicitGenericInvocationContext, InvocationExpressionContext, GenericInvocationContext } from '../grammars/.antlr4/BellaParser';
 import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
+import { ParserRuleContext } from 'antlr4ts';
+import { TerminalNode } from 'antlr4ts/tree/TerminalNode';
 
 
 
-//TODO: change this
 export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BellaCompletionTrigger[]> {
 
     public triggers: BellaCompletionTrigger[] = [];
@@ -29,14 +30,70 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                 endLine, startOfParamsList.start.charPositionInLine
             )
         };
-        let completion: BellaCompletionTrigger = {
-            completionBase: { context: procedureSignature.text },
+        let signatureSupport: BellaCompletionTrigger = {
+            completionBase: {
+                //truncated signature, important!!!
+                context: procedureSignature.text,
+                completionSource: [
+                    { name: '', type: DeclarationType.Procedure }
+                ]
+            },
             expectedCompletions: [DeclarationType.Object, DeclarationType.PersistentObject],
             range: BellaVisitorUtils.createRange(
                 startOfParamsList.start.line - 1, startOfParamsList.start.charPositionInLine,
                 (startOfParamsList.stop?.line || startOfParamsList.start.line) - 1, startOfParamsList.stop?.charPositionInLine)
         }
-        return this.accumulateResult([trigger, completion]);
+        return this.accumulateResult([trigger, signatureSupport]);
+    }
+
+    //TODO: need to parse expression inside to get completions for
+    visitGenericInvocation(context: GenericInvocationContext): BellaCompletionTrigger[] {
+        const startLine = context.start.line - 1;
+        const procedureSignature = context.explicitGenericInvocation();
+        if (!procedureSignature) {
+            return [];
+        }
+        const startOfParamsList = procedureSignature.arguments();
+        const endLine = (startOfParamsList.start?.line || context.start.line) - 1;
+        let trigger: BellaCompletionTrigger = {
+            completionBase: {
+                context: procedureSignature.text,
+                completionSource: [{
+                    name: procedureSignature.Identifier()?.text || '',
+                    type: DeclarationType.ServiceEntry // TODO: could be formula
+                }]
+            },
+            expectedCompletions: [DeclarationType.ServiceEntry],
+            range: BellaVisitorUtils.createRange(
+                startLine, procedureSignature.start.charPositionInLine,
+                endLine, startOfParamsList.start.charPositionInLine
+            )
+        };
+        let serviceName = '';
+        try {
+            //TODO: fix it, dirty approach
+            const ctx = procedureSignature as any;
+            serviceName = ctx.parent.parent.type().Identifier().text;
+        } catch (error) {
+
+        }
+        let signatureSupport: BellaCompletionTrigger = {
+            completionBase: {
+                //truncated signature, important!!!
+                context: procedureSignature.text,
+                completionSource: [
+                    {
+                        name: serviceName,
+                        type: DeclarationType.ServiceEntry
+                    }
+                ]
+            },
+            expectedCompletions: [DeclarationType.Object, DeclarationType.PersistentObject],
+            range: BellaVisitorUtils.createRange(
+                startOfParamsList.start.line - 1, startOfParamsList.start.charPositionInLine,
+                (startOfParamsList.stop?.line || startOfParamsList.start.line) - 1, startOfParamsList.stop?.charPositionInLine)
+        }
+        return this.accumulateResult([trigger, signatureSupport]);
     }
 
     visitNewStatement(context: NewStatementContext): BellaCompletionTrigger[] {
@@ -45,12 +102,12 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         let identifierContext = expression.Identifier();
         let lParen = expression.LPAREN();
         let result: BellaCompletionTrigger[] = [];
-        if(!!identifierContext && !!lParen) {
+        if (!!identifierContext && !!lParen) {
             let completion: BellaCompletionTrigger = {
                 completionBase: {
                     context: context.text,
                     completionSource: [
-                        {name: identifierContext.text, type: DeclarationType.Object}
+                        { name: identifierContext.text, type: DeclarationType.Object }
                     ]
                 },
                 expectedCompletions: [
@@ -68,45 +125,35 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         }
         return this.accumulateResult(result);
     }
-    visitInvocationExpression(context: InvocationExpressionContext): BellaCompletionTrigger[]{
+    // TODO: also implement similar thing for invocationStatement
+    visitInvocationExpression(context: InvocationExpressionContext): BellaCompletionTrigger[] {
         const expression = (context.parent as any).expression()[0]
-        const identifierContext = expression?.Identifier();
+        const identifierContext = expression?.Identifier() || expression.expression()[0].Identifier();
+        const dotContext: TerminalNode = expression.DOT() || expression.parent.DOT();
         let result: BellaCompletionTrigger[] = [];
-        if(!!identifierContext) {
+        if (!!identifierContext) {
             let completion: BellaCompletionTrigger = {
                 completionBase: {
                     context: context.text,
                     completionSource: [
-                        {name: identifierContext.text, type: DeclarationType.Service}
+                        { name: identifierContext.text, type: DeclarationType.Service }
                     ]
                 },
                 expectedCompletions: [
-                    DeclarationType.ServiceEntry
+                    DeclarationType.ServiceEntry,
+                    DeclarationType.ObjectField
                 ],
                 range: BellaVisitorUtils.createRange(
-                    context.start.line - 1,
-                    context.start.charPositionInLine,
+                    dotContext.symbol.line - 1,
+                    dotContext.symbol.charPositionInLine,
                     (context.stop?.line || context.start.line) - 1,
-                    context.stop?.charPositionInLine)
+                    dotContext.symbol.charPositionInLine + (context.Identifier()?.text?.length || 0) + 1
+                )
             }
             result.push(completion);
         }
         return this.accumulateResult(result);
     }
-    // visitExpression(context: ExpressionContext): BellaCompletionTrigger[] {
-    //     const startLine = context.start.line - 1;
-    //     const endLine = (context.stop?.line || context.start.line) - 1;
-    //     let completion: BellaCompletionTrigger = {
-    //         completionBase: { context: context.text }, expectedCompletions: [DeclarationType.Object],
-    //         range: BellaVisitorUtils.createRange(
-    //             startLine,
-    //             context.start.charPositionInLine,
-    //             endLine,
-    //             context.stop?.charPositionInLine
-    //         )
-    //     }
-    //     return this.accumulateResult([completion]);
-    // }
 
     visitLocalVariableDeclarationStatement(context: LocalVariableDeclarationStatementContext): BellaCompletionTrigger[] {
         const startLine = context.start.line - 1;
@@ -161,7 +208,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
     visitGeneralSignature(context: GeneralSignatureContext): BellaCompletionTrigger[] {
         const lParenContext = context.LPAREN();
         const rParenContext = context.RPAREN();
-        if(!lParenContext || !rParenContext) {
+        if (!lParenContext || !rParenContext) {
             return [];
         }
         const startLine = lParenContext.symbol.line - 1;
@@ -169,7 +216,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         let result: BellaCompletionTrigger[] = [];
         let completion: BellaCompletionTrigger = {
             completionBase: { context: context.text },
-            expectedCompletions: [ DeclarationType.Object],
+            expectedCompletions: [DeclarationType.Object],
             range: BellaVisitorUtils.createRange(
                 startLine,
                 lParenContext.symbol.charPositionInLine,

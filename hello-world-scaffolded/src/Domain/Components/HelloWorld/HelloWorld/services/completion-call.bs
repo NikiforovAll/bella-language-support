@@ -1,24 +1,33 @@
 procedure Test()
+    HelloWorld2.Test2()
     call Test2()
-    LogInfo()
+    HelloWorld2.Test3()
+    HelloWorld2.Test4()
 
 object Params2
     Test:String
+    Test2:String
+    Test3:String
+    Test4:String
 
-procedure Test2(Param)
+procedure Test2(Params2)
     call Test()
-    let T = new Params2()
+    let T = new Params2(Test = 'Test')
 procedure Test(GlAccountId, out Account)
     call Test()
 
 procedure Test(Params2, out Account)
-    let t1312 = new Account(fisfirstName = "Test")
+    let t1312 = new Account(firstName = "Test")
     call Test(t2, out t)
     let t123 = new Account(gender)
+    new Account(gender)
+    //TODO:
     HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
-    new Account(gen)
+    new Account(gender = 1)
+    call Test(T, Test)
+    //TODO:
     test.Test(
-        new Account(
+        new Accountunt(
             firstName = Test,
             fullName = Test
         )

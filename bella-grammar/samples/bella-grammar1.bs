@@ -31,8 +31,17 @@
     //     Test = R
     // )
 
-    TestService.T
+// procedure Procedure()
+//     TestService.
 
-t.Test(
-    new Account()
-)
+// procedure Procedure()
+//     TestService.T1
+// procedure Procedure()
+//     TestService.T2()
+
+// procedure Procedure()
+//     Object.Forumula().T2()
+
+// HelloWorld.ExampleMethod()
+
+HelloWorld.ExampleMethod(new Account(firstName = 'Test'))

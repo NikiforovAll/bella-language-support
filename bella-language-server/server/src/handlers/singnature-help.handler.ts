@@ -17,31 +17,80 @@ export class SignatureHelpHandler extends BaseHandler {
     getSignature(params: TextDocumentPositionParams): SignatureHelp | undefined {
         const docUri = params.textDocument.uri;
         let completionToken = this.completions.getCompletion(
-                params.position.line,
-                params.position.character,
-                docUri);
+            params.position.line,
+            params.position.character,
+            docUri);
         if (!completionToken) {
             return;
         }
-        const procedures = this.declarations.getDeclarationsForQuery({
-            uriFilter: {
-                active: false,
-            },
-            typeFilter: {
-                active: true,
-                type: DeclarationType.Procedure
-            },
-            nameFilter: {
-                active: true,
-                name: CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context)
-            },
-            namespaceFilter: {
-                active: true,
-                namespace: CommonUtils.getNamespaceFromURI(docUri)
-            }
-        });
+        let completionSource = (completionToken.completionBase.completionSource || [])[0];
+        let procedures: KeyedDeclaration[] = [];
+        switch (completionSource.type) {
+            case DeclarationType.Procedure:
+                procedures = this.declarations.getDeclarationsForQuery({
+                    uriFilter: {
+                        active: false,
+                    },
+                    typeFilter: {
+                        active: true,
+                        type: DeclarationType.Procedure
+                    },
+                    nameFilter: {
+                        active: true,
+                        name: CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context)
+                    },
+                    namespaceFilter: {
+                        active: true,
+                        namespace: CommonUtils.getNamespaceFromURI(docUri)
+                    }
+                });
+                break;
+            case DeclarationType.ServiceEntry:
+                const services = this.declarations.getDeclarationsForQuery({
+                    uriFilter: {
+                        active: false,
+                    },
+                    typeFilter: {
+                        active: true,
+                        type: DeclarationType.Service
+                    },
+                    nameFilter: {
+                        active: true,
+                        name: completionSource.name
+                    },
+                    namespaceFilter: {
+                        active: false,
+                        namespace: CommonUtils.getNamespaceFromURI(docUri)
+                    }
+                });
+                const mainService = services[0]; // defined in common scope
+                if(!!mainService) {
+                    procedures = this.declarations.getDeclarationsForQuery({
+                        uriFilter: {
+                            active: false,
+                        },
+                        typeFilter: {
+                            active: true,
+                            type: DeclarationType.Procedure
+                        },
+                        nameFilter: {
+                            active: true,
+                            name: CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context)
+                        },
+                        namespaceFilter: {
+                            active: true,
+                            //descend from common to component namespace
+                            namespace: CommonUtils.extractComponentNameFromUrl(mainService.uri)
+                        }
+                    });
+                }
+                break;
+            default:
+                throw Error('Not supported signature type');
+                break;
+        }
         const isNoParams = !!completionToken.completionBase.context.match(/\(\s*\)/g);
-        const currentParamIndex = isNoParams? null : (completionToken.completionBase.context.match(/,/g) || []).length;
+        const currentParamIndex = isNoParams ? null : (completionToken.completionBase.context.match(/,/g) || []).length;
         const numberOfParams = isNoParams ? 0 : (currentParamIndex || 0) + 1;
         const foundProcedureIndex = procedures
             .findIndex(p => (!p.members ? 0 : p.members.length) >= numberOfParams);
@@ -54,7 +103,7 @@ export class SignatureHelpHandler extends BaseHandler {
     }
 
     toSignatureInformation(declaration: KeyedDeclaration): SignatureInformation {
-        const content : MarkupContent = {
+        const content: MarkupContent = {
             value: `**Location:** ${CommonUtils.getDeclarationFullRelativePath(declaration.uri)}`,
             kind: "markdown"
         }
@@ -70,7 +119,6 @@ export class SignatureHelpHandler extends BaseHandler {
     toSignatureParam(declaration: BaseDeclaration): ParameterInformation {
         return {
             label: declaration.name,
-            // documentation: `Name: ${declaration.name} as ${DeclarationType[declaration.type]}`
             documentation: `Name: ${declaration.name} as ${DeclarationType[declaration.type]}`
         }
     }

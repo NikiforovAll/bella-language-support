@@ -25,7 +25,8 @@ procedure Test(Params2, out Account)
 describe("procedure-completion-statement", () => {
     it("should return parsed completion for statement", () => {
         let input = ` // blank line
-t.Test(
+new Account()
+SomeService.Test(
     new Account()
 )`;
         let tree = BellaLanguageSupport.parse(input);
@@ -34,13 +35,33 @@ t.Test(
     });
 });
 
-describe("invocation-expresion-completion", () => {
+describe("invocation-expression-completion", () => {
     it("should return parsed completion for invocation expression", () => {
         let input = ` // blank line
-t.Test`;
+CompletionBaseService.Test`;
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
         visitor.visit(tree);
+    });
+});
+describe("invocation-expression-completion-not-finished", () => {
+    it("should return parsed completion for invocation expression", () => {
+        let input = ` // blank line
+CompletionBaseService.`;
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
+        visitor.visit(tree);
+    });
+});
+
+describe("invocation-expression-completion", () => {
+    it("should return parsed completion for invocation expression", () => {
+        let input = ` // blank line
+HelloWorld.ExampleMethod()`;
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
+        visitor.visit(tree);
+        expect(visitor.triggers).to.have.lengthOf(1);
     });
 });
 
