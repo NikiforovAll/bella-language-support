@@ -171,14 +171,17 @@ propertyAccessor
     : DOT (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
     ;
 
+invocationExpression
+    : (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
+    | explicitGenericInvocation? //TODO: consider how this impacts diagnostics
+    ;
 expression
     :   LPAREN expression RPAREN
     |   expression RANGE expression
     |   literal
-    |   expression DOT (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
-    // |   expression DOT explicitGenericInvocation
+    |   expression DOT invocationExpression
+    |   invocationStatement
     |   expression LBRACK expression RBRACK
-    |   expression LPAREN expressionList? ','? RPAREN
     |   Not expression
     |   newStatement
     |   expression As type
@@ -217,8 +220,8 @@ expression
         |   '%='
         )
         (expression)
-    | invocationStatement
-    | (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
+    |   (Identifier | PrimitiveType | Error | HOSTED | SERVICE) LPAREN expressionList? ','? RPAREN // TODO: this might break a lot of stuff
+    |   (Identifier | PrimitiveType | Error | HOSTED | SERVICE)
     ;
 
 // memberInvocation

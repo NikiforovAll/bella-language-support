@@ -1,11 +1,18 @@
 import { DeclarationType, BellaCompletionTrigger} from 'bella-grammar';
 import { DeclarationIdentifier } from 'bella-grammar/dist/lib/models/bella-completion';
-import { CompletionItem, CompletionItemKind, CompletionParams } from 'vscode-languageserver';
+import { CompletionItem, CompletionParams } from 'vscode-languageserver';
 
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
-import { KeyedDeclaration, LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
-import { CommonUtils } from '../utils/common.utils';
+import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { BaseHandler } from './base.handler';
+import { CompletionProvider } from './completion-providers/completion-provider';
+import { MultipleSourceCompletionProvider } from './completion-providers/multiple-source-completion-provider';
+import { KeywordCompletionProvider } from './completion-providers/keyword-completion-provider';
+import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
+import { ProcedureCompletionProvider } from './completion-providers/procedure-completion-provider';
+import { ObjectCompletionProvider } from './completion-providers/object-completion-provider';
+import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
+import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -30,7 +37,8 @@ export class CompletionHandler extends BaseHandler {
             providers = [
                 new KeywordCompletionProvider(),
                 this.createProvider(DeclarationType.PersistentObject),
-                this.createProvider(DeclarationType.Object)
+                this.createProvider(DeclarationType.Object),
+                this.createProvider(DeclarationType.Service)
             ]
         } else {
             providers = this.createProviders(completionToken);
@@ -59,6 +67,8 @@ export class CompletionHandler extends BaseHandler {
                     throw new Error('Completion source could not be resolved, please provide correct one');
                 }
                 return new ObjectFieldCompletionProvider(this.cache, this.docUri, completionSourceName);
+            case DeclarationType.Service:
+                return new ServiceCompletionProvider(this.cache, this.docUri);
             default:
                 throw new Error('Completion provider could not be resolved');
                 break;
@@ -66,182 +76,4 @@ export class CompletionHandler extends BaseHandler {
     }
 }
 
-interface CompletionProvider {
-    getCompletions(): CompletionItem[];
-}
 
-class MultipleSourceCompletionProvider implements CompletionProvider {
-    getCompletions(): CompletionItem[] {
-        return this.providers
-            .map(p => p.getCompletions())
-            .reduce((acc, completion) => acc.concat(completion));
-    }
-
-    providers: CompletionProvider[];
-    constructor(...providers: CompletionProvider[]) {
-        this.providers = providers;
-    }
-}
-
-class KeywordCompletionProvider implements CompletionProvider {
-    getCompletions(): CompletionItem[] {
-        return [
-            {
-                label: 'new',
-                insertText: 'new ',
-                kind: CompletionItemKind.Keyword
-            },
-            {
-                label: 'call',
-                insertText: 'call ',
-                kind: CompletionItemKind.Keyword
-            },
-            {
-                label: 'let',
-                insertText: 'let ',
-                kind: CompletionItemKind.Keyword
-            },
-        ];
-    }
-}
-
-
-
-class PersistentObjectCompletionProvider implements CompletionProvider {
-
-    constructor(private cache: LSPDeclarationRegistry, private docUri: string) { }
-
-    getCompletions(): CompletionItem[] {
-        const declarations = this.cache.getDeclarationsForQuery(
-            {
-                uriFilter: { active: false },
-                typeFilter: {
-                    active: true,
-                    type: DeclarationType.PersistentObject
-                },
-                namespaceFilter: {
-                    active: true,
-                    namespace: CommonUtils.getNamespaceFromURI(this.docUri),
-                }
-            }
-        );
-        return declarations.map(this.toCompletionItem);
-    }
-
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
-        return {
-            label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            // detail: 'test',
-            kind: CompletionItemKind.Variable
-        }
-    }
-}
-
-
-class ProcedureCompletionProvider implements CompletionProvider {
-
-    constructor(private cache: LSPDeclarationRegistry, private docUri: string) { }
-
-    getCompletions(): CompletionItem[] {
-        const declarations = this.cache.getDeclarationsForQuery(
-            {
-                uriFilter: { active: false },
-                typeFilter: {
-                    active: true,
-                    type: DeclarationType.Procedure
-                },
-                namespaceFilter: {
-                    active: true,
-                    namespace: CommonUtils.getNamespaceFromURI(this.docUri),
-                    // componentName: CommonUtils.extractComponentNameFromUrl(this.docUri)
-                }
-            }
-        );
-        return declarations.map(this.toCompletionItem);
-    }
-
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
-        return {
-            label: CommonUtils.getProcedureTruncatedName(declaration.name),
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            // detail: 'test',
-            kind: CompletionItemKind.Method
-        }
-    }
-}
-
-class ObjectCompletionProvider implements CompletionProvider {
-
-    constructor(private cache: LSPDeclarationRegistry, private docUri: string) { }
-
-    getCompletions(): CompletionItem[] {
-        const declarations = this.cache.getDeclarationsForQuery(
-            {
-                uriFilter: { active: false },
-                typeFilter: {
-                    active: true,
-                    type: DeclarationType.Object
-                },
-                namespaceFilter: {
-                    active: true,
-                    namespace: CommonUtils.getNamespaceFromURI(this.docUri),
-                }
-            }
-        );
-        return declarations.map(this.toCompletionItem);
-    }
-
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
-        return {
-            label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            kind: CompletionItemKind.Class,
-        }
-    }
-}
-
-
-class ObjectFieldCompletionProvider implements CompletionProvider {
-
-    constructor(
-        private cache: LSPDeclarationRegistry,
-        private docUri: string,
-        private objectName: string) { }
-
-    getCompletions(): CompletionItem[] {
-        const declarations = this.cache.getDeclarationsForQuery(
-            {
-                uriFilter: { active: false },
-                nameFilter: {
-                    active: true,
-                    name: this.objectName
-                },
-                typeFilter: {
-                    active: true,
-                    type: DeclarationType.Object
-                },
-                namespaceFilter: {
-                    active: true,
-                    namespace: CommonUtils.getNamespaceFromURI(this.docUri),
-                },
-                descendantsFilter: {
-                    active: true,
-                    discardParent: true
-                }
-            }
-        );
-        return declarations.map(this.toCompletionItem);
-    }
-
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
-        const objectFieldName = declaration.name;
-        const sortingPrefix = '0';
-        return {
-            label: objectFieldName,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            kind: CompletionItemKind.Property,
-            sortText: sortingPrefix + objectFieldName
-        }
-    }
-}

@@ -15,6 +15,7 @@ procedure Test(Params2, out Account)
     let t1312 = new Account(fisfirstName = "Test")
     call Test(t2, out t)
     let t123 = new Account(gender)
+    HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
     new Account(gen)
     test.Test(
         new Account(
@@ -22,4 +23,3 @@ procedure Test(Params2, out Account)
             fullName = Test
         )
     )
-

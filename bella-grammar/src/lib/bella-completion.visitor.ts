@@ -2,7 +2,7 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 
 import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
 import { BellaCompletionTrigger } from './models/bella-completion';
-import { CallStatementContext, NewStatementContext, LocalVariableDeclarationContext, ExpressionContext, LocalVariableDeclarationStatementContext, BellaParser, ProcedureParamContext, GeneralSignatureContext } from '../grammars/.antlr4/BellaParser';
+import { CallStatementContext, NewStatementContext, LocalVariableDeclarationContext, ExpressionContext, LocalVariableDeclarationStatementContext, BellaParser, ProcedureParamContext, GeneralSignatureContext, InvocationStatementContext, ExplicitGenericInvocationContext, InvocationExpressionContext } from '../grammars/.antlr4/BellaParser';
 import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
 
@@ -42,7 +42,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
     visitNewStatement(context: NewStatementContext): BellaCompletionTrigger[] {
         const expression = context.expression();
         let membersContext = expression.expressionList();
-        let identifierContext = expression.expression()[0].Identifier();
+        let identifierContext = expression.Identifier();
         let lParen = expression.LPAREN();
         let result: BellaCompletionTrigger[] = [];
         if(!!identifierContext && !!lParen) {
@@ -68,7 +68,31 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         }
         return this.accumulateResult(result);
     }
-
+    visitInvocationExpression(context: InvocationExpressionContext): BellaCompletionTrigger[]{
+        const expression = (context.parent as any).expression()[0]
+        const identifierContext = expression?.Identifier();
+        let result: BellaCompletionTrigger[] = [];
+        if(!!identifierContext) {
+            let completion: BellaCompletionTrigger = {
+                completionBase: {
+                    context: context.text,
+                    completionSource: [
+                        {name: identifierContext.text, type: DeclarationType.Service}
+                    ]
+                },
+                expectedCompletions: [
+                    DeclarationType.ServiceEntry
+                ],
+                range: BellaVisitorUtils.createRange(
+                    context.start.line - 1,
+                    context.start.charPositionInLine,
+                    (context.stop?.line || context.start.line) - 1,
+                    context.stop?.charPositionInLine)
+            }
+            result.push(completion);
+        }
+        return this.accumulateResult(result);
+    }
     // visitExpression(context: ExpressionContext): BellaCompletionTrigger[] {
     //     const startLine = context.start.line - 1;
     //     const endLine = (context.stop?.line || context.start.line) - 1;
@@ -105,7 +129,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             let membersContext = context.localVariableDeclaration().expression()[0];
             let leftParenContext = membersContext.LPAREN();
             //TODO: this is bug prone, may cause potential issues
-            let sourceObject = membersContext.expression()[0].Identifier();
+            let sourceObject = membersContext.Identifier();
             if (!!leftParenContext && !!sourceObject) {
                 let membersCompletion: BellaCompletionTrigger = {
                     completionBase: {

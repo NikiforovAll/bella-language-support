@@ -24,4 +24,15 @@
 
 //InvoiceGeneratorAsync.RemoveSentToDunningInvoiceByInvoiceId()
 
-call Test(new Params2())
+// Test.Service()
+// (new Test1).Service1()
+
+    // let Account = new Params2(
+    //     Test = R
+    // )
+
+    TestService.T
+
+t.Test(
+    new Account()
+)
