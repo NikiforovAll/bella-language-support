@@ -39,20 +39,35 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         return this.accumulateResult([trigger, completion]);
     }
 
-    // visitNewStatement(context: NewStatementContext): BellaCompletionTrigger[] {
-    //     const startLine = context.start.line - 1;
-    //     const expression = context.expression();
-    //     const endLine =  (expression.stop?.line || expression.start.line) - 1;
-    //     let completion: BellaCompletionTrigger = {
-    //         completionBase: { context: context.text }, expectedCompletions: [DeclarationType.Object],
-    //         range: BellaVisitorUtils.createRange(
-    //             startLine,
-    //             expression.start.charPositionInLine,
-    //             endLine,
-    //             expression.start.charPositionInLine + expression.text.length)
-    //     }
-    //     return this.accumulateResult([completion]);
-    // }
+    visitNewStatement(context: NewStatementContext): BellaCompletionTrigger[] {
+        const expression = context.expression();
+        let membersContext = expression.expressionList();
+        let identifierContext = expression.expression()[0].Identifier();
+        let lParen = expression.LPAREN();
+        let result: BellaCompletionTrigger[] = [];
+        if(!!identifierContext && !!lParen) {
+            let completion: BellaCompletionTrigger = {
+                completionBase: {
+                    context: context.text,
+                    completionSource: [
+                        {name: identifierContext.text, type: DeclarationType.Object}
+                    ]
+                },
+                expectedCompletions: [
+                    DeclarationType.Object,
+                    DeclarationType.ObjectField,
+                    DeclarationType.PersistentObject
+                ],
+                range: BellaVisitorUtils.createRange(
+                    lParen.symbol.line - 1,
+                    lParen.symbol.charPositionInLine,
+                    (expression.RPAREN()?.symbol.line || lParen.symbol.line) - 1,
+                    expression.RPAREN()?.symbol.charPositionInLine)
+            }
+            result.push(completion);
+        }
+        return this.accumulateResult(result);
+    }
 
     // visitExpression(context: ExpressionContext): BellaCompletionTrigger[] {
     //     const startLine = context.start.line - 1;

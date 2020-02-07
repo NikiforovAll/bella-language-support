@@ -7,13 +7,19 @@ object Params2
 
 procedure Test2(Param)
     call Test()
-    let T = new Params2(
+    let T = new Params2()
+procedure Test(GlAccountId, out Account)
+    call Test()
 
-
-    )
 procedure Test(Params2, out Account)
-
-    let Account = new Params2(
-        Test = Ac,
-        Test
+    let t1312 = new Account(fisfirstName = "Test")
+    call Test(t2, out t)
+    let t123 = new Account(gender)
+    new Account(gen)
+    test.Test(
+        new Account(
+            firstName = Test,
+            fullName = Test
+        )
     )
+

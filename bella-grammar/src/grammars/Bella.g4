@@ -180,7 +180,7 @@ expression
     |   expression LBRACK expression RBRACK
     |   expression LPAREN expressionList? ','? RPAREN
     |   Not expression
-    |   New expression
+    |   newStatement
     |   expression As type
     |   expression Is Not? (type | literal)
     |   expression Not? In expression
