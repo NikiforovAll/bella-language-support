@@ -239,7 +239,7 @@ arguments
 
 
 expressionList
-    :  'out'? expression (',' 'out'? expression)* // with trailing comma
+    :  'out'? expression (',' 'out'? expression)* COMMA? // with trailing comma, MAY CAUSE ISSUES
     ;
 
 callStatement

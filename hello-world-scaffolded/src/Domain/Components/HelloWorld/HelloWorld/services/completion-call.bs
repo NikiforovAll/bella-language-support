@@ -1,6 +1,7 @@
 procedure Test()
-    HelloWorld2.Test2()
-    call Test2()
+    HelloWorld2.Test2(Account, P2)
+    call Test2(p)
+    call Test(p1, p2)
     HelloWorld2.Test3()
     HelloWorld2.Test4()
 
@@ -10,12 +11,14 @@ object Params2
     Test3:String
     Test4:String
 
-procedure Test2(Params2)
+procedure Test2(p: Params2)
     call Test()
     let T = new Params2(Test = 'Test')
 procedure Test(GlAccountId, out Account)
     call Test()
 
+procedure Test4()
+    call Test2(Params2)
 procedure Test(Params2, out Account)
     let t1312 = new Account(firstName = "Test")
     call Test(t2, out t)

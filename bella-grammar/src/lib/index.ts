@@ -19,7 +19,9 @@ import { BellaCompletionVisitor } from './bella-completion.visitor';
 export {
     BaseDeclaration,
     Position,
-    Range
+    Range,
+    SignatureDeclaration,
+    ParamDeclaration
 } from './models/base-declaration';
 
 export { MemberComposite } from './models/base-declaration';

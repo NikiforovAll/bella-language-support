@@ -61,7 +61,7 @@ HelloWorld.ExampleMethod()`;
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
         visitor.visit(tree);
-        expect(visitor.triggers).to.have.lengthOf(1);
+        expect(visitor.triggers).to.have.lengthOf(2);
     });
 });
 

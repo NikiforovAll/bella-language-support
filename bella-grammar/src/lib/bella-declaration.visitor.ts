@@ -19,7 +19,7 @@ import {
     BellaParser,
     StatementContext} from "../grammars/.antlr4/BellaParser"
 import { AbstractParseTreeVisitor } from "antlr4ts/tree/AbstractParseTreeVisitor";
-import { BaseDeclaration} from "./models/base-declaration";
+import { BaseDeclaration, SignatureContext, SignatureDeclaration} from "./models/base-declaration";
 import { ComponentServiceDeclaration } from "./models/component-service-declaration";
 import { SimpleObjectDeclaration, CompositeObjectDeclaration, BaseObject } from "./models/object-declaration";
 import { TypeDeclaration } from "./models/type-declaration";
@@ -144,12 +144,20 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let signature = context.generalSignature().text.replace("out", "out ");
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || (startLine + 1)) - 1;
+        let params = this.visitProcedureParamListLocal(context.generalSignature().procedureParamList());
         // let calls = this.visitProcedureBodyLocal(context.procedureBody());
         let pd: ProcedureDeclaration = {
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type: DeclarationType.Procedure,
-            members: this.visitProcedureParamListLocal(context.generalSignature().procedureParamList())
+            members: params,
+            signatureContext: {
+                context: signature,
+                params: params.map(paramDeclaration => ({
+                    type: paramDeclaration.name,
+                    alias: paramDeclaration.name
+                }))
+            }
         };
         this.declarations.push(pd);
         return pd;
@@ -250,11 +258,18 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
     visitServiceBodyLocal(context: ServiceBodyContext): BaseDeclaration[] {
         let res = context.serviceDeclarationEntry().map((ctx: ServiceDeclarationEntryContext): BaseDeclaration => {
             let startLine = ctx.start.line - 1;
-            return {
+            let result: BaseDeclaration & SignatureDeclaration = {
                 name: ctx.Identifier().text,
                 type: DeclarationType.ServiceEntry,
-                range: BellaVisitorUtils.createRange(startLine, ctx.start.charPositionInLine, startLine)
+                range: BellaVisitorUtils.createRange(startLine, ctx.start.charPositionInLine, startLine),
+                signatureContext: {
+                    context: ctx.text,
+                    params: ctx.procedureParamList()
+                        ?.procedureParam()
+                        ?.map((p: ProcedureParamContext) => ({alias: p.text, type: p.type().text})) || []
+                }
             }
+            return result;
         });
         return res;
     }
