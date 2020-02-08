@@ -7,9 +7,15 @@ export interface BellaCompletionTrigger {
     range: Range;
 }
 
-export interface DeclarationIdentifier {
+export interface DeclarationIdentifier extends SimpleDeclarationIdentifier, CompoundDeclarationIdentifier {
     context: string;
-    completionSource?: CompletionIdentifier[]
+}
+
+export interface SimpleDeclarationIdentifier {
+    completionSource?: CompletionIdentifier[];
+}
+export interface CompoundDeclarationIdentifier {
+    compoundCompletionSource?: BellaCompletionTrigger[];
 }
 
 export interface CompletionIdentifier {

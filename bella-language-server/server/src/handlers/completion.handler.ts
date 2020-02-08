@@ -35,6 +35,7 @@ export class CompletionHandler extends BaseHandler {
 
         let providers = [];
         if (!completionToken) {
+            //global scope
             providers = [
                 new KeywordCompletionProvider(),
                 this.createProvider(DeclarationType.PersistentObject),

@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { BellaLanguageSupport, VisitorType } from '../src/lib';
 import { BellaCompletionVisitor } from '../src/lib/bella-completion.visitor';
 
@@ -53,15 +52,3 @@ CompletionBaseService.`;
         visitor.visit(tree);
     });
 });
-
-describe("invocation-expression-completion", () => {
-    it("should return parsed completion for invocation expression", () => {
-        let input = ` // blank line
-HelloWorld.ExampleMethod()`;
-        let tree = BellaLanguageSupport.parse(input);
-        let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
-        visitor.visit(tree);
-        expect(visitor.triggers).to.have.lengthOf(2);
-    });
-});
-
