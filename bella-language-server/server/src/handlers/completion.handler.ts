@@ -14,6 +14,8 @@ import { ObjectCompletionProvider } from './completion-providers/object-completi
 import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
 import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
 import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
+import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
+import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -27,26 +29,36 @@ export class CompletionHandler extends BaseHandler {
 
     public complete(params: CompletionParams): CompletionItem[] {
         this.docUri = params.textDocument.uri;
-        let completionToken = this.completions.getCompletion(
+        let completionTokens = this.completions.getCompletions(
             params.position.line,
             params.position.character,
             this.docUri
         );
 
         let providers = [];
-        if (!completionToken) {
+        if (completionTokens.length === 0) {
             //global scope
             providers = [
                 new KeywordCompletionProvider(),
                 this.createProvider(DeclarationType.PersistentObject),
                 this.createProvider(DeclarationType.Object),
-                this.createProvider(DeclarationType.Service)
+                this.createProvider(DeclarationType.Service),
+                this.createProvider(DeclarationType.Enum)
             ]
         } else {
-            providers = this.createProviders(completionToken);
+            providers = this.createProvidersForCompletionTriggers(completionTokens);
         }
         return new MultipleSourceCompletionProvider(...providers)
             .getCompletions();
+    }
+
+
+    private createProvidersForCompletionTriggers(context: BellaCompletionTrigger[]): CompletionProvider[] {
+        let result: CompletionProvider[] = [];
+        for (const trigger of context) {
+            result.push(...this.createProviders(trigger));
+        }
+        return result;
     }
 
     private createProviders(context: BellaCompletionTrigger): CompletionProvider[] {
@@ -69,6 +81,10 @@ export class CompletionHandler extends BaseHandler {
                 return new ServiceCompletionProvider(this.cache, this.docUri);
             case DeclarationType.ServiceEntry:
                 return new ServiceEntryCompletionProvider(this.cache, this.docUri, sourceName);
+            case DeclarationType.Enum:
+                return new EnumCompletionProvider(this.cache, this.docUri);
+            case DeclarationType.EnumEntry:
+                return new EnumEntryCompletionProvider(this.cache, this.docUri, sourceName);
             default:
                 throw new Error('Completion provider could not be resolved');
         }

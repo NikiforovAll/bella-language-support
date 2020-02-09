@@ -27,6 +27,8 @@ procedure Test(Params2, out Account)
     //TODO:
     HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
     new Account(gender = 1)
+    new Account( )
+    Params2.Test
     call Test(T, Test)
     //TODO:
     test.Test(
@@ -35,3 +37,7 @@ procedure Test(Params2, out Account)
             fullName = Test
         )
     )
+
+enum Gender
+    Male
+    Female

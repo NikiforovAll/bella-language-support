@@ -26,6 +26,10 @@ export class LSPCompletionRegistry {
         return this.getRegistryNode(uri).getCompletionByPosition(row, col);
     }
 
+    public getCompletions(row: number, col: number, uri: string) {
+        return this.getRegistryNode(uri).getCompletionsByPosition(row, col);
+    }
+
     private getRegistryNode(uri: string): CompletionRegistryNode {
         let nrURI = CommonUtils.normalizeURI(uri);
         if (isEmpty(nrURI) || !this.completionRegistry.has(nrURI)) {

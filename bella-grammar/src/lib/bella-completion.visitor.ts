@@ -182,29 +182,42 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         const dotContext = context.DOT();
         const identifierContext = context.expression()[0].Identifier();
         const result: BellaCompletionTrigger[] = [];
-        if (!!identifierContext && !!dotContext) {
+        if(!dotContext) {
+            throw new Error('DOT is expected in parent expression');
+        }
+        const range = BellaVisitorUtils.createRange(
+            dotContext.symbol.line - 1,
+            dotContext.symbol.charPositionInLine,
+            (context.stop?.line || context.start.line) - 1,
+            dotContext.symbol.charPositionInLine + (context.Identifier()?.text?.length || 0) + 1
+        );
+        // TODO: refine concepts of expected completions and give it a docs
+        const expectedCompletions = [
+            DeclarationType.ServiceEntry,
+            DeclarationType.ObjectField,
+            DeclarationType.EnumEntry,
+            // DeclarationType.Formula
+        ];
+        if (!!identifierContext) {
             let completionTrigger: BellaCompletionTrigger = {
                 completionBase: {
                     context: context.text,
                     completionSource: [
                         { name: identifierContext.text, type: DeclarationType.Service },
-                        { name: identifierContext.text, type: DeclarationType.Object }
+                        { name: identifierContext.text, type: DeclarationType.Object },
+                        { name: identifierContext.text, type: DeclarationType.Enum }
                     ]
-                },
-                expectedCompletions: [
-                    DeclarationType.ServiceEntry,
-                    DeclarationType.ObjectField
-                ],
-                range: BellaVisitorUtils.createRange(
-                    dotContext.symbol.line - 1,
-                    dotContext.symbol.charPositionInLine,
-                    (context.stop?.line || context.start.line) - 1,
-                    dotContext.symbol.charPositionInLine + (context.Identifier()?.text?.length || 0) + 1
-                )
+                }, expectedCompletions, range
             }
             result.push(completionTrigger)
         } else {
-            //TODO: compound completion base
+            let compoundCompletionTrigger: BellaCompletionTrigger = {
+                completionBase: {
+                    context: context.text,
+                    compoundCompletionSource: this.visitExpressionLocal(context.expression()[0])
+                }, expectedCompletions, range
+            }
+            result.push(compoundCompletionTrigger)
         }
         return result;
     }
