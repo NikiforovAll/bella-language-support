@@ -1,0 +1,14 @@
+// procedure hotPlay(test: Gender, BalanceRecordRevert)
+    // HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
+    // new Account(contactInfo =  Test, )
+    // Params2.Test4
+    // HelloWorld2.Test3()
+    // call Test(Pa,GlAccountNumber)
+    // Gender.Female
+
+procedure p2()
+    // new Account(gender = Account, )
+    // call Test2()
+    call Test2()
+    //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
+    Test2.

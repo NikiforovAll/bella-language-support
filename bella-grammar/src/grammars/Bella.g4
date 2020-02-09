@@ -101,7 +101,7 @@ generalSignature
     |   Identifier
     ;
 procedureParamList
-    : procedureParam (COMMA procedureParam)*
+    : procedureParam (COMMA procedureParam)* COMMA?
     ;
 
 procedureParam
@@ -269,7 +269,7 @@ localVariableDeclarationStatement
     ;
 
 localVariableDeclaration
-    :   (type | expression) ASSIGN New? expression?
+    :   (type | expression) ASSIGN (newStatement | New? expression?)
     |   type ASSIGN invocationStatement
     |   type ASSIGN (New | EmptyLiteral)
     // |   (type | expression) ASSIGN New? expression?

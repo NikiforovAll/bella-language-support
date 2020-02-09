@@ -5,6 +5,7 @@ export interface BellaCompletionTrigger {
     completionBase: DeclarationIdentifier;
     expectedCompletions: DeclarationType[];
     range: Range;
+    scope: CompletionScope;
 }
 
 export interface DeclarationIdentifier extends SimpleDeclarationIdentifier, CompoundDeclarationIdentifier {
@@ -21,4 +22,10 @@ export interface CompoundDeclarationIdentifier {
 export interface CompletionIdentifier {
     name: string;
     type: DeclarationType;
+}
+
+export enum CompletionScope {
+    Block,
+    Ambient,
+    Global
 }

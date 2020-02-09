@@ -1,5 +1,5 @@
 import { DeclarationType, BellaCompletionTrigger } from 'bella-grammar';
-import { DeclarationIdentifier } from 'bella-grammar/dist/lib/models/bella-completion';
+import { DeclarationIdentifier, CompletionScope } from 'bella-grammar/dist/lib/models/bella-completion';
 import { CompletionItem, CompletionParams } from 'vscode-languageserver';
 
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
@@ -36,17 +36,21 @@ export class CompletionHandler extends BaseHandler {
         );
 
         let providers = [];
+        let ambientScopeProviders = [
+            new KeywordCompletionProvider(),
+            this.createProvider(DeclarationType.PersistentObject),
+            this.createProvider(DeclarationType.Object),
+            this.createProvider(DeclarationType.Service),
+            this.createProvider(DeclarationType.Enum)
+        ];
         if (completionTokens.length === 0) {
             //global scope
-            providers = [
-                new KeywordCompletionProvider(),
-                this.createProvider(DeclarationType.PersistentObject),
-                this.createProvider(DeclarationType.Object),
-                this.createProvider(DeclarationType.Service),
-                this.createProvider(DeclarationType.Enum)
-            ]
+            providers = ambientScopeProviders;
         } else {
             providers = this.createProvidersForCompletionTriggers(completionTokens);
+            if(completionTokens.every(t => t.scope !== CompletionScope.Block)){
+                providers.push(...ambientScopeProviders);
+            }
         }
         return new MultipleSourceCompletionProvider(...providers)
             .getCompletions();

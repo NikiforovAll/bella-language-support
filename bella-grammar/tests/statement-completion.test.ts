@@ -6,7 +6,7 @@ describe("procedure-completion", () => {
         let input = ` // blank line
 procedure Test(Params2, out Account)
     let Account = new Params2(
-        Test = R
+        Test = R.
     )`;
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
@@ -24,7 +24,17 @@ procedure Test(Params2, out Account)
 describe("procedure-completion-statement", () => {
     it("should return parsed completion for statement", () => {
         let input = ` // blank line
-new Account()
+new Account(
+    T
+)
+
+new Account(
+    T = T.
+)
+
+new Account(
+    T = Test,
+)
 SomeService.Test(
     new Account()
 )`;

@@ -46,13 +46,18 @@
 // call T(T1, )
 // HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
 
-procedure foo2()
-    TestService.T2()
-procedure foo2()
-    T1.T2.T3
+// procedure foo2()
+//     TestService.T2()
+// procedure foo2()
+//     T1.T2.T3
 
-procedure foo3()
-    TestService.
+// procedure foo3()
+//     TestService.
 
-procedure foo2()
-    T1.T2.T3()
+// procedure foo2()
+//     T1.T2.T3()
+
+new Account(gender = Account, t = account.)
+
+// procedure foo2()
+//     let t = new Account(Test = 1 )

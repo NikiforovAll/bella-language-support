@@ -5,6 +5,9 @@ procedure Test()
     HelloWorld2.Test3()
     HelloWorld2.Test4()
 
+    //TODO: nested completions
+    HelloWorld2.Test2(Account)
+
 object Params2
     Test:String
     Test2:String
@@ -23,7 +26,7 @@ procedure Test(Params2, out Account)
     let t1312 = new Account(firstName = "Test")
     call Test(t2, out t)
     let t123 = new Account(gender)
-    new Account(gender)
+    new Account(gender = )
     //TODO:
     HelloWorld.ExampleMethod(new Account(firstName = 'Test'))
     new Account(gender = 1)
@@ -37,6 +40,7 @@ procedure Test(Params2, out Account)
             fullName = Test
         )
     )
+
 
 enum Gender
     Male
