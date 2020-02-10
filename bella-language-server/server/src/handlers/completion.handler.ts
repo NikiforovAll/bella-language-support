@@ -16,6 +16,7 @@ import { ObjectFieldCompletionProvider } from './completion-providers/object-fie
 import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
 import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
+import { ExclusiveSourceCompletionProvider } from './completion-providers/exclusive-source-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -52,7 +53,7 @@ export class CompletionHandler extends BaseHandler {
                 providers.push(...ambientScopeProviders);
             }
         }
-        return new MultipleSourceCompletionProvider(...providers)
+        return new MultipleSourceCompletionProvider(...this.groupExclusiveProviders(providers))
             .getCompletions();
     }
 
@@ -69,29 +70,60 @@ export class CompletionHandler extends BaseHandler {
         return context.expectedCompletions.map(t => this.createProvider(t, context));
     }
 
+    private groupExclusiveProviders(providers: CompletionProvider[]) {
+        const providerResult: CompletionProvider[] = [];
+        const groups = [
+            [
+                DeclarationType.ObjectField,
+                DeclarationType.ServiceEntry
+            ]
+        ];
+        const isInGroups = (p: CompletionProvider, groups: DeclarationType[][]) =>
+            p.getCompletionTypes()
+            .some(t => groups.some(g => g.includes(t)));
+
+        for (const group of groups) {
+            const groupedProviders = providers.filter(p => isInGroups(p, [group]));
+            providerResult.push(new ExclusiveSourceCompletionProvider(...groupedProviders))
+        }
+        providerResult.push(...providers.filter(p => !isInGroups(p, groups)));
+        return providerResult;
+    }
+
     private createProvider(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger,
     ): CompletionProvider {
         const sourceName = this.extractCompletionSourceName(context);
+        let completionProvider
         switch (expectedCompletionType) {
             case DeclarationType.Procedure:
-                return new ProcedureCompletionProvider(this.cache, this.docUri);
+                completionProvider = new ProcedureCompletionProvider(this.cache, this.docUri);
+                break;
             case DeclarationType.Object:
-                return new ObjectCompletionProvider(this.cache, this.docUri);
+                completionProvider = new ObjectCompletionProvider(this.cache, this.docUri);
+                break;
             case DeclarationType.PersistentObject:
-                return new PersistentObjectCompletionProvider(this.cache, this.docUri);
+                completionProvider = new PersistentObjectCompletionProvider(this.cache, this.docUri);
+                break;
             case DeclarationType.ObjectField:
-                return new ObjectFieldCompletionProvider(this.cache, this.docUri, sourceName);
+                completionProvider = new ObjectFieldCompletionProvider(this.cache, this.docUri, sourceName);
+                break;
             case DeclarationType.Service:
-                return new ServiceCompletionProvider(this.cache, this.docUri);
+                completionProvider = new ServiceCompletionProvider(this.cache, this.docUri);
+                break;
             case DeclarationType.ServiceEntry:
-                return new ServiceEntryCompletionProvider(this.cache, this.docUri, sourceName);
+                completionProvider = new ServiceEntryCompletionProvider(this.cache, this.docUri, sourceName);
+                break;
             case DeclarationType.Enum:
-                return new EnumCompletionProvider(this.cache, this.docUri);
+                completionProvider = new EnumCompletionProvider(this.cache, this.docUri);
+                break;
             case DeclarationType.EnumEntry:
-                return new EnumEntryCompletionProvider(this.cache, this.docUri, sourceName);
+                completionProvider = new EnumEntryCompletionProvider(this.cache, this.docUri, sourceName);
+                break;
             default:
                 throw new Error('Completion provider could not be resolved');
         }
+        completionProvider.setCompletionTypes([expectedCompletionType]);
+        return completionProvider;
     }
 
     private extractCompletionSourceName(context?: BellaCompletionTrigger): string {

@@ -37,6 +37,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         const procedureSignature = context.explicitGenericInvocation();
         const paramsListContext = procedureSignature.arguments();
         const endLine = (paramsListContext.start?.line || context.start.line) - 1;
+        //procedure name
         let trigger: BellaCompletionTrigger = {
             completionBase: { context: procedureSignature.text },
             expectedCompletions: [

@@ -1,10 +1,15 @@
 import { DeclarationType } from 'bella-grammar';
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
+
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../../utils/common.utils';
-import { CompletionProvider } from './completion-provider';
-export class EnumEntryCompletionProvider implements CompletionProvider {
-    constructor(private cache: LSPDeclarationRegistry, private docUri: string, private sourceName: string) { }
+import { BaseCompletionProvider } from './completion-provider';
+
+export class EnumEntryCompletionProvider extends BaseCompletionProvider {
+    constructor(private cache: LSPDeclarationRegistry, private docUri: string, private sourceName: string) {
+        super();
+    }
+
     getCompletions(): CompletionItem[] {
         const declarations = this.cache.getDeclarationsForQuery({
             uriFilter: { active: false },
@@ -27,6 +32,7 @@ export class EnumEntryCompletionProvider implements CompletionProvider {
         });
         return declarations.map(this.toCompletionItem);
     }
+
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         const enumEntryName = declaration.name;
         const sortingPrefix = '0';

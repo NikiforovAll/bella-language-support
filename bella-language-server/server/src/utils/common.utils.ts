@@ -139,4 +139,9 @@ export namespace CommonUtils {
                 break;
         }
     }
+
+    export function getClassName(type: any): string | undefined{
+        const matches = type?.constructor?.toString()?.match(/\w+/g);
+        return matches? matches[1] : undefined;
+    }
 }

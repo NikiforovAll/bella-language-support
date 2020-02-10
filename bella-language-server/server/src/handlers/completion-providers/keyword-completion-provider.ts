@@ -1,6 +1,8 @@
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
-import { CompletionProvider } from './completion-provider';
-export class KeywordCompletionProvider implements CompletionProvider {
+
+import { BaseCompletionProvider } from './completion-provider';
+
+export class KeywordCompletionProvider extends BaseCompletionProvider {
     getCompletions(): CompletionItem[] {
         return [
             {

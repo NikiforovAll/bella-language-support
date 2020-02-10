@@ -11,4 +11,4 @@ procedure p2()
     // call Test2()
     call Test2()
     //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
-    Test2.
+    HelloWorld.Method2()

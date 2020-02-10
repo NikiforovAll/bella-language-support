@@ -1,6 +1,6 @@
 import { CompletionItem } from 'vscode-languageserver';
-import { CompletionProvider } from './completion-provider';
-export class MultipleSourceCompletionProvider implements CompletionProvider {
+import { CompletionProvider, BaseCompletionProvider } from './completion-provider';
+export class MultipleSourceCompletionProvider extends BaseCompletionProvider {
     getCompletions(): CompletionItem[] {
         return this.providers
             .map(p => p.getCompletions())
@@ -8,6 +8,7 @@ export class MultipleSourceCompletionProvider implements CompletionProvider {
     }
     providers: CompletionProvider[];
     constructor(...providers: CompletionProvider[]) {
+        super();
         this.providers = providers;
     }
 }
