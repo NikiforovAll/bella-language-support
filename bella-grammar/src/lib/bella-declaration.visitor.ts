@@ -167,30 +167,39 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let signature = context.formulaSignature().text;
         let startLine = context.start.line - 1;
         let endLine = (context.stop?.line || (startLine + 1)) - 1;
+        let params = this.visitProcedureParamListLocal(context
+            .formulaSignature()
+            .generalSignature()
+            .procedureParamList());
         let fd: FormulaDeclaration = {
             name: signature,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type: DeclarationType.Formula,
-            members: this.visitProcedureParamListLocal(context
-                .formulaSignature()
-                .generalSignature()
-                .procedureParamList())
+            members: params,
+            signatureContext: {
+                context: signature,
+                params: params.map(paramDeclaration => ({
+                    type: paramDeclaration.name,
+                    alias: paramDeclaration.name
+                }))
+            }
         };
         this.declarations.push(fd);
         return fd;
     }
 
+    //TODO: this was not previously commented out, uhmmm
     // this is not invoked when there is already top level parser rule invoked
-    visitStatement(context: StatementContext): BaseDeclaration{
-        let fd: FormulaDeclaration = {
-            name: 'Expression',
-            range: BellaVisitorUtils.createRange(0, 0, 0),
-            type: DeclarationType.Object
-        };
-        const identifierTokenNumber = BellaParser.Identifier;
-        let filtered = context.getTokens(identifierTokenNumber).filter((t: TerminalNode) => t.text);
-        return fd;
-    }
+    // visitStatement(context: StatementContext): BaseDeclaration{
+    //     let fd: FormulaDeclaration = {
+    //         name: 'Expression',
+    //         range: BellaVisitorUtils.createRange(0, 0, 0),
+    //         type: DeclarationType.Object
+    //     };
+    //     const identifierTokenNumber = BellaParser.Identifier;
+    //     let filtered = context.getTokens(identifierTokenNumber).filter((t: TerminalNode) => t.text);
+    //     return fd;
+    // }
 
 
     // top level declarations (END)

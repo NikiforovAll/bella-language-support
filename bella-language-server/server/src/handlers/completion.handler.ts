@@ -17,6 +17,7 @@ import { ServiceEntryCompletionProvider } from './completion-providers/service-e
 import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
 import { ExclusiveSourceCompletionProvider } from './completion-providers/exclusive-source-completion-provider';
+import { FormulaCompletionProvider } from './completion-providers/formula-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -92,7 +93,7 @@ export class CompletionHandler extends BaseHandler {
 
     private createProvider(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger,
     ): CompletionProvider {
-        const sourceName = this.extractCompletionSourceName(context);
+        const sourceName = this.extractCompletionSourceName(expectedCompletionType, context);
         let completionProvider
         switch (expectedCompletionType) {
             case DeclarationType.Procedure:
@@ -119,6 +120,9 @@ export class CompletionHandler extends BaseHandler {
             case DeclarationType.EnumEntry:
                 completionProvider = new EnumEntryCompletionProvider(this.cache, this.docUri, sourceName);
                 break;
+            case DeclarationType.Formula:
+                completionProvider = new FormulaCompletionProvider(this.cache, this.docUri, sourceName);
+                break;
             default:
                 throw new Error('Completion provider could not be resolved');
         }
@@ -126,14 +130,17 @@ export class CompletionHandler extends BaseHandler {
         return completionProvider;
     }
 
-    private extractCompletionSourceName(context?: BellaCompletionTrigger): string {
+    private extractCompletionSourceName(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger): string {
         if (!!context) {
             const completionSource = context?.completionBase?.completionSource;
             if (!completionSource) {
                 // throw new Error('Completion source could not be resolved, please provide correct one');
                 return '<empty source>';
             }
-            const completionSourceName = completionSource[0].name;
+            const relatedSource = completionSource.find(s => s.type === expectedCompletionType);
+            const completionSourceName = relatedSource
+                ? relatedSource.name
+                : completionSource[0].name;
             return completionSourceName;
         }
         return '<source name is not specified>';

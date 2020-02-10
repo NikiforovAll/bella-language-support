@@ -4,7 +4,7 @@ import { BaseHandler } from './base.handler';
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
 import { LSPDeclarationRegistry, KeyedDeclaration } from '../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../utils/common.utils';
-import { DeclarationType, BaseDeclaration, SignatureDeclaration, ParamDeclaration } from 'bella-grammar';
+import { DeclarationType, BaseDeclaration, SignatureDeclaration, ParamDeclaration, CompletionIdentifier, BellaCompletionTrigger } from 'bella-grammar';
 
 
 export class SignatureHelpHandler extends BaseHandler {
@@ -23,17 +23,59 @@ export class SignatureHelpHandler extends BaseHandler {
         if (!completionToken) {
             return;
         }
-        let completionSource = (completionToken.completionBase.completionSource || []).find(
+        let completionSources = (completionToken.completionBase.completionSource || []).filter(
             t => [
                 DeclarationType.ServiceEntry,
-                DeclarationType.Procedure
+                DeclarationType.Procedure,
+                DeclarationType.Formula
             ].includes(t.type)
         );
-        if(!completionSource) {
-            console.log('Signature not found, completion source is not provided');
-            return ;
+        let currentSource;
+        while (currentSource = completionSources.shift()) {
+            const signature = this.getSignatureForCompletionSource(currentSource, completionToken, docUri);
+            if (!!signature) {
+                return signature;
+            }
         }
+    }
+
+    getSignatureForCompletionSource(
+        completionSource: CompletionIdentifier,
+        completionToken: BellaCompletionTrigger,
+        docUri: string) {
+        if (!completionSource) {
+            console.log('Signature not found, completion source is not provided');
+            return;
+        }
+        let procedures: KeyedDeclaration[] = this
+            .findSignatureDeclarations(completionSource, completionToken, docUri);
+        if(procedures.length === 0) {
+            return undefined;
+        }
+        const isNoParams = !!completionToken.completionBase.context.match(/\(\s*\)/g);
+        let currentParamIndex = isNoParams ? null : (completionToken.completionBase.context.match(/,/g) || []).length;
+        const numberOfParams = isNoParams ? 0 : (currentParamIndex || 0) + 1;
+        const foundProcedureIndex = procedures
+            .findIndex(p => {
+                const params = (p as any as SignatureDeclaration).signatureContext.params;
+                return (!params ? 0 : params.length) >= numberOfParams;
+            });
+        //some signature shenanigans
+        if(completionSource.type === DeclarationType.Formula) {
+            currentParamIndex = !currentParamIndex ? 1 : ++currentParamIndex;
+        }
+        const signature: SignatureHelp = {
+            signatures: procedures.map(d => this.toSignatureInformation(d)),
+            activeParameter: currentParamIndex,
+            activeSignature: foundProcedureIndex === -1 ? null : foundProcedureIndex
+        }
+        return signature;
+    }
+
+
+    private findSignatureDeclarations(completionSource: CompletionIdentifier, completionToken: BellaCompletionTrigger, docUri: string) {
         let procedures: KeyedDeclaration[] = [];
+        const truncatedName = CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context);
         switch (completionSource.type) {
             case DeclarationType.Procedure:
                 procedures = this.declarations.getDeclarationsForQuery({
@@ -46,7 +88,26 @@ export class SignatureHelpHandler extends BaseHandler {
                     },
                     nameFilter: {
                         active: true,
-                        name: CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context)
+                        name: truncatedName
+                    },
+                    namespaceFilter: {
+                        active: true,
+                        namespace: CommonUtils.getNamespaceFromURI(docUri)
+                    }
+                });
+                break;
+            case DeclarationType.Formula:
+                procedures = this.declarations.getDeclarationsForQuery({
+                    uriFilter: {
+                        active: false,
+                    },
+                    typeFilter: {
+                        active: true,
+                        type: DeclarationType.Formula
+                    },
+                    nameFilter: {
+                        active: true,
+                        name: truncatedName
                     },
                     namespaceFilter: {
                         active: true,
@@ -55,7 +116,7 @@ export class SignatureHelpHandler extends BaseHandler {
                 });
                 break;
             case DeclarationType.ServiceEntry:
-                const serviceEntryName = CommonUtils.getProcedureTruncatedName(completionToken.completionBase.context);
+
                 procedures = this.declarations.getDeclarationsForQuery({
                     uriFilter: {
                         active: false,
@@ -81,7 +142,7 @@ export class SignatureHelpHandler extends BaseHandler {
                             },
                             nameFilter: {
                                 active: true,
-                                name: serviceEntryName
+                                name: truncatedName
                             }
                         }
                     }
@@ -89,23 +150,8 @@ export class SignatureHelpHandler extends BaseHandler {
                 break;
             default:
                 throw Error('Not supported signature type');
-                break;
         }
-
-        const isNoParams = !!completionToken.completionBase.context.match(/\(\s*\)/g);
-        const currentParamIndex = isNoParams ? null : (completionToken.completionBase.context.match(/,/g) || []).length;
-        const numberOfParams = isNoParams ? 0 : (currentParamIndex || 0) + 1;
-        const foundProcedureIndex = procedures
-            .findIndex(p => {
-                const params = (p as any as SignatureDeclaration).signatureContext.params;
-                return  (!params ? 0 : params.length) >= numberOfParams;
-            });
-        const signature: SignatureHelp = {
-            signatures: procedures.map(d => this.toSignatureInformation(d)),
-            activeParameter: currentParamIndex,
-            activeSignature: foundProcedureIndex === -1 ? null : foundProcedureIndex
-        }
-        return signature;
+        return procedures;
     }
 
     toSignatureInformation(declaration: KeyedDeclaration): SignatureInformation {
@@ -130,5 +176,6 @@ export class SignatureHelpHandler extends BaseHandler {
             documentation: `Name: ${p.alias} as ${p.type}`
         }
     }
+
 }
 

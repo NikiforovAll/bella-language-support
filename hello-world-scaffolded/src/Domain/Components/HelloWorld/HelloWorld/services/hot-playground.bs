@@ -12,3 +12,20 @@ procedure p2()
     call Test2()
     //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
     HelloWorld.Method2()
+    Gender.Female
+
+formula GetPatternForSourceDescriptionMatch(SourceDescription): String = "^" + SourceDescription.Replace("{*}", ".*") + "$"
+
+formula IsFullMatch(TaskRule, BaseTask):Boolean = TaskRule.ifBlock.sourceDescription.GetPatternForSourceDescriptionMatch().IsMatch(BaseTask.sourceDescription)
+    && TaskRule.ifBlock.sourceComponent == BaseTask.createdByComponent
+
+object TaskRuleId:String
+object TaskRulesPerPage:Integer
+object TotalTaskRulesCount:Integer
+
+object TaskRule
+    id:TaskRuleId
+    createdOn:CreatedOn
+    createdBy:EmployeeId
+    ifBlock:TaskRuleIfBlock
+    thenBlock:TaskRuleThenBlock

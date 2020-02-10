@@ -187,13 +187,20 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         }
         const startOfParamsList = procedureSignature.arguments();
         const endLine = (startOfParamsList.start?.line || context.start.line) - 1;
+        const triggerIdentifier = procedureSignature.Identifier()?.text || '';
         let trigger: BellaCompletionTrigger = {
             completionBase: {
                 context: procedureSignature.text,
                 completionSource: [{
-                    name: procedureSignature.Identifier()?.text || '',
-                    type: DeclarationType.ServiceEntry // TODO: could be formula
-                }]
+                    name: triggerIdentifier,
+                    type: DeclarationType.ServiceEntry
+                },
+                // TODO: consider adding this
+                // {
+                //     name: triggerIdentifier,
+                //     type: DeclarationType.Formula
+                // }
+            ]
             },
             expectedCompletions: [DeclarationType.ServiceEntry],
             range: BellaVisitorUtils.createRange(
@@ -202,11 +209,11 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             ),
             scope: CompletionScope.Block
         };
-        let serviceName = '';
+        let triggerName = '';
         try {
             //TODO: fix it, dirty approach
             const ctx = procedureSignature as any;
-            serviceName = ctx.parent.parent.type().Identifier().text;
+            triggerName = ctx.parent.parent.type().Identifier().text;
         } catch (error) {
 
         }
@@ -216,8 +223,12 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                 context: procedureSignature.text,
                 completionSource: [
                     {
-                        name: serviceName,
+                        name: triggerName,
                         type: DeclarationType.ServiceEntry
+                    },
+                    {
+                        name: triggerName,
+                        type: DeclarationType.Formula
                     }
                 ]
             },
@@ -269,12 +280,11 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             (context.stop?.line || dotContext.symbol.line) - 1,
             stopCharacterPosition
         );
-        // TODO: refine concepts of expected completions and give it a docs
         const expectedCompletions = [
             DeclarationType.ServiceEntry,
             DeclarationType.ObjectField,
             DeclarationType.EnumEntry,
-            // DeclarationType.Formula
+            DeclarationType.Formula
         ];
         if (!!identifierContext) {
             let completionTrigger: BellaCompletionTrigger = {
@@ -283,7 +293,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                     completionSource: [
                         { name: identifierContext.text, type: DeclarationType.Service },
                         { name: identifierContext.text, type: DeclarationType.Object },
-                        { name: identifierContext.text, type: DeclarationType.Enum }
+                        { name: identifierContext.text, type: DeclarationType.Enum },
                     ]
                 }, expectedCompletions, range,
                 scope: CompletionScope.Block
