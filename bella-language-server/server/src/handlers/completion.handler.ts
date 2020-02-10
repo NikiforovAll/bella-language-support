@@ -18,6 +18,8 @@ import { EnumCompletionProvider } from './completion-providers/enum-completion-p
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
 import { ExclusiveSourceCompletionProvider } from './completion-providers/exclusive-source-completion-provider';
 import { FormulaCompletionProvider } from './completion-providers/formula-completion-provider';
+import { CompletionUtils } from '../utils/completion.utils';
+import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -93,8 +95,14 @@ export class CompletionHandler extends BaseHandler {
 
     private createProvider(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger,
     ): CompletionProvider {
-        const sourceName = this.extractCompletionSourceName(expectedCompletionType, context);
-        let completionProvider
+        let completionProvider;
+        //TODO: consider to move type inferring to higher level
+        const resolvedType = CompletionUtils
+            .extractCompletionSourceName(expectedCompletionType, this.cache, context);
+        if(!resolvedType.resolved) {
+            return new EmptyCompletionProvider();
+        }
+        const sourceName = resolvedType.name;
         switch (expectedCompletionType) {
             case DeclarationType.Procedure:
                 completionProvider = new ProcedureCompletionProvider(this.cache, this.docUri);
@@ -128,22 +136,6 @@ export class CompletionHandler extends BaseHandler {
         }
         completionProvider.setCompletionTypes([expectedCompletionType]);
         return completionProvider;
-    }
-
-    private extractCompletionSourceName(expectedCompletionType: DeclarationType, context?: BellaCompletionTrigger): string {
-        if (!!context) {
-            const completionSource = context?.completionBase?.completionSource;
-            if (!completionSource) {
-                // throw new Error('Completion source could not be resolved, please provide correct one');
-                return '<empty source>';
-            }
-            const relatedSource = completionSource.find(s => s.type === expectedCompletionType);
-            const completionSourceName = relatedSource
-                ? relatedSource.name
-                : completionSource[0].name;
-            return completionSourceName;
-        }
-        return '<source name is not specified>';
     }
 }
 
