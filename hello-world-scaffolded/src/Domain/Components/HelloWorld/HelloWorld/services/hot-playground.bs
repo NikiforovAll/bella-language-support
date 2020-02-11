@@ -13,8 +13,8 @@ procedure p2()
     //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
     // call TestProcedure(p1, p2, out p3)
     //TODO: curr
-    SourceDescription.T
-    T3.
+    SourceDescription
+    ExtraTaskRule.
 
 
 

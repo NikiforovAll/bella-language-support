@@ -17,7 +17,9 @@ import { DeclarationType } from './models/declaration-type.enum';
 import { BellaVisitorUtils } from './visitor.utils';
 
 const DECLARATION_LEVEL_SCOPE = [
-    DeclarationType.Object, DeclarationType.Enum
+    DeclarationType.Object,
+    DeclarationType.Enum,
+    DeclarationType.Type
 ]
 
 export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implements BellaVisitor<BellaCompletionTrigger[]> {
@@ -361,7 +363,10 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         const endLine = rParenContext.symbol.line - 1;
         let result: BellaCompletionTrigger[] = [];
         let completion: BellaCompletionTrigger = {
-            completionBase: { context: context.text },
+            completionBase: {
+                context: context.text,
+                // completionSource: [{name: ''}]
+            },
             expectedCompletions: DECLARATION_LEVEL_SCOPE,
             range: BellaVisitorUtils.createRange(
                 startLine,
