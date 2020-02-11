@@ -10,5 +10,6 @@ export interface SimpleObjectDeclaration extends BaseObject {
     //TODO: add information about declared type
 }
 
-export interface CompositeObjectDeclaration extends BaseObject, MemberComposite{
+export interface CompositeObjectDeclaration extends BaseObject, MemberComposite {
+    returnType?: TypeDeclaration
 }

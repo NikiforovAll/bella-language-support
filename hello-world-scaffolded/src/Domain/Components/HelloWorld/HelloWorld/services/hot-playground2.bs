@@ -1,0 +1,11 @@
+
+object TaskRuleId:String
+object TaskRulesPerPage:Integer
+object TotalTaskRulesCount:Integer
+
+object TaskRule
+    id:TaskRuleId
+    createdOn:CreatedOn
+    createdBy:EmployeeId
+    ifBlock:TaskRuleIfBlock
+    thenBlock:TaskRuleThenBlock

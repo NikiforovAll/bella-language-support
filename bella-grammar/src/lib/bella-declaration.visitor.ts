@@ -77,12 +77,18 @@ export class BellaDeclarationVisitor extends AbstractParseTreeVisitor<any> imple
         let endLine = (context.stop?.line || startLine + 1 ) - 1;
         let body = context.objectBody();
         let members = body.children?.map(c => this.visitObjectFieldDeclarationLocal(c as ObjectFieldDeclarationContext)) || [];
+        let returnTypeDeclaration;
+        let ctxType = context.objectExtension()?.type();
+        if(!!ctxType){
+            returnTypeDeclaration = this.visitTypeLocal(ctxType);
+        }
         let sod: CompositeObjectDeclaration = {
             name,
             range: BellaVisitorUtils.createRange(startLine, 0, endLine),
             type,
             objectBase: ObjectBase.Composite,
-            members
+            members,
+            returnType: returnTypeDeclaration
         };
         this.declarations.push(sod);
         return sod;

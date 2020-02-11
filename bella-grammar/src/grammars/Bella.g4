@@ -48,7 +48,7 @@ compositeObjectDeclaration
     ;
 
 objectExtension
-    : COLON Identifier
+    : COLON type
     ;
 
 objectBody

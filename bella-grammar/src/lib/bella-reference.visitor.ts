@@ -129,7 +129,10 @@ export class BellaReferenceVisitor extends AbstractParseTreeVisitor<any> impleme
     }
 
     visitObjectExtension(context: ObjectExtensionContext): BellaReference[] {
-        return this.accumulateResult(this.visitIdentifierLocal(context.Identifier(), DeclarationType.Object, false));
+        // return this.accumulateResult(this.visitIdentifierLocal(context.Identifier(), DeclarationType.Object, false));
+        return this.accumulateResult(
+            this.visitIdentifierLocal(context.type().Identifier(), DeclarationType.Object, false)
+        );
     }
 
     private inferProcedureDeclaration(ruleContext: ParserRuleContext): ReferenceIdentifier | undefined {

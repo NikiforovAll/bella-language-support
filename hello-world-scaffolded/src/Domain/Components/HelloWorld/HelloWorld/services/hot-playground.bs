@@ -13,8 +13,9 @@ procedure p2()
     //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
     // call TestProcedure(p1, p2, out p3)
     //TODO: curr
-    SourceDescription
-    ExtraTaskRule
+    SourceDescription.T
+    T3.
+
 
 
 object SourceDescription:String
@@ -24,16 +25,15 @@ formula GetPatternForSourceDescriptionMatch(SourceDescription): String = "^" + S
 formula IsFullMatch(TaskRule, BaseTask):Boolean = TaskRule.ifBlock.sourceDescription.GetPatternForSourceDescriptionMatch().IsMatch(BaseTask.sourceDescription)
     && TaskRule.ifBlock.sourceComponent == BaseTask.createdByComponent
 
-object TaskRuleId:String
-object TaskRulesPerPage:Integer
-object TotalTaskRulesCount:Integer
-
-object TaskRule
-    id:TaskRuleId
-    createdOn:CreatedOn
-    createdBy:EmployeeId
-    ifBlock:TaskRuleIfBlock
-    thenBlock:TaskRuleThenBlock
-
 object ExtraTaskRule: TaskRule
     extra: String
+
+
+object T1
+    T1:String
+
+object T2: T1
+    T2: String
+
+object T3: T2
+    T3: String
