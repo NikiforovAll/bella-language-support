@@ -3,7 +3,15 @@ import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 import { BaseCompletionProvider } from '../completion-provider';
 
 const REFERENCE: CompletionItem[] = [
-
+    {
+        label: 'Date',
+        detail: 'DateTime.Date()',
+        kind: CompletionItemKind.Function,
+        documentation: {
+            value: `Returns Date part of DateTime.`,
+            kind: "markdown"
+        }
+    },
 ];
 export class DateTimeTypeCompletionProvider extends BaseCompletionProvider {
     constructor(private objectName?: string) {

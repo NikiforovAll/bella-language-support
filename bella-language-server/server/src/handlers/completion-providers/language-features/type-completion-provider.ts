@@ -10,6 +10,7 @@ import { IntegerTypeCompletionProvider } from './integer-type-completion-provide
 import { CompletionUtils } from '../../../utils/completion.utils';
 import { BooleanTypeCompletionProvider } from './boolean-time-type-completion-provider';
 import { DecimalTypeCompletionProvider } from './decimal-type-completion-provider';
+import { CollectionTypeCompletionProvider } from './collection-type-completion-provider';
 
 /**
  * Built-in types
@@ -31,9 +32,12 @@ export class TypeCompletionProvider extends BaseCompletionProvider {
         }else {
             this.provider = new ExclusiveSourceCompletionProvider(
                 new StringTypeCompletionProvider(objectName),
+                new BooleanTypeCompletionProvider(objectName),
                 new DateTimeTypeCompletionProvider(objectName),
                 new DateTypeCompletionProvider(objectName),
                 new IntegerTypeCompletionProvider(objectName),
+                new DecimalTypeCompletionProvider(objectName),
+                new CollectionTypeCompletionProvider(objectName),
             );
         }
     }

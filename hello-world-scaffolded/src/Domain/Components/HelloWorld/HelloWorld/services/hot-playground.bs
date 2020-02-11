@@ -10,15 +10,14 @@ procedure p2()
     // new Account(gender = Account, )
     // call Test2()
     call Test2()
-    //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
     // call TestProcedure(p1, p2, out p3)
-    //TODO: curr
-    SourceDescription
-    ExtraTaskRule.
-
+    // SourceDescription.
+    SourceDescription2.Date()
 
 
 object SourceDescription:String
+object SourceDescription2:DateTime
+object SourceDescription3:Decimal
 
 formula GetPatternForSourceDescriptionMatch(SourceDescription): String = "^" + SourceDescription.Replace("{*}", ".*") + "$"
 
@@ -28,12 +27,15 @@ formula IsFullMatch(TaskRule, BaseTask):Boolean = TaskRule.ifBlock.sourceDescrip
 object ExtraTaskRule: TaskRule
     extra: String
 
+object TaskRuleList: ExtraTaskRule[*]
+
+object TaskRuleCatalog: ExtraTaskRule[TaskRuleId]
 
 object T1
     T1:String
 
 object T2: T1
-    T2: String
+    T2: DateTime
 
 object T3: T2
-    T3: String
+    T3: Decimal

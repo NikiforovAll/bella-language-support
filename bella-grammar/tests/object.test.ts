@@ -23,6 +23,20 @@ describe("object-declaration", () => {
     });
 });
 
+describe("object-declaration", () => {
+    it("should return parsed alias", () => {
+        let input = "object TestList:Test[*]";
+        let tree = BellaLanguageSupport.parse(input);
+        let visitor = BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        visitor.visit(tree);
+        let declarations = visitor.declarations;
+        expect(declarations).to.have.lengthOf(1);
+        let [ d ] = declarations;
+        let declaration = d as SimpleObjectDeclaration;
+        assert.ok(declaration);
+    });
+});
+
 describe("object-declaration-composite", () => {
     it("should return parsed composite object", () => {
         let input = `//skipped line

@@ -23,10 +23,28 @@ const REFERENCE: CompletionItem[] = [
     },
     {
         label: 'IsMatch',
-        detail: 'String.IsMatch(Pattern)',
+        detail: 'RegExp.IsMatch(String)',
         kind: CompletionItemKind.Function,
         documentation: {
             value: `Returns a new string in which all occurrences of a specified string in the current instance are replaced with another specified string.`,
+            kind: "markdown"
+        }
+    },
+    {
+        label: 'ToLower',
+        detail: 'String.ToLower()',
+        kind: CompletionItemKind.Function,
+        documentation: {
+            value: `Returns a copy of this string converted to lowercase.`,
+            kind: "markdown"
+        }
+    },
+    {
+        label: 'Split',
+        detail: 'String.Split(separator)',
+        kind: CompletionItemKind.Function,
+        documentation: {
+            value: `Splits a string into substrings based on the characters in an array. You can specify whether the substrings include empty array elements.`,
             kind: "markdown"
         }
     },

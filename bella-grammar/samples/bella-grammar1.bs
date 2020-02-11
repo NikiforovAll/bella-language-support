@@ -57,7 +57,9 @@
 // procedure foo2()
 //     T1.T2.T3()
 
-new Account(gender = Account, t = account.)
+// new Account(gender = Account, t = account.)
 
 // procedure foo2()
 //     let t = new Account(Test = 1 )
+
+object Test: TestO[*]

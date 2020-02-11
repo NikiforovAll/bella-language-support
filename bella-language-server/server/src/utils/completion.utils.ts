@@ -64,23 +64,17 @@ export class TypeResolver {
         if (declarations.length > 0) {
             const objectDeclaration = declarations[0] as any as SimpleObjectDeclaration;
             if (objectDeclaration.returnType?.objectBase === ObjectBase.PrimitiveType) {
-                acc.push(
-                    {
-                        name: objectDeclaration.returnType?.name, resolved: true
-                    }
-                );
+                acc.push({name: objectDeclaration.returnType?.name, resolved: true});
             }
             if (objectDeclaration.returnType?.objectBase === ObjectBase.Alias) {
                 const returnTypeName = objectDeclaration.returnType?.name;
-                // acc.push(
-                //     {
-                //         name: returnTypeName,
-                //         type: DeclarationType.Object, resolved: true
-                //     }
-                // );
                 if (!!returnTypeName) {
                     this.resolveTypeResult(returnTypeName, acc);
                 }
+            }
+            if (objectDeclaration.returnType?.objectBase === ObjectBase.Collection) {
+                const returnTypeName = objectDeclaration.returnType?.name;
+                acc.push({ name: returnTypeName, resolved: true });
             }
             // top level object
             acc.push({ name: objectDeclaration.name, resolved: true });
