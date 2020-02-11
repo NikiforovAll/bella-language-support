@@ -62,4 +62,7 @@
 // procedure foo2()
 //     let t = new Account(Test = 1 )
 
-object Test: TestO[*]
+// object Test: TestO[*]
+
+procedure Procedure(Params)
+    call Test(T1, T2)

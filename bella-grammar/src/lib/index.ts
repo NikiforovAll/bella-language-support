@@ -33,6 +33,8 @@ export {
     CompositeObjectDeclaration
 } from './models/object-declaration';
 
+export { TypeDeclaration } from './models/type-declaration';
+
 export { ServiceDeclaration } from './models/service-declaration';
 export { ProcedureDeclaration } from './models/procedure-declaration';
 export { FormulaDeclaration } from './models/formula-declaration';

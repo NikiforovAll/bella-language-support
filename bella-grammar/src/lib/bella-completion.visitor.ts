@@ -272,11 +272,12 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
 
     visitExpressionLocal(context: ExpressionContext): BellaCompletionTrigger[] {
         const dotContext = context.DOT();
+        if (!dotContext) {
+            // throw new Error('DOT is expected in parent expression');
+            return [];
+        }
         const identifierContext = context.expression()[0].Identifier();
         const result: BellaCompletionTrigger[] = [];
-        if (!dotContext) {
-            throw new Error('DOT is expected in parent expression');
-        }
         let stopCharacterPosition = dotContext.symbol.charPositionInLine + 1;
         const invocationExpressionContextStop = context.invocationExpression()
             ?.Identifier()

@@ -9,3 +9,9 @@ object TaskRule
     createdBy:EmployeeId
     ifBlock:TaskRuleIfBlock
     thenBlock:TaskRuleThenBlock
+
+procedure EntryPoint()
+    // TaskRule = new TaskRule(
+    //     createdBy = "Test"
+    // )
+    // SourceDescription.GetPatternForSourceDescriptionMatch()

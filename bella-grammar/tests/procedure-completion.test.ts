@@ -6,7 +6,8 @@ describe("procedure-completion", () => {
     it("should return parsed completion for procedure", () => {
         let input = ` // blank line
 procedure Test()
-    call  Test()`;
+    call  Test()
+    call Test2(T1, T2, out T3)`;
         let tree = BellaLanguageSupport.parse(input);
         let visitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
         visitor.visit(tree);

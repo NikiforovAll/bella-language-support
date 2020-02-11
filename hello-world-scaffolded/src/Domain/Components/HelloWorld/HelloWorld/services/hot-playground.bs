@@ -9,10 +9,15 @@
 procedure p2()
     // new Account(gender = Account, )
     // call Test2()
-    call Test2()
+    //TODO: signature support is broken in this case
+    // call TestProcedure()
+    // call CreateMyNleAccount(Test)
+    HelloWorld2.Test2(p1, p2)
     // call TestProcedure(p1, p2, out p3)
     // SourceDescription.
-    SourceDescription2.Date()
+    // SourceDescription2.Date()
+
+
 
 
 object SourceDescription:String

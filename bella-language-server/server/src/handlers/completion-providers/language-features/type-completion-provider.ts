@@ -20,7 +20,7 @@ export class TypeCompletionProvider extends BaseCompletionProvider {
 
     constructor(objectName: string) {
         super();
-        if(objectName === CompletionUtils.EMPTY_COMPLETION_SOURCE_ARRAY_LABEL){
+        if(objectName === CompletionUtils.EMPTY_COMPLETION_SOURCE_ARRAY_LABEL || objectName === ''){
             this.provider = new MultipleSourceCompletionProvider(
                 new StringTypeCompletionProvider(),
                 new BooleanTypeCompletionProvider(),

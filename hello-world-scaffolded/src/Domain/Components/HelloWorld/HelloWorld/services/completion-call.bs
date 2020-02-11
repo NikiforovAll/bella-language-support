@@ -10,9 +10,10 @@ procedure Test()
 
 object Params2
     Test:String
-    Test2:String
-    Test3:String
-    Test4:String
+    Test2:DateTime
+    Test3:TaskRuleList
+    Test4:TaskRuleCatalog
+
 
 procedure Test2(p: Params2)
     call Test()

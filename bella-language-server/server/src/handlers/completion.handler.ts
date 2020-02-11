@@ -47,7 +47,8 @@ export class CompletionHandler extends BaseHandler {
             this.createProvider(DeclarationType.PersistentObject),
             this.createProvider(DeclarationType.Object),
             this.createProvider(DeclarationType.Service),
-            this.createProvider(DeclarationType.Enum)
+            this.createProvider(DeclarationType.Enum),
+            this.createProvider(DeclarationType.Type)
         ];
         if (completionTokens.length === 0) {
             //global scope
@@ -73,7 +74,8 @@ export class CompletionHandler extends BaseHandler {
 
     private createProviders(context: BellaCompletionTrigger): CompletionProvider[] {
         const resolvedTypes = CompletionUtils.extractCompletionSourceName(this.cache, this.docUri, context);
-        return context.expectedCompletions.map(t => this.createProvider(t, resolvedTypes));
+        return context.expectedCompletions
+            .map(t => this.createProvider(t, resolvedTypes));
     }
 
     private groupExclusiveProviders(providers: CompletionProvider[]) {
@@ -109,9 +111,12 @@ export class CompletionHandler extends BaseHandler {
         if (resolvedTypes.length > 1) {
             //TODO: this impact exclusive provider, error-prone!
             return new MultipleSourceCompletionProvider(...providers)
+        } else if (resolvedTypes.length === 1) {
+            let [singleProvider] = providers;
+            return singleProvider;
         }
-        let [singleProvider] = providers;
-        return singleProvider;
+        console.warn('[createProvider]: provider is not created, empty provider is created instead')
+        return new EmptyCompletionProvider();
     }
 
     private createProviderByType(expectedCompletionType: DeclarationType, resolvedType: ResolvedTypeResult) {

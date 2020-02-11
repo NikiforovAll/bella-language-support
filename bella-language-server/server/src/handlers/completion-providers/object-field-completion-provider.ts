@@ -1,4 +1,4 @@
-import { DeclarationType } from 'bella-grammar';
+import { DeclarationType, SimpleObjectDeclaration } from 'bella-grammar';
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
@@ -32,11 +32,12 @@ export class ObjectFieldCompletionProvider extends BaseCompletionProvider {
         return declarations.map(this.toCompletionItem);
     }
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+        const typeDeclaration = (declaration as any as SimpleObjectDeclaration).returnType;
         const objectFieldName = declaration.name;
         const sortingPrefix = '0';
         return {
             label: objectFieldName,
-            detail: declaration.name,
+            detail: declaration.name + (typeDeclaration?.fullQualifier ? (': ' + typeDeclaration.fullQualifier) : ''),
             kind: CompletionItemKind.Property,
             documentation: {
                 value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
