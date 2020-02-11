@@ -27,8 +27,12 @@ export class EnumCompletionProvider extends BaseCompletionProvider {
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+            detail: declaration.name,
             kind: CompletionItemKind.Enum,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            }
         };
     }
 }

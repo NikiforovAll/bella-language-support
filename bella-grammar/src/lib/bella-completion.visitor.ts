@@ -108,7 +108,10 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                     completionBase: {
                         context: context.text,
                         completionSource: [
-                            { name: identifierContext.text, type: DeclarationType.Object }
+                            {
+                                name: identifierContext.text,
+                                // type: DeclarationType.Object
+                            }
                         ]
                     },
                     expectedCompletions: [
@@ -132,7 +135,10 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                     completionBase: {
                         context: context.text,
                         completionSource: [
-                            { name: identifierContext.text, type: DeclarationType.Object }
+                            {
+                                name: identifierContext.text,
+                                // type: DeclarationType.Object
+                            }
                         ]
                     },
                     expectedCompletions: [
@@ -153,7 +159,10 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                         completionBase: {
                             context: context.text,
                             completionSource: [
-                                { name: identifierContext.text, type: DeclarationType.Object }
+                                {
+                                    name: identifierContext.text,
+                                    // type: DeclarationType.Object
+                                }
                             ]
                         },
                         expectedCompletions: [
@@ -193,7 +202,7 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                 context: procedureSignature.text,
                 completionSource: [{
                     name: triggerIdentifier,
-                    type: DeclarationType.ServiceEntry
+                    // type: DeclarationType.ServiceEntry
                 },
                 // TODO: consider adding this
                 // {
@@ -284,16 +293,18 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             DeclarationType.ServiceEntry,
             DeclarationType.ObjectField,
             DeclarationType.EnumEntry,
-            DeclarationType.Formula
+            DeclarationType.Formula,
+            DeclarationType.Type
         ];
         if (!!identifierContext) {
             let completionTrigger: BellaCompletionTrigger = {
                 completionBase: {
                     context: context.text,
                     completionSource: [
-                        { name: identifierContext.text, type: DeclarationType.Service },
-                        { name: identifierContext.text, type: DeclarationType.Object },
-                        { name: identifierContext.text, type: DeclarationType.Enum },
+                        { name: identifierContext.text },
+                        // { name: identifierContext.text, type: DeclarationType.Service },
+                        // { name: identifierContext.text, type: DeclarationType.Object },
+                        // { name: identifierContext.text, type: DeclarationType.Enum },
                     ]
                 }, expectedCompletions, range,
                 scope: CompletionScope.Block

@@ -36,8 +36,12 @@ export class ObjectFieldCompletionProvider extends BaseCompletionProvider {
         const sortingPrefix = '0';
         return {
             label: objectFieldName,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+            detail: declaration.name,
             kind: CompletionItemKind.Property,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            },
             sortText: sortingPrefix + objectFieldName
         };
     }

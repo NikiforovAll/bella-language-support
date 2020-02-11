@@ -24,8 +24,12 @@ export class ServiceCompletionProvider extends BaseCompletionProvider {
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            kind: CompletionItemKind.Interface
+            detail: declaration.name,
+            kind: CompletionItemKind.Interface,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            }
         };
     }
 }

@@ -26,8 +26,12 @@ export class ObjectCompletionProvider extends BaseCompletionProvider {
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+            detail: declaration.name,
             kind: CompletionItemKind.Class,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            }
         };
     }
 }

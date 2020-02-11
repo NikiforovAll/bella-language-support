@@ -26,8 +26,12 @@ export class ProcedureCompletionProvider extends BaseCompletionProvider {
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: CommonUtils.getProcedureTruncatedName(declaration.name),
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            kind: CompletionItemKind.Method
+            detail: declaration.name,
+            kind: CompletionItemKind.Method,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            }
         };
     }
 }

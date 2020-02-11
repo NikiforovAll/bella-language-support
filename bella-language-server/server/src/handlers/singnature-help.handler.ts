@@ -24,7 +24,7 @@ export class SignatureHelpHandler extends BaseHandler {
             return;
         }
         let completionSources = (completionToken.completionBase.completionSource || []).filter(
-            t => [
+            t => !!t.type && [
                 DeclarationType.ServiceEntry,
                 DeclarationType.Procedure,
                 DeclarationType.Formula

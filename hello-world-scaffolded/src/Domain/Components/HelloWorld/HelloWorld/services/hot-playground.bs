@@ -11,9 +11,13 @@ procedure p2()
     // call Test2()
     call Test2()
     //TODO: this one doesn't have fields but have return type. This triggers autocompletions also.
-    HelloWorld.Method2()
+    // call TestProcedure(p1, p2, out p3)
+    //TODO: curr
+    SourceDescription
+    ExtraTaskRule
 
 
+object SourceDescription:String
 
 formula GetPatternForSourceDescriptionMatch(SourceDescription): String = "^" + SourceDescription.Replace("{*}", ".*") + "$"
 
@@ -30,3 +34,6 @@ object TaskRule
     createdBy:EmployeeId
     ifBlock:TaskRuleIfBlock
     thenBlock:TaskRuleThenBlock
+
+object ExtraTaskRule: TaskRule
+    extra: String

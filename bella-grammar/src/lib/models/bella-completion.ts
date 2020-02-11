@@ -21,7 +21,7 @@ export interface CompoundDeclarationIdentifier {
 
 export interface CompletionIdentifier {
     name: string;
-    type: DeclarationType;
+    type?: DeclarationType;
 }
 
 export enum CompletionScope {

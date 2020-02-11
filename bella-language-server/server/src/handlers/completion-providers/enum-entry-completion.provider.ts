@@ -38,8 +38,12 @@ export class EnumEntryCompletionProvider extends BaseCompletionProvider {
         const sortingPrefix = '0';
         return {
             label: enumEntryName,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+            detail: declaration.name,
             kind: CompletionItemKind.EnumMember,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            },
             sortText: sortingPrefix + enumEntryName
         };
     }

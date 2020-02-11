@@ -6,7 +6,8 @@ import { BaseCompletionProvider, CompletionProvider } from './completion-provide
 const PROVIDER_PRIORITY: {
     [type: string]: number;
 } = {
-    'ObjectFieldCompletionProvider': 99
+    'ObjectFieldCompletionProvider': 99,
+    'PrimitiveTypeCompletionProvider': 199
 };
 
 const DEFAULT_PRIORITY = 0;

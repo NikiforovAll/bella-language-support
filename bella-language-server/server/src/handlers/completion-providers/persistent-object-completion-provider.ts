@@ -24,9 +24,12 @@ export class PersistentObjectCompletionProvider extends BaseCompletionProvider {
     private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: declaration.name,
-            detail: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
-            // detail: 'test',
-            kind: CompletionItemKind.Variable
+            detail: declaration.name,
+            kind: CompletionItemKind.Variable,
+            documentation: {
+                value: CommonUtils.getDeclarationFullRelativePath(declaration.uri),
+                kind: "markdown"
+            }
         };
     }
 }
