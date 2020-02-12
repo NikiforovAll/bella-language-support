@@ -9,6 +9,7 @@ export class FormulaCompletionProvider extends BaseCompletionProvider {
     constructor(private cache: LSPDeclarationRegistry, private docUri: string, private objectName: string) {
         super();
     }
+
     getCompletions(): CompletionItem[] {
         const declarations = this.cache.getDeclarationsForQuery({
             uriFilter: { active: false },
@@ -25,7 +26,8 @@ export class FormulaCompletionProvider extends BaseCompletionProvider {
             .filter((d: FormulaDeclaration) => d.signatureContext.params[0]?.type === this.objectName)
             .map(this.toCompletionItem);
     }
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         return {
             label: CommonUtils.getProcedureTruncatedName(declaration.name),
             detail: declaration.name,

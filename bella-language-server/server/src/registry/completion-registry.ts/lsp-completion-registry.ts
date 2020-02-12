@@ -20,7 +20,7 @@ export class LSPCompletionRegistry implements DeclarationCacheProvider{
         });
         this.declarationCompletionCache = new NodeCache({
             checkperiod: 30,
-            stdTTL: 60 * 5
+            stdTTL: 30 * 5
         });
     }
 

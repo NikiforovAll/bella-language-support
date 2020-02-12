@@ -151,6 +151,9 @@ const DICTIONARY_REFERENCE: CompletionItem[] = [
     },
 ];
 export class CollectionTypeCompletionProvider extends BaseCompletionProvider {
+    toCompletionItem(declaration: import("../../../registry/declaration-registry/lsp-declaration-registry").KeyedDeclaration): CompletionItem {
+        throw new Error("Method not implemented.");
+    }
     constructor(private objectName: string) {
         super();
     }

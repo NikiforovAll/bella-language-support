@@ -1,8 +1,12 @@
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
 import { BaseCompletionProvider } from './completion-provider';
+import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
 
 export class KeywordCompletionProvider extends BaseCompletionProvider {
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+        throw new Error("Method not implemented.");
+    }
     getCompletions(): CompletionItem[] {
         return [
             {

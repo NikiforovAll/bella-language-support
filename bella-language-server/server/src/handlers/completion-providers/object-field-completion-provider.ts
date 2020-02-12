@@ -31,7 +31,8 @@ export class ObjectFieldCompletionProvider extends BaseCompletionProvider {
         });
         return declarations.map(this.toCompletionItem);
     }
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         const typeDeclaration = (declaration as any as SimpleObjectDeclaration).returnType;
         const objectFieldName = declaration.name;
         const sortingPrefix = '0';

@@ -16,6 +16,9 @@ import { CollectionTypeCompletionProvider } from './collection-type-completion-p
  * Built-in types
  */
 export class TypeCompletionProvider extends BaseCompletionProvider {
+    toCompletionItem(declaration: import("../../../registry/declaration-registry/lsp-declaration-registry").KeyedDeclaration): CompletionItem {
+        throw new Error("Method not implemented.");
+    }
     provider: MultipleSourceCompletionProvider;
 
     constructor(objectName: string) {

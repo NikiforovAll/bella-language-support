@@ -2,6 +2,7 @@ import { CompletionItem } from 'vscode-languageserver';
 
 import { CommonUtils } from '../../utils/common.utils';
 import { BaseCompletionProvider, CompletionProvider } from './completion-provider';
+import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
 
 const PROVIDER_PRIORITY: {
     [type: string]: number;
@@ -14,10 +15,13 @@ const PROVIDER_PRIORITY: {
 const DEFAULT_PRIORITY = 0;
 
 export class ExclusiveSourceCompletionProvider extends BaseCompletionProvider {
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+        throw new Error("Method not implemented.");
+    }
     getCompletions(): CompletionItem[] {
         for (const provider of this.providers) {
             const completions = provider.getCompletions();
-            if(completions.length > 0) {
+            if (completions.length > 0) {
                 return completions;
             }
         }

@@ -6,9 +6,11 @@ import { CommonUtils } from '../../utils/common.utils';
 import { BaseCompletionProvider } from './completion-provider';
 
 export class ServiceEntryCompletionProvider extends BaseCompletionProvider {
+
     constructor(private cache: LSPDeclarationRegistry, private docUri: string, private sourceName: string) {
         super();
     }
+
     getCompletions(): CompletionItem[] {
         const declarations = this.cache.getDeclarationsForQuery({
             uriFilter: { active: false },
@@ -31,7 +33,8 @@ export class ServiceEntryCompletionProvider extends BaseCompletionProvider {
         });
         return declarations.map(this.toCompletionItem);
     }
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         const serviceEntryName = CommonUtils.getProcedureTruncatedName(declaration.name);
         const sortingPrefix = '0';
         return {

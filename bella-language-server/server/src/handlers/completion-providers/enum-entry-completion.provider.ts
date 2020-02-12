@@ -33,7 +33,7 @@ export class EnumEntryCompletionProvider extends BaseCompletionProvider {
         return declarations.map(this.toCompletionItem);
     }
 
-    private toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
+    toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         const enumEntryName = declaration.name;
         const sortingPrefix = '0';
         return {

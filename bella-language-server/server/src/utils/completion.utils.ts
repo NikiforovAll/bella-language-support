@@ -121,7 +121,7 @@ export class TypeResolver {
                 fallbackRules: {
                     fallbackTypeProbe: {
                         type: DeclarationType.Object,
-                        fallbackTypes: [DeclarationType.Enum, DeclarationType.Service]
+                        fallbackTypes: [DeclarationType.Enum, DeclarationType.Service, DeclarationType.PersistentObject]
                     }
                 },
             }

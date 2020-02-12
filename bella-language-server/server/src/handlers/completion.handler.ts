@@ -49,6 +49,7 @@ export class CompletionHandler extends BaseHandler {
             this.createProvider(DeclarationType.Object),
             this.createProvider(DeclarationType.Service),
             this.createProvider(DeclarationType.Enum),
+            // only system built-in types are returned in this case
             this.createProvider(DeclarationType.Type),
             new LanguageLevelProceduresCompletionProvider()
         ];
@@ -78,10 +79,10 @@ export class CompletionHandler extends BaseHandler {
         const resolvedTypes = CompletionUtils.extractCompletionSourceName(this.cache, this.docUri, context);
         return context.expectedCompletions
             .map(t => {
-                const p = this.createProvider(t, resolvedTypes);
-                const baseProvider = p as BaseCompletionProvider;
-                baseProvider.setDeclarationCache(this.completionRegistry);
-                return p;
+                return this.createProvider(t, resolvedTypes);
+                // const baseProvider = p as BaseCompletionProvider;
+                // baseProvider.setDeclarationCache(this.completionRegistry);
+                // return p;
             });
     }
 
@@ -112,7 +113,9 @@ export class CompletionHandler extends BaseHandler {
     ): CompletionProvider {
         if (!resolvedTypes) {
             // WARNING: this sets default value for nullable field
-            return this.createProviderFromSourceName(expectedCompletionType, '');
+            const provider = this.createProviderFromSourceName(expectedCompletionType, '');
+            provider.setDeclarationCache(this.completionRegistry);
+            return provider;
         }
 
         const providers = resolvedTypes.map(rt => this.createProviderByType(expectedCompletionType, rt));

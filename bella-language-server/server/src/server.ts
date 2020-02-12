@@ -14,7 +14,8 @@ import { SnapshotHandler } from './handlers/snapshot.handler';
 import { LSPParserProxy } from './lsp-parser-proxy';
 import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from './utils/common.utils';
-import { debounce } from 'ts-debounce'
+// import { debounce } from 'ts-debounce'
+import { debounce, throttle } from 'lodash';
 
 /**
  * The BashServer glues together the separate components to implement
@@ -59,10 +60,18 @@ export default class BellaServer {
 
 	private documentScan(change: LSP.TextDocumentChangeEvent) {
 		const { uri } = change.document;
-		this.connection.console.log(`DocumentScan: [START] ${uri}`);
+		this.connection.console.log(`DocumentScan.analyze: [START] ${uri}`);
 		this.analyzer.analyze(change.document);
+		// this.analyzer.scanForCompletions(change.document);
+		this.connection.console.log(`DocumentScan.analyze: [END] ${uri}`);
+	}
+
+	private documentCompletionScan(change: LSP.TextDocumentChangeEvent) {
+		const { uri } = change.document;
+		this.connection.console.log(`DocumentScan.scanForCompletions: [START] ${uri}`);
+		// this.analyzer.analyze(change.document);
 		this.analyzer.scanForCompletions(change.document);
-		this.connection.console.log(`DocumentScan: [START] ${uri}`);
+		this.connection.console.log(`DocumentScan.scanForCompletions: [END] ${uri}`);
 	}
 
 	/**
@@ -70,15 +79,29 @@ export default class BellaServer {
 	 * care about.
 	 */
 	public register(connection: LSP.Connection): void {
-		const debounceScanTime = 1000;
-		const debounceScan = debounce(this.documentScan.bind(this), debounceScanTime);
+		const debounceScanTime = 1500;
+		const debounceCompletionScanTime = 1000;
+		const debounceScan = debounce(
+			this.documentScan.bind(this),
+			debounceScanTime,
+			// { trailing: true }
+		);
+		const debounceCompletionScan = throttle(
+			this.documentCompletionScan.bind(this),
+			debounceCompletionScanTime,
+			// { leading: true }
+		);
+		// const throttleCompletionScan = throttle(
+		// 	() => {console.log('throttle')},
+		// 	debounceCompletionScanTime,
+		// 	// { leading: true }
+		// );
 		this.documents.listen(this.connection);
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			debounceScan(change);
-		})
-		// this.documents.onDidOpen((change: LSP.TextDocumentChangeEvent) => {
-		// 	this.analyzer.scanForCompletions(change.document);
-		// })
+			debounceCompletionScan(change);
+			// throttleCompletionScan();
+		});
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))
 		connection.onDefinition(this.onDefinition.bind(this));

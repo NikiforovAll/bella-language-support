@@ -10,6 +10,9 @@ object TaskRule
     ifBlock:TaskRuleIfBlock
     thenBlock:TaskRuleThenBlock
 
+
+persistent object TestCatalog: AccountId[*]
+
 procedure EntryPoint()
     // TaskRule = new TaskRule(
     //     createdBy = "Test"

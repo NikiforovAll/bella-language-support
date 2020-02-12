@@ -3,6 +3,7 @@ import { CompletionItem } from 'vscode-languageserver';
 import { LSPCompletionRegistry } from '../../registry/completion-registry.ts/lsp-completion-registry';
 import { DeclarationCacheProvider } from '../../registry/completion-registry.ts/declaration-cache-provider';
 import NodeCache = require('node-cache');
+import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
 
 export interface CompletionProvider {
     getCompletions(): CompletionItem[];
@@ -18,6 +19,8 @@ export abstract class BaseCompletionProvider implements CompletionProvider, Decl
     protected completionsOf: DeclarationType[] = [];
 
     abstract getCompletions(): CompletionItem[];
+
+    abstract toCompletionItem(declaration: KeyedDeclaration): CompletionItem;
 
     setCompletionTypes(types: DeclarationType[]): CompletionProvider {
         this.completionsOf = types;

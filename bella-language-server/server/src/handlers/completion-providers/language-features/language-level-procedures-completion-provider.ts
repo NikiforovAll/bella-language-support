@@ -23,6 +23,9 @@ const REFERENCE: CompletionItem[] = [
     },
 ];
 export class LanguageLevelProceduresCompletionProvider extends BaseCompletionProvider {
+    toCompletionItem(declaration: import("../../../registry/declaration-registry/lsp-declaration-registry").KeyedDeclaration): CompletionItem {
+        throw new Error("Method not implemented.");
+    }
     constructor() {
         super();
     }
