@@ -5,15 +5,22 @@ import { CommonUtils } from '../../utils/common.utils';
 import { CompletionRegistryNode } from './completion-registry-node';
 import { CompletionRegistryUtils } from '../../utils/completion-registry.utils';
 import { isEmpty } from 'lodash';
+import { DeclarationCacheProvider } from './declaration-cache-provider';
 
-export class LSPCompletionRegistry {
+export class LSPCompletionRegistry implements DeclarationCacheProvider{
 
     private completionRegistry: NodeCache;
+
+    declarationCompletionCache: NodeCache;
 
     constructor() {
         this.completionRegistry = new NodeCache({
             checkperiod: 0,
             stdTTL: 0
+        });
+        this.declarationCompletionCache = new NodeCache({
+            checkperiod: 30,
+            stdTTL: 60 * 5
         });
     }
 

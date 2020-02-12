@@ -1,12 +1,10 @@
-import { BellaCompletionTrigger, DeclarationType } from 'bella-grammar';
-import { CompletionScope } from 'bella-grammar/dist/lib/models/bella-completion';
+import { BellaCompletionTrigger, DeclarationType, CompletionScope } from 'bella-grammar';
 import { CompletionItem, CompletionParams } from 'vscode-languageserver';
 
-import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
 import { BaseHandler } from './base.handler';
-import { CompletionProvider } from './completion-providers/completion-provider';
+import { CompletionProvider, BaseCompletionProvider } from './completion-providers/completion-provider';
 import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
 import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
@@ -24,20 +22,21 @@ import { PersistentObjectCompletionProvider } from './completion-providers/persi
 import { ProcedureCompletionProvider } from './completion-providers/procedure-completion-provider';
 import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
 import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
+import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
 
 
 export class CompletionHandler extends BaseHandler {
     docUri: string;
     constructor(
         private cache: LSPDeclarationRegistry,
-        private completions: LSPCompletionRegistry) {
+        private completionRegistry: LSPCompletionRegistry) {
         super();
         this.docUri = '';
     }
 
     public complete(params: CompletionParams): CompletionItem[] {
         this.docUri = params.textDocument.uri;
-        let completionTokens = this.completions.getCompletions(
+        let completionTokens = this.completionRegistry.getCompletions(
             params.position.line,
             params.position.character,
             this.docUri
@@ -58,7 +57,7 @@ export class CompletionHandler extends BaseHandler {
             providers = ambientScopeProviders;
         } else {
             providers = this.createProvidersForCompletionTriggers(completionTokens);
-            if (completionTokens.every(t => t.scope !== CompletionScope.Block)) {
+            if (completionTokens.every((t: any) => t.scope !== CompletionScope.Block)) {
                 providers.push(...ambientScopeProviders);
             }
         }
@@ -78,7 +77,12 @@ export class CompletionHandler extends BaseHandler {
     private createProviders(context: BellaCompletionTrigger): CompletionProvider[] {
         const resolvedTypes = CompletionUtils.extractCompletionSourceName(this.cache, this.docUri, context);
         return context.expectedCompletions
-            .map(t => this.createProvider(t, resolvedTypes));
+            .map(t => {
+                const p = this.createProvider(t, resolvedTypes);
+                const baseProvider = p as BaseCompletionProvider;
+                baseProvider.setDeclarationCache(this.completionRegistry);
+                return p;
+            });
     }
 
     private groupExclusiveProviders(providers: CompletionProvider[]) {
@@ -87,6 +91,7 @@ export class CompletionHandler extends BaseHandler {
             [
                 DeclarationType.ObjectField,
                 DeclarationType.ServiceEntry,
+                DeclarationType.EnumEntry,
                 DeclarationType.Type
             ]
         ];

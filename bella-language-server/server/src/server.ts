@@ -1,22 +1,20 @@
 import * as LSP from 'vscode-languageserver';
 
-import { DocumentSymbolHandler } from './handlers/document-symbol.handler';
 import BellaAnalyzer from './bella-analyzer';
-import { LSPParserProxy } from './lsp-parser-proxy';
-import { DiagnosticsHandler } from './handlers/diagnostics.handler';
-import { DefinitionHandler } from './handlers/definition.handler';
-import { ReferenceHandler } from './handlers/reference.handler';
-import { SnapshotHandler } from './handlers/snapshot.handler';
-import { CodeLensHandler, CodeLensPayload } from './handlers/codeLens.handler';
-import { CommonUtils } from './utils/common.utils';
-import { ReferenceFactoryMethods } from './factories/reference.factory';
 import { DeclarationFactoryMethods } from './factories/declaration.factory';
-import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
+import { ReferenceFactoryMethods } from './factories/reference.factory';
+import { CodeLensHandler, CodeLensPayload } from './handlers/codeLens.handler';
 import { CompletionHandler } from './handlers/completion.handler';
-import { LSPCompletionRegistry } from './registry/completion-registry.ts/lsp-completion-registry';
-import { ImplementationRequest } from 'vscode-languageserver';
+import { DefinitionHandler } from './handlers/definition.handler';
+import { DiagnosticsHandler } from './handlers/diagnostics.handler';
+import { DocumentSymbolHandler } from './handlers/document-symbol.handler';
+import { ReferenceHandler } from './handlers/reference.handler';
 import { SignatureHelpHandler } from './handlers/singnature-help.handler';
-
+import { SnapshotHandler } from './handlers/snapshot.handler';
+import { LSPParserProxy } from './lsp-parser-proxy';
+import { KeyedDeclaration } from './registry/declaration-registry/lsp-declaration-registry';
+import { CommonUtils } from './utils/common.utils';
+import { debounce } from 'ts-debounce'
 
 /**
  * The BashServer glues together the separate components to implement
@@ -59,17 +57,24 @@ export default class BellaServer {
 		this.diagnosticsHandler = new DiagnosticsHandler(this.connection);
 	}
 
+	private documentScan(change: LSP.TextDocumentChangeEvent) {
+		const { uri } = change.document;
+		this.connection.console.log(`DocumentScan: [START] ${uri}`);
+		this.analyzer.analyze(change.document);
+		this.analyzer.scanForCompletions(change.document);
+		this.connection.console.log(`DocumentScan: [START] ${uri}`);
+	}
+
 	/**
 	 * Register handlers for the events from the Language Server Protocol that we
 	 * care about.
 	 */
 	public register(connection: LSP.Connection): void {
-		this.documents.listen(this.connection)
+		const debounceScanTime = 1000;
+		const debounceScan = debounce(this.documentScan.bind(this), debounceScanTime);
+		this.documents.listen(this.connection);
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
-			const { uri } = change.document
-			// this.diagnosticsHandler.validateTextDocument(change.document);
-			this.analyzer.analyze(change.document);
-			this.analyzer.scanForCompletions(change.document);
+			debounceScan(change);
 		})
 		// this.documents.onDidOpen((change: LSP.TextDocumentChangeEvent) => {
 		// 	this.analyzer.scanForCompletions(change.document);
@@ -128,15 +133,15 @@ export default class BellaServer {
 		return handler.findSymbolsInWorkspace(params);
 	}
 
-	private onDefinition(params: LSP.TextDocumentPositionParams) : LSP.LocationLink[] {
+	private onDefinition(params: LSP.TextDocumentPositionParams): LSP.LocationLink[] {
 		let handler = new DefinitionHandler(
 			this.analyzer.declarationCache,
 			this.analyzer.referencesCache);
 		return handler.findDefinitions(params);
 	}
 
-	private onReferences(params : LSP.ReferenceParams): LSP.Location[]{
-		let handler = new ReferenceHandler(this.analyzer.declarationCache,this.analyzer.referencesCache);
+	private onReferences(params: LSP.ReferenceParams): LSP.Location[] {
+		let handler = new ReferenceHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
 		return handler.findReferences(params);
 	}
 
@@ -145,13 +150,13 @@ export default class BellaServer {
 		return handler.getCodeLens(params.textDocument);
 	}
 
-	private onCodeLensResolve(codeLens: LSP.CodeLens): LSP.CodeLens{
+	private onCodeLensResolve(codeLens: LSP.CodeLens): LSP.CodeLens {
 		let handler = new CodeLensHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
 		return handler.resolve(codeLens);
 	}
 
 	private onMakeSnapshot() {
-		let handler =  new SnapshotHandler(
+		let handler = new SnapshotHandler(
 			this.analyzer.declarationCache,
 			this.analyzer.referencesCache);
 		handler.setConnection(this.connection);
@@ -159,7 +164,7 @@ export default class BellaServer {
 	}
 
 	private onLazyReferences(payload: CodeLensPayload) {
-        let { uri, declaration, parentDeclaration }: CodeLensPayload = (payload as CodeLensPayload);
+		let { uri, declaration, parentDeclaration }: CodeLensPayload = (payload as CodeLensPayload);
 		let handler = new CodeLensHandler(this.analyzer.declarationCache, this.analyzer.referencesCache);
 		let refs = handler.resolveDeclaration(uri, declaration, parentDeclaration);
 		let referencesResult = [
@@ -188,7 +193,7 @@ export default class BellaServer {
 		return handler.complete(payload);
 	}
 
-	private onSignatureHelp(payload: LSP.TextDocumentPositionParams): LSP.SignatureHelp | undefined{
+	private onSignatureHelp(payload: LSP.TextDocumentPositionParams): LSP.SignatureHelp | undefined {
 		let handler = new SignatureHelpHandler(
 			this.analyzer.declarationCache,
 			this.analyzer.completionCache);

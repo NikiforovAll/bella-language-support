@@ -7,7 +7,8 @@ const PROVIDER_PRIORITY: {
     [type: string]: number;
 } = {
     'ObjectFieldCompletionProvider': 99,
-    'PrimitiveTypeCompletionProvider': 199
+    'PrimitiveTypeCompletionProvider': 199,
+    'EnumEntryCompletionProvider': 299
 };
 
 const DEFAULT_PRIORITY = 0;
