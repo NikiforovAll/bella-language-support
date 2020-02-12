@@ -1,28 +1,29 @@
-import { DeclarationType, BellaCompletionTrigger } from 'bella-grammar';
-import { DeclarationIdentifier, CompletionScope } from 'bella-grammar/dist/lib/models/bella-completion';
+import { BellaCompletionTrigger, DeclarationType } from 'bella-grammar';
+import { CompletionScope } from 'bella-grammar/dist/lib/models/bella-completion';
 import { CompletionItem, CompletionParams } from 'vscode-languageserver';
 
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
+import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
 import { BaseHandler } from './base.handler';
 import { CompletionProvider } from './completion-providers/completion-provider';
-import { MultipleSourceCompletionProvider } from './completion-providers/multiple-source-completion-provider';
-import { KeywordCompletionProvider } from './completion-providers/keyword-completion-provider';
-import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
-import { ProcedureCompletionProvider } from './completion-providers/procedure-completion-provider';
-import { ObjectCompletionProvider } from './completion-providers/object-completion-provider';
-import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
-import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
-import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
+import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
 import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
 import { ExclusiveSourceCompletionProvider } from './completion-providers/exclusive-source-completion-provider';
 import { FormulaCompletionProvider } from './completion-providers/formula-completion-provider';
-import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
-import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
+import { KeywordCompletionProvider } from './completion-providers/keyword-completion-provider';
+import {
+    LanguageLevelProceduresCompletionProvider,
+} from './completion-providers/language-features/language-level-procedures-completion-provider';
 import { TypeCompletionProvider } from './completion-providers/language-features/type-completion-provider';
-import { resolve } from 'dns';
-import { LanguageLevelProceduresCompletionProvider } from './completion-providers/language-features/language-level-procedures-completion-provider';
+import { MultipleSourceCompletionProvider } from './completion-providers/multiple-source-completion-provider';
+import { ObjectCompletionProvider } from './completion-providers/object-completion-provider';
+import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
+import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
+import { ProcedureCompletionProvider } from './completion-providers/procedure-completion-provider';
+import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
+import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {

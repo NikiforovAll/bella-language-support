@@ -18,8 +18,6 @@ procedure p2()
     // SourceDescription2.Date()
 
 
-
-
 object SourceDescription:String
 object SourceDescription2:DateTime
 object SourceDescription3:Decimal
@@ -30,7 +28,7 @@ formula IsFullMatch(TaskRule, BaseTask):Boolean = TaskRule.ifBlock.sourceDescrip
     && TaskRule.ifBlock.sourceComponent == BaseTask.createdByComponent
 
 object ExtraTaskRule: TaskRule
-    extra: String
+    extra: TaskRule
 
 object TaskRuleList: ExtraTaskRule[*]
 
