@@ -22,6 +22,7 @@ import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
 import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
 import { TypeCompletionProvider } from './completion-providers/language-features/type-completion-provider';
 import { resolve } from 'dns';
+import { LanguageLevelProceduresCompletionProvider } from './completion-providers/language-features/language-level-procedures-completion-provider';
 
 
 export class CompletionHandler extends BaseHandler {
@@ -48,7 +49,8 @@ export class CompletionHandler extends BaseHandler {
             this.createProvider(DeclarationType.Object),
             this.createProvider(DeclarationType.Service),
             this.createProvider(DeclarationType.Enum),
-            this.createProvider(DeclarationType.Type)
+            this.createProvider(DeclarationType.Type),
+            new LanguageLevelProceduresCompletionProvider()
         ];
         if (completionTokens.length === 0) {
             //global scope
@@ -115,7 +117,7 @@ export class CompletionHandler extends BaseHandler {
             let [singleProvider] = providers;
             return singleProvider;
         }
-        console.warn('[createProvider]: provider is not created, empty provider is created instead')
+        console.warn('[createProvider]: provider is not created, empty provider is returned instead');
         return new EmptyCompletionProvider();
     }
 
@@ -176,5 +178,3 @@ export class CompletionHandler extends BaseHandler {
         return completionProvider;
     }
 }
-
-
