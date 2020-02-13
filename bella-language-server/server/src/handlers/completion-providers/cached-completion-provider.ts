@@ -8,7 +8,7 @@ import { BaseCompletionProvider, CompletionCacheIdentifier } from './completion-
 
 export abstract class CachedCompletionProvider extends BaseCompletionProvider {
 
-    protected CACHE_EXP_TIME = 5 * 60;
+    protected CACHE_EXP_TIME = 3 * 60;
 
     getCompletions():CompletionItem[] {
         const namespace = CommonUtils.getNamespaceFromURI(this.docUri);

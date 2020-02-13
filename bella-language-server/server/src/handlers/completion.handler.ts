@@ -1,5 +1,5 @@
 import { BellaCompletionTrigger, DeclarationType, CompletionScope } from 'bella-grammar';
-import { CompletionItem, CompletionParams } from 'vscode-languageserver';
+import { CompletionItem, CompletionParams, CompletionTriggerKind } from 'vscode-languageserver';
 
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
@@ -53,14 +53,16 @@ export class CompletionHandler extends BaseHandler {
             this.createProvider(DeclarationType.Type),
             new LanguageLevelProceduresCompletionProvider()
         ];
+        // && params.context?.triggerKind === CompletionTriggerKind.TriggerForIncompleteCompletions
         if (completionTokens.length === 0) {
             //global scope
             providers = ambientScopeProviders;
         } else {
             providers = this.createProvidersForCompletionTriggers(completionTokens);
-            if (completionTokens.every((t: any) => t.scope !== CompletionScope.Block)) {
-                providers.push(...ambientScopeProviders);
-            }
+            // TODO: this adds ambient context to inner scope of completion triggers
+            // if (completionTokens.every((t: any) => t.scope !== CompletionScope.Block)) {
+            //     providers.push(...ambientScopeProviders);
+            // }
         }
         return new MultipleSourceCompletionProvider(...this.groupExclusiveProviders(providers))
             .getCompletions();
