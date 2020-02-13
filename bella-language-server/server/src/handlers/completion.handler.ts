@@ -4,18 +4,18 @@ import { CompletionItem, CompletionParams, CompletionTriggerKind } from 'vscode-
 import { LSPDeclarationRegistry } from '../registry/declaration-registry/lsp-declaration-registry';
 import { CompletionUtils, ResolvedTypeResult } from '../utils/completion.utils';
 import { BaseHandler } from './base.handler';
-import { CompletionProvider, BaseCompletionProvider } from './completion-providers/completion-provider';
+import { CompletionProvider, BaseCompletionProvider } from './completion-providers/general-purpose-providers/completion-provider';
 import { EmptyCompletionProvider } from './completion-providers/empty-completion-provider';
 import { EnumCompletionProvider } from './completion-providers/enum-completion-provider';
 import { EnumEntryCompletionProvider } from './completion-providers/enum-entry-completion.provider';
-import { ExclusiveSourceCompletionProvider } from './completion-providers/exclusive-source-completion-provider';
+import { ExclusiveSourceCompletionProvider } from './completion-providers/general-purpose-providers/exclusive-source-completion-provider';
 import { FormulaCompletionProvider } from './completion-providers/formula-completion-provider';
 import { KeywordCompletionProvider } from './completion-providers/keyword-completion-provider';
 import {
     LanguageLevelProceduresCompletionProvider,
 } from './completion-providers/language-features/language-level-procedures-completion-provider';
 import { TypeCompletionProvider } from './completion-providers/language-features/type-completion-provider';
-import { MultipleSourceCompletionProvider } from './completion-providers/multiple-source-completion-provider';
+import { MultipleSourceCompletionProvider } from './completion-providers/general-purpose-providers/multiple-source-completion-provider';
 import { ObjectCompletionProvider } from './completion-providers/object-completion-provider';
 import { ObjectFieldCompletionProvider } from './completion-providers/object-field-completion-provider';
 import { PersistentObjectCompletionProvider } from './completion-providers/persistent-object-completion-provider';
@@ -23,7 +23,8 @@ import { ProcedureCompletionProvider } from './completion-providers/procedure-co
 import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
 import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
-import { FilteredCompletionProvider } from './completion-providers/filtered-completion-provider';
+import { FilteredCompletionProvider } from './completion-providers/general-purpose-providers/filtered-completion-provider';
+import { AmbientContextCompletionProvider } from './completion-providers/ambient-context-completion-provider';
 
 const MAX_NUMBER_OF_COMPLETIONS_PER_PROVIDER = 50;
 
@@ -45,20 +46,23 @@ export class CompletionHandler extends BaseHandler {
         );
 
         let providers = [];
-        let userDeclarationsProviders = [
-            this.createProvider(DeclarationType.PersistentObject),
-            this.createProvider(DeclarationType.Object),
+        let userDeclarationsProviders: CompletionProvider[] = [
+            // new AmbientContextCompletionProvider(this.cache, this.docUri),
+            // OR WITHOUT MERGING
+            // this.createProvider(DeclarationType.PersistentObject),
+            // this.createProvider(DeclarationType.Object),
             // new FilteredCompletionProvider(
             //     this.createProvider(DeclarationType.Object), (completions: any[]) => {
             //         return completions.length < MAX_NUMBER_OF_COMPLETIONS_PER_PROVIDER;
             //     }),
-            this.createProvider(DeclarationType.Service),
-            this.createProvider(DeclarationType.Enum)
+            // this.createProvider(DeclarationType.Service),
+            // this.createProvider(DeclarationType.Enum)
         ];
         let ambientScopeProviders = [
             new KeywordCompletionProvider(),
             // new ExclusiveSourceCompletionProvider(...userDeclarationsProviders),
-            ...userDeclarationsProviders,
+            // ...userDeclarationsProviders,
+            new AmbientContextCompletionProvider(this.cache, this.docUri),
             // only system built-in types are returned in this case
             this.createProvider(DeclarationType.Type),
             new LanguageLevelProceduresCompletionProvider()

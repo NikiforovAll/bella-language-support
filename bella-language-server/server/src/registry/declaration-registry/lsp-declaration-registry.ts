@@ -150,26 +150,33 @@ export class LSPDeclarationRegistry {
 
     private getDeclarationsForQueryLocal(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
         let result: KeyedDeclaration[] = [];
+        const start = Date.now();
         if (query.uriFilter.active) {
             result = this.getRegistryNode(query.uriFilter.uri || '').getDeclarations(query);
         } else {
             // global search
             let selectedKeys = this.cache.keys();
+            const isNamespaceFilterActivated = query.namespaceFilter?.active;
             for (const registry_key of selectedKeys) {
                 let registry = this.cache.get<DeclarationRegistryNode>(registry_key);
+                const registryNamespace = registry?.namespace;
                 if (isNil(registry)) {
                     continue;
                 }
-                if (registry?.namespace !== CommonUtils.SHARED_NAMESPACE_NAME && query.namespaceFilter?.active &&
-                    registry?.namespace !== query.namespaceFilter.namespace) {
+                if (registryNamespace !== CommonUtils.SHARED_NAMESPACE_NAME && isNamespaceFilterActivated &&
+                    registry?.namespace !== query.namespaceFilter?.namespace) {
                     continue;
                 }
 
-                if(query.namespaceFilter?.active
-                    && !!query.namespaceFilter.componentName
+                if(query.namespaceFilter?.excludeCommon && registryNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
+                    continue;
+                }
+
+                if(isNamespaceFilterActivated && !!query.namespaceFilter?.componentName
                     && query.namespaceFilter.componentName.toLowerCase().indexOf(registry.componentName.toLowerCase()) === -1){
                         continue;
                 }
+                // TODO: this could be slow, measure impact
                 result.push(...registry.getDeclarations(query));
             }
         }
@@ -177,10 +184,9 @@ export class LSPDeclarationRegistry {
         // if(query?.nameFilter?.active){
         //     result = result.filter(kd => kd.name === query?.nameFilter?.name);
         // }
+        console.log(`LSPDeclarationRegistry.getDeclarationsForQueryLocal: elapsed = ${Date.now() - start} ms`)
         return result;
     }
-
-
 }
 
 export interface KeyedDeclaration extends BaseDeclaration, MemberComposite {

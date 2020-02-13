@@ -1,6 +1,6 @@
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
-import { BaseCompletionProvider } from './completion-provider';
+import { BaseCompletionProvider } from './general-purpose-providers/completion-provider';
 import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
 
 export class KeywordCompletionProvider extends BaseCompletionProvider {

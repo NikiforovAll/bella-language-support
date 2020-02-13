@@ -1,6 +1,6 @@
 import { CompletionItem } from 'vscode-languageserver';
 
-import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
+import { KeyedDeclaration } from '../../../registry/declaration-registry/lsp-declaration-registry';
 import { BaseCompletionProvider, CompletionProvider } from './completion-provider';
 
 export type Predicate = (...args:any[]) => boolean;

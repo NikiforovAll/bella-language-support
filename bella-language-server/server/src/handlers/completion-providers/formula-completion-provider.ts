@@ -3,7 +3,7 @@ import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../../utils/common.utils';
-import { BaseCompletionProvider } from './completion-provider';
+import { BaseCompletionProvider } from './general-purpose-providers/completion-provider';
 
 export class FormulaCompletionProvider extends BaseCompletionProvider {
     constructor(private cache: LSPDeclarationRegistry, private docUri: string, private objectName: string) {

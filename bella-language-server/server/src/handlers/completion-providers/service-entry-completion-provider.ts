@@ -3,7 +3,7 @@ import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../../utils/common.utils';
-import { BaseCompletionProvider } from './completion-provider';
+import { BaseCompletionProvider } from './general-purpose-providers/completion-provider';
 
 export class ServiceEntryCompletionProvider extends BaseCompletionProvider {
 

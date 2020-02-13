@@ -13,8 +13,11 @@ object TaskRule
 
 persistent object TestCatalog: AccountId[*]
 
+external service TaskManager on TaskManager
+
 procedure EntryPoint()
     // TaskRule = new TaskRule(
     //     createdBy = "Test"
     // )
     // SourceDescription.GetPatternForSourceDescriptionMatch()
+    //textDocument/completion -

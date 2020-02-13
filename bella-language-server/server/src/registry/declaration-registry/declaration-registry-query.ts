@@ -23,6 +23,8 @@ export interface NodeRegistrySearchQuery {
         namespace: string;
         //namespace subdivision as component name
         componentName?: string
+        // by default it is included
+        excludeCommon?: boolean;
     } & Activatable
 
     nameFilter?: {

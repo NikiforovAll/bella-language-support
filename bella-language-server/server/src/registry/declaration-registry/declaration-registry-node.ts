@@ -42,19 +42,23 @@ export class DeclarationRegistryNode {
                     // start to probe fallback rules
                 }
             } else {
-                return this.getValues(
+                const declarations = this.getValues(
                     query.overloadsFilter?.active &&
-                    query.overloadsFilter?.includeOverloads||
-                    false).filter(d => {
-                        let passed = true;
-                        if (!isNil(typeFilter) && typeFilter?.active) {
-                            passed = passed && (d.type === typeFilter.type);
-                        }
-                        if (!isNil(nameFilter) && nameFilter.active) {
-                            passed = passed && (d.name === nameFilter.name);
-                        }
-                        return passed;
-                    });
+                    query.overloadsFilter?.includeOverloads ||
+                    false);
+                const isTypeFilterEnabled = !isNil(typeFilter) && typeFilter?.active;
+                const isNameFilterEnabled = !isNil(nameFilter) && nameFilter.active;
+                const resultDeclarations = isTypeFilterEnabled || isNameFilterEnabled ? declarations.filter(d => {
+                    let passed = true;
+                    if (isTypeFilterEnabled) {
+                        passed = passed && (d.type === typeFilter?.type);
+                    }
+                    if (isNameFilterEnabled) {
+                        passed = passed && (d.name === nameFilter?.name);
+                    }
+                    return passed;
+                }) : declarations;
+                return resultDeclarations;
             }
         }
         console.warn('getDeclarations - all values are returned - query is empty');
@@ -64,7 +68,7 @@ export class DeclarationRegistryNode {
 
     setOverloads(overloads: DeclarationOverload[]) {
         this.overloads = new Dictionary<DeclarationKey, DeclarationOverload>();
-        overloads.forEach(o=>{
+        overloads.forEach(o => {
             this.overloads.setValue(o.declarationKey, o);
         })
     }
@@ -73,9 +77,9 @@ export class DeclarationRegistryNode {
         return this.nodes;
     }
 
-    private getValues(includeOverloads: boolean): KeyedDeclaration[]{
+    private getValues(includeOverloads: boolean): KeyedDeclaration[] {
         const uniqueDeclarations = this.getNodes().values();
-        if(includeOverloads) {
+        if (includeOverloads) {
             let mergedResult: KeyedDeclaration[] = [];
             let declarationsWithoutOverloads = uniqueDeclarations
                 .filter(d => !this.overloads.containsKey(new DeclarationKey(d.name, d.type)));

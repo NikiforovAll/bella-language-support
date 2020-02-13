@@ -80,7 +80,7 @@ export default class BellaServer {
 	 */
 	public register(connection: LSP.Connection): void {
 		const debounceScanTime = 2500;
-		const debounceCompletionScanTime = 0;
+		const debounceCompletionScanTime = 500;
 		const debounceScan = debounce(
 			this.documentScan.bind(this),
 			debounceScanTime,
@@ -92,16 +92,17 @@ export default class BellaServer {
 			// { leading: true, }
 		);
 		// const throttleCompletionScan = throttle(
-		// 	() => {console.log('throttle')},
+		// 	// () => {console.log('throttle')},
+		// 	this.documentCompletionScan.bind(this),
 		// 	debounceCompletionScanTime,
-		// 	// { leading: true }
+		// 	{ leading: true }
 		// );
 		this.documents.listen(this.connection);
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			debounceScan(change);
-			// debounceCompletionScan(change);
 			this.documentCompletionScan(change);
-			// throttleCompletionScan();
+			// debounceCompletionScan(change);
+			// throttleCompletionScan(change);
 		});
 		// Register all the handlers for the LSP events.
 		// connection.onHover(this.onHover.bind(this))

@@ -1,6 +1,6 @@
 import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
-import { BaseCompletionProvider } from '../completion-provider';
+import { BaseCompletionProvider } from '../general-purpose-providers/completion-provider';
 
 const REFERENCE: CompletionItem[] = [
     {

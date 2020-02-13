@@ -1,4 +1,4 @@
-import { CompletionProvider, BaseCompletionProvider } from "./completion-provider";
+import { CompletionProvider, BaseCompletionProvider } from "./general-purpose-providers/completion-provider";
 import { CompletionItem } from "vscode-languageserver";
 import { KeyedDeclaration } from "../../registry/declaration-registry/lsp-declaration-registry";
 

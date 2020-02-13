@@ -1,8 +1,8 @@
 import { CompletionItem } from 'vscode-languageserver';
 
-import { BaseCompletionProvider } from '../completion-provider';
-import { ExclusiveSourceCompletionProvider } from '../exclusive-source-completion-provider';
-import { MultipleSourceCompletionProvider } from '../multiple-source-completion-provider';
+import { BaseCompletionProvider } from '../general-purpose-providers/completion-provider';
+import { ExclusiveSourceCompletionProvider } from '../general-purpose-providers/exclusive-source-completion-provider';
+import { MultipleSourceCompletionProvider } from '../general-purpose-providers/multiple-source-completion-provider';
 import { DateTimeTypeCompletionProvider } from './date-time-type-completion-provider';
 import { DateTypeCompletionProvider } from './date-type-completion-provider';
 import { StringTypeCompletionProvider } from './string-type-completion-provider';

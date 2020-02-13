@@ -1,8 +1,8 @@
 import { CompletionItem } from 'vscode-languageserver';
 
-import { CommonUtils } from '../../utils/common.utils';
+import { CommonUtils } from '../../../utils/common.utils';
 import { BaseCompletionProvider, CompletionProvider } from './completion-provider';
-import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
+import { KeyedDeclaration } from '../../../registry/declaration-registry/lsp-declaration-registry';
 
 const PROVIDER_PRIORITY: {
     [type: string]: number;

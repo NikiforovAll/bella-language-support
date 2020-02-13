@@ -1,9 +1,9 @@
 import { DeclarationType } from 'bella-grammar';
 import { CompletionItem } from 'vscode-languageserver';
-import { LSPCompletionRegistry } from '../../registry/completion-registry.ts/lsp-completion-registry';
-import { DeclarationCacheProvider } from '../../registry/completion-registry.ts/declaration-cache-provider';
+import { LSPCompletionRegistry } from '../../../registry/completion-registry.ts/lsp-completion-registry';
+import { DeclarationCacheProvider } from '../../../registry/completion-registry.ts/declaration-cache-provider';
 import NodeCache = require('node-cache');
-import { KeyedDeclaration } from '../../registry/declaration-registry/lsp-declaration-registry';
+import { KeyedDeclaration } from '../../../registry/declaration-registry/lsp-declaration-registry';
 
 export interface CompletionProvider {
     getCompletions(): CompletionItem[];

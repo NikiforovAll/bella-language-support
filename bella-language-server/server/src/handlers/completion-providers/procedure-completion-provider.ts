@@ -3,7 +3,7 @@ import { CompletionItem, CompletionItemKind } from 'vscode-languageserver';
 
 import { KeyedDeclaration, LSPDeclarationRegistry } from '../../registry/declaration-registry/lsp-declaration-registry';
 import { CommonUtils } from '../../utils/common.utils';
-import { CachedCompletionProvider } from './cached-completion-provider';
+import { CachedCompletionProvider } from './general-purpose-providers/cached-completion-provider';
 
 export class ProcedureCompletionProvider extends CachedCompletionProvider {
 
