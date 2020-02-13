@@ -51,33 +51,36 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             ),
             scope: CompletionScope.Block
         };
-        let signatureSupport: BellaCompletionTrigger = {
-            completionBase: {
-                //truncated signature, important!!!
-                context: procedureSignature.text,
-                completionSource: [
-                    { name: '', type: DeclarationType.Procedure }
-                ]
-            },
-            expectedCompletions: [
-                // TODO: this should be just global scope but signature completion at the same time
-                // DeclarationType.Object,
-                // DeclarationType.PersistentObject
-            ],
-            range: BellaVisitorUtils.createRange(
-                paramsListContext.start.line - 1, paramsListContext.start.charPositionInLine,
-                (paramsListContext.stop?.line || paramsListContext.start.line) - 1, paramsListContext.stop?.charPositionInLine),
-            scope: CompletionScope.Ambient
+        const result = [trigger];
+        if (!!paramsListContext.text) {
+            let signatureSupport: BellaCompletionTrigger = {
+                completionBase: {
+                    //truncated signature, important!!!
+                    context: procedureSignature.text,
+                    completionSource: [
+                        { name: '', type: DeclarationType.Procedure }
+                    ]
+                },
+                expectedCompletions: [
+                    // TODO: this should be just global scope but signature completion at the same time
+                    // DeclarationType.Object,
+                    // DeclarationType.PersistentObject
+                ],
+                range: BellaVisitorUtils.createRange(
+                    paramsListContext.start.line - 1, paramsListContext.start.charPositionInLine,
+                    (paramsListContext.stop?.line || paramsListContext.start.line) - 1, paramsListContext.stop?.charPositionInLine),
+                scope: CompletionScope.Ambient
+            }
+            //TODO: this is not complete!!!
+            let innerTriggers = paramsListContext
+                ?.expressionList()
+                ?.expression()
+                ?.map(expression => this.visitExpressionLocal(expression))
+                .reduce((acc, t) => acc.concat(t))
+                .filter(t => !!t) || [];
+            result.push(...[signatureSupport, ...innerTriggers]);
         }
-        //TODO: this is not complete!!!
-        let innerTriggers = paramsListContext
-            ?.expressionList()
-            ?.expression()
-            ?.map(expression => this.visitExpressionLocal(expression))
-            .reduce((acc, t) => acc.concat(t))
-            .filter(t => !!t) || [];
-
-        return this.accumulateResult([trigger, signatureSupport, ...innerTriggers]);
+        return this.accumulateResult(result);
     }
 
     /**
@@ -206,12 +209,12 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                     name: triggerIdentifier,
                     // type: DeclarationType.ServiceEntry
                 },
-                // TODO: consider adding this
-                // {
-                //     name: triggerIdentifier,
-                //     type: DeclarationType.Formula
-                // }
-            ]
+                    // TODO: consider adding this
+                    // {
+                    //     name: triggerIdentifier,
+                    //     type: DeclarationType.Formula
+                    // }
+                ]
             },
             expectedCompletions: [DeclarationType.ServiceEntry],
             range: BellaVisitorUtils.createRange(
@@ -220,40 +223,45 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             ),
             scope: CompletionScope.Block
         };
-        let triggerName = '';
-        try {
-            //TODO: fix it, dirty approach
-            const ctx = procedureSignature as any;
-            triggerName = ctx.parent.parent.type().Identifier().text;
-        } catch (error) {
+        const result = [trigger];
+        if (!!startOfParamsList.text) {
+            let triggerName = '';
+            try {
+                //TODO: fix it, dirty approach
+                const ctx = procedureSignature as any;
+                triggerName = ctx.parent.parent.type().Identifier().text;
+            } catch (error) {
 
+            }
+
+            let signatureSupport: BellaCompletionTrigger = {
+                completionBase: {
+                    //truncated signature, important!!!
+                    context: procedureSignature.text,
+                    completionSource: [
+                        {
+                            name: triggerName,
+                            type: DeclarationType.ServiceEntry
+                        },
+                        {
+                            name: triggerName,
+                            type: DeclarationType.Formula
+                        }
+                    ]
+                },
+                expectedCompletions: [
+                    // TODO: this should be just global scope
+                    // DeclarationType.Object,
+                    // DeclarationType.PersistentObject
+                ],
+                range: BellaVisitorUtils.createRange(
+                    startOfParamsList.start.line - 1, startOfParamsList.start.charPositionInLine,
+                    (startOfParamsList.stop?.line || startOfParamsList.start.line) - 1, startOfParamsList.stop?.charPositionInLine),
+                scope: CompletionScope.Ambient
+            };
+            result.push(signatureSupport);
         }
-        let signatureSupport: BellaCompletionTrigger = {
-            completionBase: {
-                //truncated signature, important!!!
-                context: procedureSignature.text,
-                completionSource: [
-                    {
-                        name: triggerName,
-                        type: DeclarationType.ServiceEntry
-                    },
-                    {
-                        name: triggerName,
-                        type: DeclarationType.Formula
-                    }
-                ]
-            },
-            expectedCompletions: [
-                // TODO: this should be just global scope
-                // DeclarationType.Object,
-                // DeclarationType.PersistentObject
-            ],
-            range: BellaVisitorUtils.createRange(
-                startOfParamsList.start.line - 1, startOfParamsList.start.charPositionInLine,
-                (startOfParamsList.stop?.line || startOfParamsList.start.line) - 1, startOfParamsList.stop?.charPositionInLine),
-            scope: CompletionScope.Ambient
-        }
-        return this.accumulateResult([trigger, signatureSupport]);
+        return this.accumulateResult(result);
     }
 
     /**
