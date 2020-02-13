@@ -23,7 +23,9 @@ import { ProcedureCompletionProvider } from './completion-providers/procedure-co
 import { ServiceCompletionProvider } from './completion-providers/service-completion-provider';
 import { ServiceEntryCompletionProvider } from './completion-providers/service-entry-completion-provider';
 import { LSPCompletionRegistry } from '../registry/completion-registry.ts/lsp-completion-registry';
+import { FilteredCompletionProvider } from './completion-providers/filtered-completion-provider';
 
+const MAX_NUMBER_OF_COMPLETIONS_PER_PROVIDER = 50;
 
 export class CompletionHandler extends BaseHandler {
     docUri: string;
@@ -43,12 +45,20 @@ export class CompletionHandler extends BaseHandler {
         );
 
         let providers = [];
-        let ambientScopeProviders = [
-            new KeywordCompletionProvider(),
+        let userDeclarationsProviders = [
             this.createProvider(DeclarationType.PersistentObject),
             this.createProvider(DeclarationType.Object),
+            // new FilteredCompletionProvider(
+            //     this.createProvider(DeclarationType.Object), (completions: any[]) => {
+            //         return completions.length < MAX_NUMBER_OF_COMPLETIONS_PER_PROVIDER;
+            //     }),
             this.createProvider(DeclarationType.Service),
-            this.createProvider(DeclarationType.Enum),
+            this.createProvider(DeclarationType.Enum)
+        ];
+        let ambientScopeProviders = [
+            new KeywordCompletionProvider(),
+            // new ExclusiveSourceCompletionProvider(...userDeclarationsProviders),
+            ...userDeclarationsProviders,
             // only system built-in types are returned in this case
             this.createProvider(DeclarationType.Type),
             new LanguageLevelProceduresCompletionProvider()

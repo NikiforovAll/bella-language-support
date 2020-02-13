@@ -9,12 +9,26 @@ const PROVIDER_PRIORITY: {
 } = {
     'ObjectFieldCompletionProvider': 99,
     'PrimitiveTypeCompletionProvider': 199,
-    'EnumEntryCompletionProvider': 299
+    'EnumEntryCompletionProvider': 299,
+    'ObjectCompletionProvider': 399,
+    'EnumCompletionProvider': 499,
+    'PersistentObjectCompletionProvider': 599,
+    'ServiceCompletionProvider': 699,
 };
 
 const DEFAULT_PRIORITY = 0;
 
+export type Predicate = (...args:any[]) => boolean;
+
 export class ExclusiveSourceCompletionProvider extends BaseCompletionProvider {
+
+    providers: CompletionProvider[];
+
+    constructor(...providers: CompletionProvider[]) {
+        super();
+        this.providers = providers.sort(this.OrderProviderComparer);
+    }
+
     toCompletionItem(declaration: KeyedDeclaration): CompletionItem {
         throw new Error("Method not implemented.");
     }
@@ -29,11 +43,6 @@ export class ExclusiveSourceCompletionProvider extends BaseCompletionProvider {
         // return this.providers
         //     .map(p => p.getCompletions())
         //     .reduce((acc, completion) => acc.concat(completion));
-    }
-    providers: CompletionProvider[];
-    constructor(...providers: CompletionProvider[]) {
-        super();
-        this.providers = providers.sort(this.OrderProviderComparer);
     }
 
     private OrderProviderComparer(p1: CompletionProvider, p2: CompletionProvider) {
