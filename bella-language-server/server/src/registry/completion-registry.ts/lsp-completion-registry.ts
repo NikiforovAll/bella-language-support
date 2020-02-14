@@ -1,4 +1,4 @@
-import { BellaReference, BellaCompletionTrigger } from 'bella-grammar';
+import { BellaReference, BellaCompletionTrigger, BellaScope } from 'bella-grammar';
 import * as NodeCache from 'node-cache';
 
 import { CommonUtils } from '../../utils/common.utils';
@@ -25,9 +25,16 @@ export class LSPCompletionRegistry implements DeclarationCacheProvider{
     }
 
     public setTriggers(triggers: BellaCompletionTrigger[], uri: string) {
-        let nrURI = CommonUtils.normalizeURI(uri);
-        this.completionRegistry.set(nrURI, CompletionRegistryUtils.createRegistryNode(triggers, nrURI));
+        // let nrURI = CommonUtils.normalizeURI(uri);
+        // this.completionRegistry.set(nrURI, CompletionRegistryUtils.createRegistryNode(triggers, nrURI));
+        throw new Error('obsolete');
     }
+
+    public setScopes(scopes: BellaScope[], uri: string) {
+        let nrURI = CommonUtils.normalizeURI(uri);
+        this.completionRegistry.set(nrURI, CompletionRegistryUtils.createRegistryNode(scopes, nrURI));
+    }
+
 
     public getCompletion(row: number, col: number, uri: string){
         return this.getRegistryNode(uri).getCompletionByPosition(row, col);

@@ -33,7 +33,11 @@ export class LSPParserProxy {
         let tree = BellaLanguageSupport.parse(input);
         BellaLanguageSupport.generateVisitor();
         let completionVisitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
-        completionVisitor.visit(tree);
+        try{
+            completionVisitor.visit(tree);
+        }catch{
+            console.warn('Parsing error inside BellaCompletionVisitor');
+        }
         let { triggers } = completionVisitor;
         return {
             triggers
@@ -43,7 +47,8 @@ export class LSPParserProxy {
     public scanForScopes(input: TextDocument) {
         const scopes = this.generateScopes(input.getText());
         for (const scope of scopes) {
-            scope.content = input.getText(CommonUtils.range(scope.range));
+            const range = CommonUtils.range(scope.range);
+            scope.content = input.getText(range);
         }
         return scopes;
     }
@@ -55,7 +60,10 @@ export class LSPParserProxy {
         //     .generateVisitor(VisitorType.ScopeVisitor) as BellaScopeVisitor;
         // scopeVisitor.visit(tree);
         // return scopeVisitor.scopes;
-        const scopes: BellaScope[] = [];
+
+        let scopeVisitor = BellaLanguageSupport
+            .generateVisitor(VisitorType.ScopeVisitor) as BellaScopeVisitor;
+        const scopes: BellaScope[] = scopeVisitor.visit(input);
         return scopes;
     }
 

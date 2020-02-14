@@ -133,14 +133,22 @@ export default class BellaAnalyzer {
         //text snippet below
     }
 
-    public scanForCompletions(document: LSP.TextDocument) {
-        const contents = document.getText();
+    // public scanForCompletions(contents: string, uri: string) {
+    //     try {
+    //         this.connection.console.log(`Scanning for completions ${uri}`)
+    //         let res = this.parser.scanForCompletions(contents);
+    //         this.completionCache.setTriggers(res.triggers, uri);
+    //     } catch (error) {
+    //         this.connection.console.warn(`Scanning Error in ${uri}: ${error}`);
+    //     }
+    // }
+
+    public scanForScopes(document: LSP.TextDocument) {
         let { uri } = document;
         try {
-            this.connection.console.log(`Scanning for completions ${uri}`)
-            let res = this.parser.scanForCompletions(contents);
-            this.completionCache.setTriggers(res.triggers, uri);
-            // let scopes = this.parser.scanForScopes(document);
+            this.connection.console.log(`Scanning for scopes ${uri}`)
+            let scopes = this.parser.scanForScopes(document);
+            this.completionCache.setScopes(scopes, uri);
         } catch (error) {
             this.connection.console.warn(`Scanning Error in ${uri}: ${error}`);
         }

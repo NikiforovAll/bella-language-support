@@ -66,14 +66,33 @@ export default class BellaServer {
 		// this.connection.console.log(`DocumentScan.analyze: [END] ${uri}`);
 	}
 
-	private documentCompletionScan(change: LSP.TextDocumentChangeEvent) {
+	private documentScopeScan(change: LSP.TextDocumentChangeEvent) {
 		const start = Date.now();
 		const { uri } = change.document;
-		// this.connection.console.log(`DocumentScan.scanForCompletions: [START] ${uri}`);
-		// this.analyzer.analyze(change.document);
-		this.analyzer.scanForCompletions(change.document);
-		this.connection.console.log(`DocumentScan.scanForCompletions: [END]; elapsed=${Date.now()- start} ms ${uri}`);
+		this.analyzer.scanForScopes(change.document);
+		this.connection.console.log(`DocumentScan.scanForScopes: [END]; elapsed=${Date.now() - start} ms ${uri}`);
 	}
+
+	// const debounceCompletionScan = debounce(
+	// 	this.documentCompletionScan.bind(this),
+	// 	debounceCompletionScanTime,
+	// 	{ leading: true, }
+	// );
+	// const throttleCompletionScan = throttle(
+	// 	// () => {console.log('throttle')},
+	// 	this.documentCompletionScan.bind(this),
+	// 	debounceCompletionScanTime,
+	// 	{ leading: true }
+	// );
+
+	// private documentCompletionScan() {
+	// const start = Date.now();
+	// const { uri } = change.document;
+	// this.connection.console.log(`DocumentScan.scanForCompletions: [START] ${uri}`);
+	// this.analyzer.analyze(change.document);
+	// this.analyzer.scanForCompletions(change.document);
+	// this.connection.console.log(`DocumentScan.scanForCompletions: [END]; elapsed=${Date.now()- start} ms ${uri}`);
+	// }
 
 	/**
 	 * Register handlers for the events from the Language Server Protocol that we
@@ -81,27 +100,17 @@ export default class BellaServer {
 	 */
 	public register(connection: LSP.Connection): void {
 		const debounceScanTime = 2500;
-		const debounceCompletionScanTime = 300;
 		const debounceScan = debounce(
 			this.documentScan.bind(this),
 			debounceScanTime,
 			// { trailing: true }
 		);
-		const debounceCompletionScan = debounce(
-			this.documentCompletionScan.bind(this),
-			debounceCompletionScanTime,
-			{ leading: true, }
-		);
-		// const throttleCompletionScan = throttle(
-		// 	// () => {console.log('throttle')},
-		// 	this.documentCompletionScan.bind(this),
-		// 	debounceCompletionScanTime,
-		// 	{ leading: true }
-		// );
+
 		this.documents.listen(this.connection);
 		this.documents.onDidChangeContent((change: LSP.TextDocumentChangeEvent) => {
 			debounceScan(change);
-			this.documentCompletionScan(change);
+			this.documentScopeScan(change);
+			// this.documentCompletionScan(change);
 			// debounceCompletionScan(change);
 			// throttleCompletionScan(change);
 		});
@@ -217,6 +226,7 @@ export default class BellaServer {
 			this.analyzer.declarationCache,
 			this.analyzer.completionCache
 		);
+		handler.setConnection(this.connection);
 		return handler.complete(payload);
 	}
 

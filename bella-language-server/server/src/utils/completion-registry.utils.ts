@@ -1,4 +1,4 @@
-import { BellaCompletionTrigger, Range } from 'bella-grammar';
+import { BellaCompletionTrigger, Range, BellaScope } from 'bella-grammar';
 
 import { CompletionRegistryNode } from '../registry/completion-registry.ts/completion-registry-node';
 import { CommonUtils } from './common.utils';
@@ -12,8 +12,13 @@ export namespace CompletionRegistryUtils {
         return compareRanges(r1, r2);
     }
 
-    export function createRegistryNode(triggers: BellaCompletionTrigger[], uri: string) {
-        let node = new CompletionRegistryNode(triggers, CommonUtils.getNamespaceFromURI(uri));
+    // export function createRegistryNode(triggers: BellaCompletionTrigger[], uri: string) {
+    //     let node = new CompletionRegistryNode(triggers, CommonUtils.getNamespaceFromURI(uri));
+    //     return node;
+    // }
+
+    export function createRegistryNode(scopes: BellaScope[], uri: string) {
+        let node = new CompletionRegistryNode(scopes, CommonUtils.getNamespaceFromURI(uri));
         return node;
     }
 

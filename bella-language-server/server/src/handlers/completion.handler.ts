@@ -38,12 +38,14 @@ export class CompletionHandler extends BaseHandler {
     }
 
     public complete(params: CompletionParams): CompletionItem[] {
+        const start = Date.now();
         this.docUri = params.textDocument.uri;
         let completionTokens = this.completionRegistry.getCompletions(
             params.position.line,
             params.position.character,
             this.docUri
         );
+		this.connection.console.log(`CompletionRegistry.getCompletions: [END]; elapsed=${Date.now() - start} ms ${this.docUri}`);
 
         let providers = [];
         let userDeclarationsProviders: CompletionProvider[] = [
