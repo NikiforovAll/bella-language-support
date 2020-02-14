@@ -60,18 +60,19 @@ export default class BellaServer {
 
 	private documentScan(change: LSP.TextDocumentChangeEvent) {
 		const { uri } = change.document;
-		this.connection.console.log(`DocumentScan.analyze: [START] ${uri}`);
+		// this.connection.console.log(`DocumentScan.analyze: [START] ${uri}`);
 		this.analyzer.analyze(change.document);
 		// this.analyzer.scanForCompletions(change.document);
-		this.connection.console.log(`DocumentScan.analyze: [END] ${uri}`);
+		// this.connection.console.log(`DocumentScan.analyze: [END] ${uri}`);
 	}
 
 	private documentCompletionScan(change: LSP.TextDocumentChangeEvent) {
+		const start = Date.now();
 		const { uri } = change.document;
-		this.connection.console.log(`DocumentScan.scanForCompletions: [START] ${uri}`);
+		// this.connection.console.log(`DocumentScan.scanForCompletions: [START] ${uri}`);
 		// this.analyzer.analyze(change.document);
 		this.analyzer.scanForCompletions(change.document);
-		this.connection.console.log(`DocumentScan.scanForCompletions: [END] ${uri}`);
+		this.connection.console.log(`DocumentScan.scanForCompletions: [END]; elapsed=${Date.now()- start} ms ${uri}`);
 	}
 
 	/**
@@ -80,7 +81,7 @@ export default class BellaServer {
 	 */
 	public register(connection: LSP.Connection): void {
 		const debounceScanTime = 2500;
-		const debounceCompletionScanTime = 500;
+		const debounceCompletionScanTime = 300;
 		const debounceScan = debounce(
 			this.documentScan.bind(this),
 			debounceScanTime,
@@ -89,7 +90,7 @@ export default class BellaServer {
 		const debounceCompletionScan = debounce(
 			this.documentCompletionScan.bind(this),
 			debounceCompletionScanTime,
-			// { leading: true, }
+			{ leading: true, }
 		);
 		// const throttleCompletionScan = throttle(
 		// 	// () => {console.log('throttle')},

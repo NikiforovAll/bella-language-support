@@ -22,3 +22,4 @@ procedure EntryPoint()
     // )
     // SourceDescription.GetPatternForSourceDescriptionMatch()
     //textDocument/completion -
+    call GetTaskTypeList(out TaskTypeList)

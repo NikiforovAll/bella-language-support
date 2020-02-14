@@ -140,6 +140,7 @@ export default class BellaAnalyzer {
             this.connection.console.log(`Scanning for completions ${uri}`)
             let res = this.parser.scanForCompletions(contents);
             this.completionCache.setTriggers(res.triggers, uri);
+            // let scopes = this.parser.scanForScopes(document);
         } catch (error) {
             this.connection.console.warn(`Scanning Error in ${uri}: ${error}`);
         }

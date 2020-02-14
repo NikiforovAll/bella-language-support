@@ -1,7 +1,10 @@
-import { BellaLanguageSupport, BaseDeclaration, BellaReference, VisitorType, ThrowingErrorListener } from "bella-grammar";
+import { BellaLanguageSupport, BaseDeclaration, BellaReference, VisitorType, ThrowingErrorListener, BellaScope } from "bella-grammar";
 import { BellaDeclarationVisitor } from "bella-grammar/dist/lib/bella-declaration.visitor";
 import { BellaReferenceVisitor } from "bella-grammar/dist/lib/bella-reference.visitor";
 import { BellaCompletionVisitor } from "bella-grammar/dist/lib/bella-completion.visitor";
+import { BellaScopeVisitor } from "bella-grammar/dist/lib/bella-scope.visitor";
+import { TextDocument } from "vscode-languageserver";
+import { CommonUtils } from "./utils/common.utils";
 
 export class LSPParserProxy {
 
@@ -10,7 +13,7 @@ export class LSPParserProxy {
     /**
      * parse
      */
-    public parse(input: string)  {
+    public parse(input: string) {
         let tree = BellaLanguageSupport.parse(input);
         // let tree = BellaLanguageSupport.parseWithErrorListener(input, ThrowingErrorListener.INSTANCE)
         let declarationVisitor =
@@ -19,8 +22,8 @@ export class LSPParserProxy {
             BellaLanguageSupport.generateVisitor(VisitorType.ReferencesVisitor) as BellaReferenceVisitor;
         declarationVisitor.visit(tree);
         referenceVisitor.visit(tree);
-        let {declarations} = declarationVisitor;
-        let {references} = referenceVisitor;
+        let { declarations } = declarationVisitor;
+        let { references } = referenceVisitor;
         return {
             declarations, references
         };
@@ -28,13 +31,32 @@ export class LSPParserProxy {
 
     public scanForCompletions(input: string) {
         let tree = BellaLanguageSupport.parse(input);
-            BellaLanguageSupport.generateVisitor() as BellaDeclarationVisitor;
+        BellaLanguageSupport.generateVisitor();
         let completionVisitor = BellaLanguageSupport.generateVisitor(VisitorType.CompletionVisitor) as BellaCompletionVisitor;
         completionVisitor.visit(tree);
         let { triggers } = completionVisitor;
         return {
             triggers
         };
+    }
+
+    public scanForScopes(input: TextDocument) {
+        const scopes = this.generateScopes(input.getText());
+        for (const scope of scopes) {
+            scope.content = input.getText(CommonUtils.range(scope.range));
+        }
+        return scopes;
+    }
+
+    private generateScopes(input: string): BellaScope[] {
+        // let tree = BellaLanguageSupport.parse(input);
+        // BellaLanguageSupport.generateVisitor();
+        // let scopeVisitor = BellaLanguageSupport
+        //     .generateVisitor(VisitorType.ScopeVisitor) as BellaScopeVisitor;
+        // scopeVisitor.visit(tree);
+        // return scopeVisitor.scopes;
+        const scopes: BellaScope[] = [];
+        return scopes;
     }
 
 }

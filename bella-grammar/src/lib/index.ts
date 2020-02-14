@@ -10,11 +10,12 @@ import {
 
 import * as bellaGeneratedLexer from '../grammars/.antlr4/BellaLexer';
 import { BellaParser } from '../grammars/.antlr4/BellaParser';
+import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
+import { BellaCompletionVisitor } from './bella-completion.visitor';
 import { BellaDeclarationVisitor } from './bella-declaration.visitor';
 import { BellaErrorStrategy } from './bella-error-strategy';
 import { BellaReferenceVisitor } from './bella-reference.visitor';
-import { BellaVisitor } from '../grammars/.antlr4/BellaVisitor';
-import { BellaCompletionVisitor } from './bella-completion.visitor';
+import { BellaScopeVisitor } from './bella-scope.visitor';
 
 export {
     BaseDeclaration,
@@ -46,6 +47,7 @@ export { BellaNestedReference } from './models/bella-nested-reference';
 export { BellaAmbiguousReference } from './models/bella-ambiguous-reference';
 
 export { BellaCompletionTrigger, CompletionIdentifier, CompletionScope } from './models/bella-completion';
+export { BellaScope } from './models/bella-scope';
 export class BellaLanguageSupport {
     public static tokenize(expr: string): Token[] {
         return this.generateLexer(expr)
@@ -91,6 +93,8 @@ export class BellaLanguageSupport {
                 return new BellaReferenceVisitor();
             case VisitorType.CompletionVisitor:
                 return new BellaCompletionVisitor();
+            case VisitorType.ScopeVisitor:
+                return new BellaScopeVisitor();
             default:
                 throw Error('Can\'t create visitor: unknown type');
         }
@@ -108,5 +112,6 @@ export class BellaLanguageSupport {
 export enum VisitorType {
     DeclarationVisitor,
     ReferencesVisitor,
-    CompletionVisitor
+    CompletionVisitor,
+    ScopeVisitor
 }
