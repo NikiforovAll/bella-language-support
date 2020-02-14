@@ -29,6 +29,7 @@ export abstract class BaseCompletionProvider implements CompletionProvider, Decl
 
     setDeclarationCache(cache: DeclarationCacheProvider) {
         this.declarationCompletionCache = cache.declarationCompletionCache;
+        return this;
     }
 
     getCompletionTypes(): DeclarationType[] {

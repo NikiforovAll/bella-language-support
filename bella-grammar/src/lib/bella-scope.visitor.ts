@@ -23,7 +23,7 @@ export class BellaScopeVisitor {
         );
         for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
             const line = lines[lineNumber];
-            if (line.startsWith('procedure')) {
+            if (line.startsWith('procedure') || line.startsWith('generic') || line.startsWith('specific')) {
                 if (!isProcedureStart) {
                     currentProcedure = line;
                     isProcedureStart = true;

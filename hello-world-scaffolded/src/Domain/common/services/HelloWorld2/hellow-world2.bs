@@ -6,3 +6,5 @@ service HelloWorld2
 procedure Test3(Params2)
 procedure Test4()
 
+
+object ObjectFromHellowWorld2: String[*]

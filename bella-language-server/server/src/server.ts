@@ -239,7 +239,6 @@ export default class BellaServer {
 
 	private onCompletionResolve(item: LSP.CompletionItem): LSP.CompletionItem {
 		return item;
-		// item.detail
 	}
 
 	private static initializeParser() {

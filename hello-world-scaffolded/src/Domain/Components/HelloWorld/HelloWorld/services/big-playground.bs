@@ -322,7 +322,6 @@ procedure ForceApplyRule(TaskRuleId)
     call GetTaskRuleById(TaskRuleId, out TaskRule)
     call FillTasksIfNeeded(TaskRule)
 
-
 procedure FillOrderIdAndRemoveEmptyCoinTasks(out Integer)
     TaskList = TaskCatalog.Where(t => t is OverstappenErrorFoundTask)
     Integer = 0

@@ -38,14 +38,14 @@ export class CompletionHandler extends BaseHandler {
     }
 
     public complete(params: CompletionParams): CompletionItem[] {
-        const start = Date.now();
+        const startOfCompletionContextParsing = Date.now();
         this.docUri = params.textDocument.uri;
         let completionTokens = this.completionRegistry.getCompletions(
             params.position.line,
             params.position.character,
             this.docUri
         );
-		this.connection.console.log(`CompletionRegistry.getCompletions: [END]; elapsed=${Date.now() - start} ms ${this.docUri}`);
+		this.connection.console.log(`CompletionRegistry.getCompletions: [END]; elapsed=${Date.now() - startOfCompletionContextParsing} ms ${this.docUri}`);
 
         let providers = [];
         let userDeclarationsProviders: CompletionProvider[] = [
@@ -64,7 +64,8 @@ export class CompletionHandler extends BaseHandler {
             new KeywordCompletionProvider(),
             // new ExclusiveSourceCompletionProvider(...userDeclarationsProviders),
             // ...userDeclarationsProviders,
-            new AmbientContextCompletionProvider(this.cache, this.docUri),
+            new AmbientContextCompletionProvider(this.cache, this.docUri)
+                .setDeclarationCache(this.completionRegistry),
             // only system built-in types are returned in this case
             this.createProvider(DeclarationType.Type),
             new LanguageLevelProceduresCompletionProvider()
@@ -80,8 +81,11 @@ export class CompletionHandler extends BaseHandler {
             //     providers.push(...ambientScopeProviders);
             // }
         }
-        return new MultipleSourceCompletionProvider(...this.groupExclusiveProviders(providers))
-            .getCompletions();
+        const startOfCompletionResolution = Date.now();
+        const completions = new MultipleSourceCompletionProvider(
+            ...this.groupExclusiveProviders(providers)).getCompletions();
+        this.connection.console.log(`CompletionHandler.complete: [END]; elapsed=${Date.now() - startOfCompletionResolution} ms ${this.docUri}`);
+        return completions;
     }
 
 
