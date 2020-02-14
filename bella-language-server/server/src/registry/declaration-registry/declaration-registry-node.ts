@@ -9,7 +9,11 @@ export class DeclarationRegistryNode {
     private overloads: Dictionary<DeclarationKey, DeclarationOverload>
         = new Dictionary<DeclarationKey, DeclarationOverload>();
 
-    constructor(private nodes: Dictionary<DeclarationKey, KeyedDeclaration>, public namespace: string, public componentName: string) {
+    constructor(
+        private nodes: Dictionary<DeclarationKey, KeyedDeclaration>,
+        public namespace: string,
+        public componentName: string,
+        public uri: string) {
     }
 
     getDeclarations(query?: NodeRegistrySearchQuery): KeyedDeclaration[] {

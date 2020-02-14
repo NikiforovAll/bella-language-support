@@ -1,0 +1,357 @@
+
+procedure CreateTask(BaseTaskCreationRequest, out TaskId)
+    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
+    TaskId = BaseTask.id
+    TaskCatalog[TaskId] = BaseTask
+
+procedure CreateTaskAsync(BaseTaskCreationRequest)
+    call CreateSpecificTask(BaseTaskCreationRequest, out BaseTask)
+
+    TaskCatalog[BaseTask.id] = BaseTask
+
+procedure GetPagedAndFilteredTaskList(TaskFilterList, TasksPerPage, PageNumber, out GetFilteredAndPagedTasksResponse)
+    call GetFilteredTaskList(TaskFilterList, out TaskList)
+
+    let TotalFilteredTasksNumber = TaskList.Count()
+    let TotalOpenTasks = TaskCatalog.Where(t => t.status != TaskStatus.Closed).Count()
+    TotalClosedTodayTasks = TaskCatalog.Where(t => t.closedOn.Date() == today).Count()
+    GetFilteredAndPagedTasksResponse = new GetFilteredAndPagedTasksResponse(
+        pageNumber = PageNumber,
+        totalPages = TotalFilteredTasksNumber.GetTotalPages(TasksPerPage),
+        totalOpenTasks = TotalOpenTasks,
+        totalClosedTodayTasks = TotalClosedTodayTasks,
+        taskList = TaskList.OrderByDescending(t => t.createdOn).Skip((PageNumber - 1) * TasksPerPage).Take(TasksPerPage),
+        totalItemsCount = TotalFilteredTasksNumber
+        )
+
+
+procedure GetFilteredTaskList(TaskFilterList, out TaskList)
+    TaskList = TaskCatalog.Where(t => TaskFilterList.All(f => f.isMatch(t)))
+
+
+procedure CreateTaskRule(TaskRuleCreationRequest, out TaskRuleId)
+    call TrimTaskRuleCreationRequest(TaskRuleCreationRequest)
+    call ValidateTaskRuleCreationRequest(TaskRuleCreationRequest)
+    TaskRuleId = IdGenerator.GetNextAvailableId(TypeOfId.TaskRuleId)
+    TaskRule = TaskRuleCreationRequest.ToTaskRule(TaskRuleId)
+    TaskRuleCatalog[TaskRuleId] = TaskRule
+
+    call FillTasksWithoutTaskRuleIfNeeded(TaskRule)
+
+procedure CreateTaskSkill(TaskSkill)
+    if IsEmpty(TaskSkill)
+        error[EmptyArgument] "Empty task skill"
+    TaskSkillCatalog ++= TaskSkill
+
+procedure GetTaskRuleById(TaskRuleId, out TaskRule)
+    if !TaskRuleCatalog.ContainsKey(TaskRuleId)
+        error[TaskRuleDoesNotExist] "Task rule with ID " + TaskRuleId + " is not found"
+    TaskRule = TaskRuleCatalog[TaskRuleId]
+
+
+procedure DeleteTaskRuleById(TaskRuleId)
+    call GetTaskRuleById(TaskRuleId, out TaskRule)
+    TaskRuleCatalog --= TaskRuleId
+
+
+procedure GetPagedTaskRuleList(PageNumber, TaskRulesPerPage, out PagedTaskRulesResponse)
+    TotalTaskRulesCount = TaskRuleCatalog.Count()
+    PagedTaskRulesResponse = new PagedTaskRulesResponse(
+        pageNumber = PageNumber,
+        totalTaskRulesCount = TotalTaskRulesCount,
+        totalPages = TotalTaskRulesCount.GetTotalPages(TaskRulesPerPage),
+        taskRuleList = TaskRuleCatalog.OrderByDescending(tr => tr.createdOn).Skip((PageNumber - 1) * TaskRulesPerPage).Take(TaskRulesPerPage)
+        )
+
+
+procedure GetTaskSkillList(out TaskSkillList)
+    TaskSkillList = TaskSkillCatalog.Select(tsk => tsk)
+
+
+procedure GetTaskUrgencyList(out TaskUrgencyList)
+    TaskUrgencyList = TaskUrgencyCatalog.Select(tu => tu)
+
+
+procedure GetTaskImportanceList(out TaskImportanceList)
+    TaskImportanceList = TaskImportanceCatalog.Select(ti => ti)
+
+
+procedure GetTaskComponentList(out TaskComponentList)
+    TaskComponentList = TaskComponentCatalog.Select(tc => tc)
+
+
+procedure GetTaskSubcomponentList(out TaskSubcomponentList)
+    TaskSubcomponentList = TaskSubcomponentCatalog.Select(ts => ts)
+
+
+procedure GetTaskRelatedServiceList(out TaskRelatedServiceList)
+    TaskRelatedServiceList = TaskRelatedServiceCatalog.Select(trs => trs)
+
+
+procedure GetTaskTypeList(out TaskTypeList)
+    TaskTypeList = TaskRuleTaskTypeCatalog.Select(tt => tt)
+
+procedure GetCategoriesList(out CategoriesList)
+    CategoriesList = CategoryCatalog.Select(x => x)
+
+
+procedure GetLastOpenTaskWithoutRulesList(TasksPerPage, PageNumber, out GetLastOpenTaskWithoutRulesListResponse)
+    TaskList = TaskCatalog.Where(t => !t.isTaskRuleAssigned).OrderByDescending(t => t.createdOn)
+    TotalTasksCount = TaskList.Count()
+    GetLastOpenTaskWithoutRulesListResponse = new GetLastOpenTaskWithoutRulesListResponse(
+        taskList = TaskList.Skip((PageNumber - 1) * TasksPerPage).Take(TasksPerPage),
+        pageNumber = PageNumber,
+        totalPages = TotalTasksCount.GetTotalPages(TasksPerPage),
+        totalTasksCount = TotalTasksCount
+        )
+
+
+procedure GetGroupedTaskWithoutRulesCountList(RecordsPerPage, PageNumber, out GetGroupedTaskWithoutRulesCountListReponse)
+    TaskWithoutRulesShortStatisticDtoList = TaskCatalog.Where(t => !t.isTaskRuleAssigned).GroupBy(t => t.createdByComponent + t.sourceDescription).Select(tg => new TaskWithoutRulesShortStatisticDto(
+        sourceComponent = tg.First().createdByComponent,
+        sourceDescription = tg.First().sourceDescription,
+        tasksCount = tg.Count()
+        )).OrderByDescending(ts => ts.tasksCount)
+
+    let TotalCount = TaskWithoutRulesShortStatisticDtoList.Count()
+
+    GetGroupedTaskWithoutRulesCountListReponse = new GetGroupedTaskWithoutRulesCountListReponse(
+            shortGroupedTasks = TaskWithoutRulesShortStatisticDtoList.Skip((PageNumber - 1) * RecordsPerPage).Take(RecordsPerPage),
+            totalPages = TotalCount.GetTotalPages(RecordsPerPage),
+            totalRecordsCount = TotalCount,
+            pageNumber = PageNumber
+        )
+
+
+procedure PostponeTaskById(AccountId, TaskId, DelayValue, Comment)
+    if Comment is empty
+        error[EmptyComment] "Comment is required field"
+    call GetTaskById(TaskId, out BaseTask)
+    if BaseTask.assignedTo != AccountId
+        error[InvalidAccountId] "Task is not assigned to you"
+    if DelayValue <= 0
+        error[InvalidDelay] "Postpone delay should be greater than 0"
+    if BaseTask.status == TaskStatus.Closed || BaseTask.status == TaskStatus.Postponed
+        error[InvalidTaskStatus] "Task " + TaskId + " has invalid status and can't be posponed"
+    Delay = new Delay(
+        days = DelayValue,
+        onlyWorking = true
+        )
+    BaseTask.postponedUntil = now.AddDelay(Delay, NLECalendar).Date() as DateTime
+    BaseTask.assignedTo = ""
+    BaseTask.assigneeFullName = ""
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PostponeTask, AccountId, Comment)
+
+procedure PostponeTaskPerUser(AccountId, TaskId)
+    call GetTaskById(TaskId, out BaseTask)
+    if AccountId == BaseTask.assignedTo
+        BaseTask.assignedTo = ""
+        BaseTask.assigneeFullName = ""
+        call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.ReopenTask, AccountId)
+
+    if ExcludeListForTaskPostponingPerUser[AccountId] is empty
+        ExcludeListForTaskPostponingPerUser[AccountId] = new
+    ExcludeListForTaskPostponingPerUser[AccountId] ++= BaseTask.id
+
+procedure ReassignTaskById(AccountId, TaskId, TaskSkill, Comment)
+    if Comment is empty
+        error[EmptyComment] "Comment is required field"
+    call GetTaskById(TaskId, out BaseTask)
+    if BaseTask.assignedTo != AccountId
+        error[InvalidAccountId] "Task is not assigned to you"
+    call CheckIfTaskSkillExist(TaskSkill)
+    if BaseTask.status == TaskStatus.Closed
+        error[InvalidTaskStatus] "Task " + TaskId + " has invalid status and can't be reassigned"
+    if BaseTask.requiredSkill == TaskSkill
+        error[AlreadyHasSkill] "The task already has " + TaskSkill + " skill"
+    BaseTask.requiredSkill = TaskSkill
+    BaseTask.assignedTo = ""
+    BaseTask.assigneeFullName = ""
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.ReassignTask, AccountId, Comment)
+
+
+procedure CloseTaskById(AccountId, TaskId, RelatedTaskIdList, Comment)
+    if Comment is empty
+        error[EmptyComment] "Comment is required field"
+    call GetTaskById(TaskId, out BaseTask)
+    if BaseTask.assignedTo != AccountId
+        error[InvalidAccountId] "Task is not assigned to you"
+    if BaseTask.status == TaskStatus.Closed
+        error[InvalidTaskStatus] "Task " + TaskId + " has invalid status and can't be closed"
+    //if BaseTask.canBeClosed == false
+    //    error[TaskIssueNotClosed] "Task " + TaskId + " can't be closed because the issue not resolved"
+
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.CloseTask, AccountId, Comment)
+    call CloseRelatedTasks(RelatedTaskIdList, AccountId)
+
+procedure CloseTaskBySystem(TaskId, RelatedTaskIdList)
+    call GetTaskById(TaskId, out BaseTask)
+    if BaseTask.status != TaskStatus.InProgress
+        error[InvalidTaskStatus] "Task " + TaskId + " has invalid status and can't be closed"
+    call CloseTaskInternally(BaseTask, AccountId = "System")
+    call CloseRelatedTasks(RelatedTaskIdList, AccountId = "System")
+
+
+procedure PutTaskInProgressBySystem(TaskId)
+    call GetTaskById(TaskId, out BaseTask)
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PutTaskInProgress, AccountId = "System", Comment = "Automaticly putted in progress by system")
+
+procedure AddCommentToTask(AccountId, TaskId, Comment)
+    call GetTaskById(TaskId, out BaseTask)
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.AddComment, AccountId, Comment)
+
+procedure GetTaskForEmployee(AccountId, out BaseTask)
+
+    call GetCurrentTaskForEmployee(AccountId, out BaseTask)
+    if IsEmpty(BaseTask)
+        call GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+        let ExcludedTasks = ExcludeListForTaskPostponingPerUser[AccountId]
+        BaseTask = TaskCatalog.Where(t => t.status == TaskStatus.Open && t.requiredSkill in TaskSkillList && t.id not in ExcludedTasks).OrderBy(t => t.createdOn).FirstOrDefault(true, empty)
+
+        if !IsEmpty(BaseTask)
+            call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PutTaskInProgress, AccountId)
+
+procedure GetCurrentTaskForEmployee(AccountId, out BaseTask)
+    BaseTask = TaskCatalog.FirstOrDefault(t => t.status == TaskStatus.InProgress && t.assignedTo == AccountId, new BaseTask())
+
+procedure IsEmployeeHaveTask(AccountId, out Boolean)
+    call GetCurrentTaskForEmployee(AccountId, out BaseTask)
+    Boolean = if (!IsEmpty(BaseTask), true, false)
+
+procedure IsTaskAssignedToEmployee(TaskId, out Boolean)
+    call GetTaskById(TaskId, out BaseTask)
+    Boolean = if(IsEmpty(BaseTask.assignedTo), false, true)
+
+procedure AssignTaskToEmployee(TaskId, AccountId, out BaseTask)
+    call GetTaskById(TaskId, out BaseTask)
+    if BaseTask.status != TaskStatus.Open && BaseTask.status != TaskStatus.Postponed && BaseTask.status != TaskStatus.InProgress
+        error[InvalidTaskStatus] "Task " + TaskId + " has invalid status and cannnot be assign"
+    call EnsureEmployeeHaveRequiredTaskSkill(AccountId, TaskSkill = BaseTask.requiredSkill)
+    call DeassignCurrentTaskFromEmployee(AccountId)
+    if BaseTask.status == TaskStatus.Postponed
+        call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.ReopenTask, AccountId)
+    call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.PutTaskInProgress, AccountId)
+
+procedure DeassignCurrentTaskFromEmployee(AccountId)
+    call GetCurrentTaskForEmployee(AccountId, out BaseTask)
+    if AccountId == BaseTask.assignedTo
+        BaseTask.assignedTo = ""
+        BaseTask.assigneeFullName = ""
+        call LogTaskEvent(BaseTask, TaskActionType = TaskActionType.ReopenTask, AccountId, Comment = "Task was de-assign due to getiing a new task.")
+
+
+procedure AssignTaskSkillsToEmployee(AccountId, TaskSkillList)
+    CrmBackend.EnsureEmployeeAccountExists(AccountId)
+    call CheckIsTaskSkillsExists(TaskSkillList)
+
+    let TaskSkillsForAssigning = TaskSkillList
+
+    call GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+
+    TaskSkill = TaskSkillList.FirstOrDefault(ts => ts in TaskSkillsForAssigning, empty)
+
+    if !IsEmpty(TaskSkill)
+        error[EmployeeAlreadyHasSuchSkill] "Employee with ID " + AccountId + " already has assigned skill: " + TaskSkill
+
+    foreach TaskSkill in TaskSkillsForAssigning
+        TaskSkillList ++= TaskSkill
+
+procedure UpdateAssignedEmployeeTaskSkills(AccountId, TaskSkillList)
+    call CheckIsTaskSkillsExists(TaskSkillList)
+
+    TaskSkillListByAccountIdCatalog[AccountId] = TaskSkillList
+
+procedure CheckIsTaskSkillsExists(TaskSkillList)
+    foreach TaskSkill in TaskSkillList
+        call CheckIfTaskSkillExist(TaskSkill)
+
+
+procedure GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+    TaskSkillList = TaskSkillListByAccountIdCatalog[AccountId]
+
+procedure EnsureEmployeeHaveRequiredTaskSkill(AccountId, TaskSkill)
+    CrmBackend.EnsureEmployeeAccountExists(AccountId)
+    call GetTaskSkillListByAccountId(AccountId, out TaskSkillList)
+    if !TaskSkillList.Any(ts => ts == TaskSkill)
+        error[EmployeeHasNotRequiredSkill] "Employee with ID " + AccountId + " has not required skill: " + TaskSkill
+
+procedure GetRelatedTaskListByTaskId(TaskId, out TaskList)
+    call GetTaskById(TaskId, out BaseTask)
+    TaskList = new
+    CustomerId = BaseTask.customerId
+
+    if !IsEmpty(CustomerId)
+        TaskList = TaskCatalog.Where(t => t.status == TaskStatus.Open && t != BaseTask && t.customerId == CustomerId && t.requiredSkill == BaseTask.requiredSkill)
+            .OrderByDescending(t => t.desiredDueDate).ThenBy(t => t.urgency.urgencyValue).ThenBy(t => t.importance.importanceValue)
+
+procedure GetTaskListByTaskIdList(TaskIdList, out TaskList)
+    TaskList = TaskCatalog.Where(t => t.id in TaskIdList)
+
+procedure CreateMultipleTasks(BaseTaskCreationRequests)
+
+    foreach BaseTaskCreationRequests
+
+        call CreateTask(BaseTaskCreationRequest, out TaskId)
+
+procedure GetTasksByTaskType(TaskType, out TaskList)
+    TaskList = TaskCatalog.Where(t => t.type == TaskType)
+
+procedure MakeTaskClosable(TaskId)
+    call GetTaskById(TaskId, out BaseTask)
+    BaseTask.canBeClosed = true
+
+procedure GetPendingTasksBelongsToCustomer(CustomerId, PerPage, PageNumber, out PagedTasksForCustomer)
+    PagedTasksForCustomer = new
+
+    TasksForCustomerDto = TaskCatalog.Where(x => x.customerId == CustomerId && x.status != TaskStatus.Closed).OrderByDescending(t => t.createdOn).Select(t => t.ToTaskForCustomerDto())
+
+    PagedTasksForCustomer.tasks = TasksForCustomerDto.Skip((PageNumber - 1) * PerPage).Take(PerPage)
+    PagedTasksForCustomer.totalCount = TasksForCustomerDto.Count()
+    PagedTasksForCustomer.pageNumber = PageNumber
+
+procedure GetClosedTasksBelongsToCustomer(CustomerId, PerPage, PageNumber, out PagedTasksForCustomer)
+    PagedTasksForCustomer = new
+
+    TasksForCustomerDto = TaskCatalog.Where(x => x.customerId == CustomerId && x.status == TaskStatus.Closed).OrderByDescending(t => t.createdOn).Select(t => t.ToTaskForCustomerDto())
+
+    PagedTasksForCustomer.tasks = TasksForCustomerDto.Skip((PageNumber - 1) * PerPage).Take(PerPage)
+    PagedTasksForCustomer.totalCount = TasksForCustomerDto.Count()
+    PagedTasksForCustomer.pageNumber = PageNumber
+
+procedure ForceApplyRule(TaskRuleId)
+    call GetTaskRuleById(TaskRuleId, out TaskRule)
+    call FillTasksIfNeeded(TaskRule)
+
+
+procedure FillOrderIdAndRemoveEmptyCoinTasks(out Integer)
+    TaskList = TaskCatalog.Where(t => t is OverstappenErrorFoundTask)
+    Integer = 0
+    foreach TaskList
+
+        OverstappenErrorFoundTask = (BaseTask as OverstappenErrorFoundTask)
+
+        if OverstappenErrorFoundTask.errors is not empty && OverstappenErrorFoundTask.errors.Any()
+            OrderId = OverstappenErrorFoundTask.errors.First().orderId
+            if OrderId is not empty
+                OverstappenErrorFoundTask.orderId = OrderId
+                AccountId = Fulfillment.GetCustomerIdByOrderId(OrderId)
+                OverstappenErrorFoundTask.customerId = AccountId
+            else
+                TaskCatalog --= BaseTask.id
+                Integer += 1
+        else
+            TaskCatalog --= BaseTask.id
+            Integer += 1
+
+procedure CreateAutoProlongationFailedTaskForServiceAccountsAsync(AutoProlongationFailedTaskCreationDtoMap)
+
+    foreach AutoProlongationFailedTaskCreationDto in AutoProlongationFailedTaskCreationDtoMap
+        AutoProlongationFailedTaskCreationRequest = new AutoProlongationFailedTaskCreationRequest(
+            customerId = AutoProlongationFailedTaskCreationDto.customerAccountId,
+            failedAutoProlongationInfo = AutoProlongationFailedTaskCreationDto.failedAutoProlongationInfoItemList,
+            createdByComponent = Component.Billing,
+            sourceDescription = "Auto prolongation failed",
+            comment = AutoProlongationFailedTaskCreationDto.comment
+            )
+
+        TaskManagerAsync.CreateTaskAsync(AutoProlongationFailedTaskCreationRequest)

@@ -11,25 +11,44 @@ import { NodeRegistrySearchQuery } from './declaration-registry-query';
 
 import { uniq } from "lodash";
 import { DeclarationRegistryNode } from './declaration-registry-node';
+
+class NamespaceKey {
+    constructor(private namespace: string) { }
+    toString(): string {
+        return `${this.namespace}`;
+    }
+}
 export class LSPDeclarationRegistry {
 
 
-    //TODO: consider to have an array of this for each component to support global level cache
-    //TODO: need to be able to get all tokens for component
     // string:DeclarationRegistryNode
     private cache: NodeCache;
+
+    private namespacesToNodesCache: Dictionary<NamespaceKey, Dictionary<string, DeclarationRegistryNode>>;
 
     constructor() {
         this.cache = new NodeCache({
             checkperiod: 0,
             stdTTL: 0
         })
+        this.namespacesToNodesCache = new Dictionary<NamespaceKey, Dictionary<string, DeclarationRegistryNode>>();
     }
 
     public setDeclarations(declarations: BaseDeclaration[], uri: string) {
         let nrURI = CommonUtils.normalizeURI(uri);
-        this.cache.set(
-            nrURI, DeclarationRegistryUtils.createRegistryNode(declarations, nrURI));
+        const newNode = DeclarationRegistryUtils.createRegistryNode(declarations, nrURI);
+        const namespaceKey = new NamespaceKey(newNode.namespace);
+        if (this.namespacesToNodesCache.containsKey(namespaceKey)) {
+            const nodesPerNamespace = this.namespacesToNodesCache.getValue(namespaceKey);
+            if (!!nodesPerNamespace) {
+                nodesPerNamespace.setValue(nrURI, newNode);
+            }
+        } else {
+            const nodesPerNamespace = new Dictionary<string, DeclarationRegistryNode>();
+            nodesPerNamespace.setValue(nrURI, newNode);
+            this.namespacesToNodesCache.setValue(namespaceKey, nodesPerNamespace);
+        }
+        this.cache.set(nrURI, newNode);
     }
 
     public getRegistryNode(uri: string): DeclarationRegistryNode {
@@ -151,40 +170,61 @@ export class LSPDeclarationRegistry {
     private getDeclarationsForQueryLocal(query: NodeRegistrySearchQuery): KeyedDeclaration[] {
         let result: KeyedDeclaration[] = [];
         const start = Date.now();
+        const isLogExecutionTime = false;
         if (query.uriFilter.active) {
             result = this.getRegistryNode(query.uriFilter.uri || '').getDeclarations(query);
         } else {
             // global search
-            let selectedKeys = this.cache.keys();
             const isNamespaceFilterActivated = query.namespaceFilter?.active;
-            for (const registry_key of selectedKeys) {
-                let registry = this.cache.get<DeclarationRegistryNode>(registry_key);
-                const registryNamespace = registry?.namespace;
-                if (isNil(registry)) {
-                    continue;
+            const isComponentNameFilterActivated = !!query.namespaceFilter?.componentName;
+            const namespaceToFind = query.namespaceFilter?.namespace;
+            if (isNamespaceFilterActivated && namespaceToFind) {
+                let registries: DeclarationRegistryNode[] = [];
+                const mainNamespacedDeclarations = this.namespacesToNodesCache.getValue(new NamespaceKey(namespaceToFind));
+                if (namespaceToFind !== CommonUtils.SHARED_NAMESPACE_NAME && !!mainNamespacedDeclarations) {
+                    registries = mainNamespacedDeclarations.values();
                 }
-                if (registryNamespace !== CommonUtils.SHARED_NAMESPACE_NAME && isNamespaceFilterActivated &&
-                    registry?.namespace !== query.namespaceFilter?.namespace) {
-                    continue;
+                if (!query.namespaceFilter?.excludeCommon) {
+                    const commonNodes = this.namespacesToNodesCache.getValue(new NamespaceKey(CommonUtils.SHARED_NAMESPACE_NAME));
+                    if (!!commonNodes) {
+                        registries.push(...commonNodes.values());
+                    }
                 }
-
-                if(query.namespaceFilter?.excludeCommon && registryNamespace === CommonUtils.SHARED_NAMESPACE_NAME) {
-                    continue;
+                if (isNamespaceFilterActivated && isComponentNameFilterActivated) {
+                    const normalizedComponentName = query.namespaceFilter?.componentName?.toLowerCase() || '';
+                    registries = registries.filter(r => normalizedComponentName
+                        .indexOf(r.componentName.toLowerCase()) !== -1)
                 }
-
-                if(isNamespaceFilterActivated && !!query.namespaceFilter?.componentName
-                    && query.namespaceFilter.componentName.toLowerCase().indexOf(registry.componentName.toLowerCase()) === -1){
+                registries.forEach(r => result.push(...r.getDeclarations(query)));
+            } else {
+                let selectedKeys = this.cache.keys();
+                for (const registry_key of selectedKeys) {
+                    let registry = this.cache.get<DeclarationRegistryNode>(registry_key);
+                    if (isNil(registry)) {
                         continue;
+                    }
+                    // if (registryNamespace !== CommonUtils.SHARED_NAMESPACE_NAME
+                    //     && isNamespaceFilterActivated
+                    //     && registry?.namespace !== namespaceToFind) {
+                    //     continue;
+                    // }
+
+                    // if (isNamespaceFilterActivated
+                    //     && isComponentNameFilterActivated
+                    //     && query.namespaceFilter?.componentName
+                    //         ?.toLowerCase()
+                    //         .indexOf(registry.componentName.toLowerCase()) === -1) {
+                    //     continue;
+                    // }
+                    // TODO: this could be slow, measure impact
+                    console.warn('getDeclarationsForQueryLocal: [GLOBAL DECLARATION REGISTRY TRAVERSING]')
+                    result.push(...registry.getDeclarations(query));
                 }
-                // TODO: this could be slow, measure impact
-                result.push(...registry.getDeclarations(query));
             }
         }
-        // TODO: name filtering could be slow, consider to move map instead
-        // if(query?.nameFilter?.active){
-        //     result = result.filter(kd => kd.name === query?.nameFilter?.name);
-        // }
-        console.log(`LSPDeclarationRegistry.getDeclarationsForQueryLocal: elapsed = ${Date.now() - start} ms`)
+        if (isLogExecutionTime) {
+            console.log(`LSPDeclarationRegistry.getDeclarationsForQueryLocal: elapsed = ${Date.now() - start} ms`)
+        }
         return result;
     }
 }

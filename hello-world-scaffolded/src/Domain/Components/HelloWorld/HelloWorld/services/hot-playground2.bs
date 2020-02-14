@@ -16,6 +16,7 @@ persistent object TestCatalog: AccountId[*]
 external service TaskManager on TaskManager
 
 procedure EntryPoint()
+
     // TaskRule = new TaskRule(
     //     createdBy = "Test"
     // )

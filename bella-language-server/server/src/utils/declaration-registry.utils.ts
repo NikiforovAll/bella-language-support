@@ -31,8 +31,9 @@ export namespace DeclarationRegistryUtils {
             return result;
         });
         let namespace = CommonUtils.getNamespaceFromURI(uri);
-        let componentName = namespace === CommonUtils.SHARED_NAMESPACE_NAME ? CommonUtils.extractComponentNameFromUrl(uri) : namespace
-        let registry = new DeclarationRegistryNode(dict,namespace, componentName);
+        let componentName = namespace === CommonUtils.SHARED_NAMESPACE_NAME
+            ? CommonUtils.extractComponentNameFromUrl(uri) : namespace
+        let registry = new DeclarationRegistryNode(dict, namespace, componentName, uri);
         registry.setOverloads(overloads);
         return registry;
     }
