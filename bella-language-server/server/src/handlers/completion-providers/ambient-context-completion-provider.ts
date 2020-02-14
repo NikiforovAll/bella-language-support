@@ -42,8 +42,8 @@ export class AmbientContextCompletionProvider extends CachedCompletionProvider {
             namespaceFilter: {
                 active: true,
                 namespace: CommonUtils.getNamespaceFromURI(docUri),
-                // componentName: CommonUtils.getNamespaceFromURI(docUri),
-                // excludeCommon: false,
+                componentName: CommonUtils.getNamespaceFromURI(docUri),
+                excludeCommon: true,
             }
         });
         [

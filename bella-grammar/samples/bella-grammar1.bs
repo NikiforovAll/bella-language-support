@@ -64,5 +64,9 @@
 
 // object Test: TestO[*]
 
-procedure Procedure(Params)
-    call Test(T1, T2)
+// procedure Procedure(Params)
+//     new T(
+//         T = new T()
+//     )
+
+let t = TestService.Formula(TestObject.T)

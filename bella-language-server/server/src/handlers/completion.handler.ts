@@ -77,9 +77,9 @@ export class CompletionHandler extends BaseHandler {
         } else {
             providers = this.createProvidersForCompletionTriggers(completionTokens);
             // TODO: this adds ambient context to inner scope of completion triggers
-            // if (completionTokens.every((t: any) => t.scope !== CompletionScope.Block)) {
-            //     providers.push(...ambientScopeProviders);
-            // }
+            if (completionTokens.every((t: any) => t.scope !== CompletionScope.Block)) {
+                providers.push(...ambientScopeProviders);
+            }
         }
         const startOfCompletionResolution = Date.now();
         const completions = new MultipleSourceCompletionProvider(

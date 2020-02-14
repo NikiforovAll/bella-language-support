@@ -88,6 +88,11 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
      * @param context
      */
     visitNewStatement(context: NewStatementContext): BellaCompletionTrigger[] {
+        const result = this.visitNewStatementLocal(context);
+        return this.accumulateResult(result);
+    }
+
+    visitNewStatementLocal(context: NewStatementContext): BellaCompletionTrigger[] {
         const expressionMain = context.expression();
         let membersContext = expressionMain.expressionList();
         const identifierContext = expressionMain.Identifier();
@@ -185,9 +190,8 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             }
             result.push(...completions);
         }
-        return this.accumulateResult(result);
+        return result;
     }
-
     /**
      * type . arguments( expressionList )
      * @param context
@@ -199,8 +203,8 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         if (!procedureSignature) {
             return [];
         }
-        const startOfParamsList = procedureSignature.arguments();
-        const endLine = (startOfParamsList.start?.line || context.start.line) - 1;
+        const paramsListContext = procedureSignature.arguments();
+        const endLine = (paramsListContext.start?.line || context.start.line) - 1;
         const triggerIdentifier = procedureSignature.Identifier()?.text || '';
         let trigger: BellaCompletionTrigger = {
             completionBase: {
@@ -219,12 +223,12 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             expectedCompletions: [DeclarationType.ServiceEntry],
             range: BellaVisitorUtils.createRange(
                 startLine, procedureSignature.start.charPositionInLine,
-                endLine, startOfParamsList.start.charPositionInLine
+                endLine, paramsListContext.start.charPositionInLine
             ),
             scope: CompletionScope.Block
         };
         const result = [trigger];
-        if (!!startOfParamsList.text) {
+        if (!!paramsListContext.text) {
             let triggerName = '';
             try {
                 //TODO: fix it, dirty approach
@@ -255,11 +259,18 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
                     // DeclarationType.PersistentObject
                 ],
                 range: BellaVisitorUtils.createRange(
-                    startOfParamsList.start.line - 1, startOfParamsList.start.charPositionInLine,
-                    (startOfParamsList.stop?.line || startOfParamsList.start.line) - 1, startOfParamsList.stop?.charPositionInLine),
+                    paramsListContext.start.line - 1, paramsListContext.start.charPositionInLine,
+                    (paramsListContext.stop?.line || paramsListContext.start.line) - 1, paramsListContext.stop?.charPositionInLine),
                 scope: CompletionScope.Ambient
             };
-            result.push(signatureSupport);
+            let innerTriggers = paramsListContext
+                ?.expressionList()
+                ?.expression()
+                ?.map(expression => this.visitExpressionLocal(expression))
+                .reduce((acc, t) => acc.concat(t))
+                .filter(t => !!t) || [];
+
+            result.push(...[signatureSupport, ...innerTriggers]);
         }
         return this.accumulateResult(result);
     }
@@ -280,58 +291,64 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
 
     visitExpressionLocal(context: ExpressionContext): BellaCompletionTrigger[] {
         const dotContext = context.DOT();
-        if (!dotContext) {
+        const newStatementContext = context.newStatement();
+        const invocationStatementContext = context.invocationStatement()?.genericInvocation();
+        if (!!dotContext) {
             // throw new Error('DOT is expected in parent expression');
-            return [];
-        }
-        const identifierContext = context.expression()[0].Identifier();
-        const result: BellaCompletionTrigger[] = [];
-        let stopCharacterPosition = dotContext.symbol.charPositionInLine + 1;
-        const invocationExpressionContextStop = context.invocationExpression()
-            ?.Identifier()
-            ?.symbol;
-        if (!!invocationExpressionContextStop) {
-            stopCharacterPosition = invocationExpressionContextStop.charPositionInLine + (invocationExpressionContextStop.text?.length || 0);
-        }
-        const range = BellaVisitorUtils.createRange(
-            dotContext.symbol.line - 1,
-            dotContext.symbol.charPositionInLine + 1,
-            // (context.stop?.line || context.start.line) - 1,
-            (context.stop?.line || dotContext.symbol.line) - 1,
-            stopCharacterPosition
-        );
-        const expectedCompletions = [
-            DeclarationType.ServiceEntry,
-            DeclarationType.ObjectField,
-            DeclarationType.EnumEntry,
-            DeclarationType.Formula,
-            DeclarationType.Type
-        ];
-        if (!!identifierContext) {
-            let completionTrigger: BellaCompletionTrigger = {
-                completionBase: {
-                    context: context.text,
-                    completionSource: [
-                        { name: identifierContext.text },
-                        // { name: identifierContext.text, type: DeclarationType.Service },
-                        // { name: identifierContext.text, type: DeclarationType.Object },
-                        // { name: identifierContext.text, type: DeclarationType.Enum },
-                    ]
-                }, expectedCompletions, range,
-                scope: CompletionScope.Block
+            const identifierContext = context.expression()[0].Identifier();
+            const result: BellaCompletionTrigger[] = [];
+            let stopCharacterPosition = dotContext.symbol.charPositionInLine + 1;
+            const invocationExpressionContextStop = context.invocationExpression()
+                ?.Identifier()
+                ?.symbol;
+            if (!!invocationExpressionContextStop) {
+                stopCharacterPosition = invocationExpressionContextStop.charPositionInLine + (invocationExpressionContextStop.text?.length || 0);
             }
-            result.push(completionTrigger)
-        } else {
-            let compoundCompletionTrigger: BellaCompletionTrigger = {
-                completionBase: {
-                    context: context.text,
-                    compoundCompletionSource: this.visitExpressionLocal(context.expression()[0])
-                }, expectedCompletions, range,
-                scope: CompletionScope.Block
+            const range = BellaVisitorUtils.createRange(
+                dotContext.symbol.line - 1,
+                dotContext.symbol.charPositionInLine + 1,
+                // (context.stop?.line || context.start.line) - 1,
+                (context.stop?.line || dotContext.symbol.line) - 1,
+                stopCharacterPosition
+            );
+            const expectedCompletions = [
+                DeclarationType.ServiceEntry,
+                DeclarationType.ObjectField,
+                DeclarationType.EnumEntry,
+                DeclarationType.Formula,
+                DeclarationType.Type
+            ];
+            if (!!identifierContext) {
+                let completionTrigger: BellaCompletionTrigger = {
+                    completionBase: {
+                        context: context.text,
+                        completionSource: [
+                            { name: identifierContext.text },
+                            // { name: identifierContext.text, type: DeclarationType.Service },
+                            // { name: identifierContext.text, type: DeclarationType.Object },
+                            // { name: identifierContext.text, type: DeclarationType.Enum },
+                        ]
+                    }, expectedCompletions, range,
+                    scope: CompletionScope.Block
+                }
+                result.push(completionTrigger)
+            } else {
+                let compoundCompletionTrigger: BellaCompletionTrigger = {
+                    completionBase: {
+                        context: context.text,
+                        compoundCompletionSource: this.visitExpressionLocal(context.expression()[0])
+                    }, expectedCompletions, range,
+                    scope: CompletionScope.Block
+                }
+                result.push(compoundCompletionTrigger)
             }
-            result.push(compoundCompletionTrigger)
+            return result;
+        } else if (!!newStatementContext) {
+            return this.visitNewStatement(newStatementContext);
+        }else if(!!invocationStatementContext) {
+            return this.visitGenericInvocation(invocationStatementContext);
         }
-        return result;
+        return [];
     }
 
     /**
@@ -356,8 +373,14 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
             result.push(completion);
         }
         const newStatementContext = context.localVariableDeclaration().newStatement();
+        const genericInvocationContext = context.localVariableDeclaration().invocationStatement()?.genericInvocation();
+        const genericInnerExpressionContext = context.localVariableDeclaration().expression()?.pop();
         if (!!newStatementContext) {
             this.visitNewStatement(newStatementContext);
+        } else if (!!genericInnerExpressionContext) {
+            result.push(...this.visitExpressionLocal(genericInnerExpressionContext));
+        } else if (!!genericInvocationContext) {
+            this.visitGenericInvocation(genericInvocationContext);
         }
         return this.accumulateResult(result);
     }
@@ -388,7 +411,6 @@ export class BellaCompletionVisitor extends AbstractParseTreeVisitor<any> implem
         result.push(completion);
         return this.accumulateResult(result);
     }
-
 
     private accumulateResult(triggers: BellaCompletionTrigger[]) {
         this.triggers.push(...triggers);

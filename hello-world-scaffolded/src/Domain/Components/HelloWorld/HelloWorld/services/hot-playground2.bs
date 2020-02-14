@@ -23,3 +23,7 @@ procedure EntryPoint()
     // SourceDescription.GetPatternForSourceDescriptionMatch()
     //textDocument/completion -
     call GetTaskTypeList(out TaskTypeList)
+    call Test(new Account())
+    T.Test(TaskRule)
+    // let t = TaskManager.DeleteTaskRuleById(TaskRule.)
+    // let t = TaskManager.DeleteTaskRuleById(ExtraTaskRule.extra.)
