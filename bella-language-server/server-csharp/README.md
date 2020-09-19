@@ -13,4 +13,3 @@ TODO: consider to migrate to CSharp version of language server
 <https://github.com/yallie/Sprache.Calc>
 <https://github.com/matarillo/vscode-languageserver-csharp-example>
 <https://github.com/sprache/Sprache>
-<https://www.codeproject.com/Articles/795056/Sprache-Calc-building-yet-another-expression-evalu>
